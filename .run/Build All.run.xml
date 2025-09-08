@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Build All" type="CompoundRunConfigurationType">
+    <toRun name="DesktopBuild" type="GradleRunConfiguration" />
+    <toRun name="WebAppBuild" type="GradleRunConfiguration" />
+    <method v="2" />
+  </configuration>
+</component>
