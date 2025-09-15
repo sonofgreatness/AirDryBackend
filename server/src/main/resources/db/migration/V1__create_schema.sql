@@ -38,3 +38,12 @@ CREATE TABLE app_user (
   password_hash VARCHAR(255) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+INSERT INTO user_type (id, displayname) VALUES
+  (uuid_generate_v4(), 'admin'),
+  (uuid_generate_v4(), 'capturer'),
+  (uuid_generate_v4(), 'casual_worker'),
+  (uuid_generate_v4(), 'super_user')
+
+
+ON CONFLICT DO NOTHING;

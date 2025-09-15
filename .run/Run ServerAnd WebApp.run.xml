@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run ServerAnd WebApp" type="CompoundRunConfigurationType">
+    <toRun name="Server" type="GradleRunConfiguration" />
+    <toRun name="WebApp" type="GradleRunConfiguration" />
+    <method v="2" />
+  </configuration>
+</component>
