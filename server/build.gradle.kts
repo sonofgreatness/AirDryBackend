@@ -40,14 +40,13 @@ dependencies {
 
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-
-
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-
-
+    //Exposed
     implementation("org.jetbrains.exposed:exposed-core:0.41.1")
     implementation("org.jetbrains.exposed:exposed-dao:0.41.1")
     implementation("org.jetbrains.exposed:exposed-jdbc:0.41.1")
+    implementation("org.jetbrains.exposed:exposed-java-time:0.41.1")
+    //Hikari + Postgres
     implementation("com.zaxxer:HikariCP:5.0.1")
     implementation("org.postgresql:postgresql:42.7.7")
     // Flyway
@@ -56,10 +55,7 @@ dependencies {
     implementation("com.auth0:java-jwt:4.4.0")
     // Koin for DI
     implementation("io.insert-koin:koin-core:3.3.3")
-    implementation("io.insert-koin:koin-ktor:$oldKtor") // or latest
-    //implementation("io.insert-koin:koin-logger-slf4j:$ktorVersion")
-
-    //implementation("io.github.smiley4:ktor-swagger-ui:3.3.0")
+    implementation("io.insert-koin:koin-ktor:$oldKtor")
     implementation(files("libs/kompendium-core-3.14.1-SNAPSHOT.jar"))
     implementation(files("libs/kompendium-json-schema-3.14.1-SNAPSHOT.jar"))
     implementation(files("libs/kompendium-oas-3.14.1-SNAPSHOT.jar"))

@@ -30,7 +30,9 @@ import org.montigny.client.config.DatabaseFactory
 import org.montigny.client.config.JwtProvider
 import org.montigny.client.di.appModule
 import org.montigny.client.domain.api.dto.Common.AnySerializer
+import org.montigny.client.domain.api.route.orgRoutes
 import org.montigny.client.domain.api.route.userRoutes
+import org.montigny.client.service.OrganizationService
 import org.montigny.client.service.UserService
 import java.io.File
 import java.net.URI
@@ -109,6 +111,7 @@ fun Application.module() {
 
     val jwtProvider: JwtProvider by inject()
     val userService: UserService by inject()
+    val organizationService: OrganizationService by inject()
 
     install(Authentication) {
         jwtProvider.configureKtorAuth(this)
@@ -129,7 +132,7 @@ fun Application.module() {
             call.respondText("Ktor: ${Greeting().greet()}")
         }
         userRoutes(userService)
-
+        orgRoutes(organizationService,userService)
         }
     }
 

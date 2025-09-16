@@ -8,55 +8,38 @@ import io.bkbn.kompendium.core.plugin.NotarizedRoute
 import io.bkbn.kompendium.json.schema.definition.TypeDefinition
 import io.bkbn.kompendium.oas.payload.MediaType
 import io.bkbn.kompendium.oas.payload.Parameter
-import io.ktor.client.request.request
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.jwt.JWTPrincipal
-import io.ktor.server.auth.principal
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 import org.montigny.client.domain.api.dto.Auth.AuthRequest
 import org.montigny.client.domain.api.dto.Auth.AuthResponse
-import org.montigny.client.domain.api.dto.Common.ActivateRequest
 import org.montigny.client.domain.api.dto.Common.ErrorResponse
 import org.montigny.client.domain.api.dto.Common.IdResponse
+import org.montigny.client.domain.api.dto.Common.PaginatedResponse
 import org.montigny.client.domain.api.dto.Common.SimpleResponse
+import org.montigny.client.domain.api.dto.User.UpdateUserDTO
 import org.montigny.client.domain.api.dto.User.UserRegisterRequest
 import org.montigny.client.domain.api.dto.User.UserResponse
+import org.montigny.client.domain.api.dto.User.UserTypesDTO
 import org.montigny.client.domain.api.route.auth.UserRole
 import org.montigny.client.domain.api.route.auth.authorize
 import org.montigny.client.service.UserService
-import org.montigny.client.util.Constants
+import org.montigny.client.util.ApiExamples.Companion.exampleLogin
+import org.montigny.client.util.ApiExamples.Companion.exampleUdateUser
+import org.montigny.client.util.ApiExamples.Companion.exampleUser
+import org.montigny.client.util.Constants.Companion.BEARER_AUTH_TAG
 import org.montigny.client.util.Constants.Companion.ERROR_EXCEPTION
-import org.montigny.client.util.Constants.Companion.ERROR_PRINCIPAL
 import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION
+import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION_TYPE
+import org.montigny.client.util.Constants.Companion.UPDATED_USER_SUCCESS_DESCRIPTION
+import org.montigny.client.util.Constants.Companion.UPDATE_USER_DESCRIPTION
 import org.montigny.client.util.UserUtils
 import java.util.*
 
 fun Route.userRoutes(userService: UserService) {
-
-
-    val exampleUser = UserRegisterRequest(
-        "Solo",
-        "Dube",
-        phoneNumber = "76900009",
-        secondaryPhoneNumber = "7998909",
-        userTypeId = UUID.randomUUID(),
-        organizationId = UUID.randomUUID(),
-        sectionId = UUID.randomUUID(),
-        departmentId = UUID.randomUUID(),
-        email = "solo@email.com",
-        password = "password",
-    )
-
-
-    val exampleLogin = AuthRequest(
-        username = "simphiweiq@gmail.com",
-        password = "myverystrongpassword",
-    )
-
     // ----------------- REGISTER -----------------
     route("/users/register") {
         install(NotarizedRoute()) {
@@ -116,7 +99,7 @@ fun Route.userRoutes(userService: UserService) {
         install(NotarizedRoute()) {
             tags = setOf("User")
             security = mapOf(
-                "BearerAuth" to emptyList())
+                BEARER_AUTH_TAG to emptyList())
             post = PostInfo.builder {
                 summary("Register Admin User")
                 description("Registers a admin new user in the system")
@@ -152,18 +135,79 @@ fun Route.userRoutes(userService: UserService) {
             }
         }
     }
+
+    //===================UPDATE USER===================
+    route("/users/{id}/update"){
+        install(NotarizedRoute()) {
+            tags = setOf("User")
+            parameters = listOf(
+                Parameter(
+                    name = "id",
+                    `in` = Parameter.Location.path,
+                    schema = TypeDefinition.STRING)
+            )
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            put = PutInfo.builder {
+                summary("Update User")
+                description(UPDATE_USER_DESCRIPTION)
+                request {
+                    requestType<UpdateUserDTO>()
+                    description(UPDATE_USER_DESCRIPTION)
+                    examples(
+                        "application/json" to MediaType.Example(
+                            value = Json.encodeToJsonElement(UpdateUserDTO.serializer(),exampleUdateUser)
+                        )
+                    )
+                    mediaTypes("application/json")
+                }
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<SimpleResponse>()
+                    description(UPDATED_USER_SUCCESS_DESCRIPTION)
+                }
+            }
+            authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+                put{
+                    try {
+                        val id = UUID.fromString(call.parameters["id"]!!)
+                        val req = call.receive<UpdateUserDTO>()
+                        userService.updateUser(id,req)
+                        call.respond(HttpStatusCode.OK, SimpleResponse(UPDATED_USER_SUCCESS_DESCRIPTION))
+
+                    }
+                    catch (e: IllegalStateException) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                    }catch (e: Exception) {
+                        e.printStackTrace()
+                        call.respond(HttpStatusCode.InternalServerError,ErrorResponse("$ERROR_EXCEPTION :${e.message}",500))
+                    }
+
+                }
+            }
+        }
+    }
     //==================GET ALL USERS================
    route("/users/get_all_users") {
        install(NotarizedRoute()) {
            tags = setOf("User")
            security = mapOf(
-               "BearerAuth" to emptyList())
+               BEARER_AUTH_TAG to emptyList())
+           parameters = listOf(
+               Parameter(
+                   name = "page",
+                   `in` = Parameter.Location.query,
+                   schema = TypeDefinition.INT)
+               ,Parameter(
+                   name = "pageSize",
+                   `in` = Parameter.Location.query,
+                   schema = TypeDefinition.INT)
+           )
            get = GetInfo.builder {
                summary(GET_USERS_DESCRIPTION)
                description(GET_USERS_DESCRIPTION)
                response {
                    responseCode(HttpStatusCode.OK)
-                   responseType<List<UserResponse>>()
+                   responseType<PaginatedResponse<UserResponse>>()
                    description(GET_USERS_DESCRIPTION)
                }
            }
@@ -171,10 +215,11 @@ fun Route.userRoutes(userService: UserService) {
                get{
 
                    try {
-
                        val currentUser = UserUtils.getLoggedInUser(call)
-                       println("currentUser = ${UserUtils.getLoggedInUser(call)}")
-                       val users = userService.getUsers(currentUser)
+                       val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+                       val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
+
+                       val users = userService.getUsers(currentUser,page,pageSize)
                        call.respond(HttpStatusCode.OK, users)
 
                    } catch (e: IllegalStateException) {
@@ -190,6 +235,42 @@ fun Route.userRoutes(userService: UserService) {
            }
        }
    }
+//===============GET ALL USER TYPES ======
+    route("/users/get_all_user_types") {
+        install(NotarizedRoute()) {
+            tags = setOf("User")
+            security = mapOf(
+                BEARER_AUTH_TAG to emptyList())
+            get = GetInfo.builder {
+                summary(GET_USERS_DESCRIPTION_TYPE)
+                description(GET_USERS_DESCRIPTION_TYPE)
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<UserTypesDTO>>()
+                    description(GET_USERS_DESCRIPTION_TYPE)
+                }
+            }
+            authorize(userService, UserRole.ADMIN,UserRole.SUPER_USER) {
+                get{
+                    try {
+                        val users = userService.getUserTypes()
+                        call.respond(HttpStatusCode.OK, users)
+                    } catch (e: IllegalStateException) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                    } catch (e: IllegalArgumentException) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        call.respond(HttpStatusCode.InternalServerError,ErrorResponse("$ERROR_EXCEPTION :${e.message}",500))
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
 
 
     // ----------------- LOGIN -----------------
@@ -217,7 +298,6 @@ fun Route.userRoutes(userService: UserService) {
                 }
             }
         }
-
         post {
             try {
                 val req = call.receive<AuthRequest>()
@@ -232,38 +312,4 @@ fun Route.userRoutes(userService: UserService) {
             }
         }
     }
-
-    // ----------------- APPROVE -----------------
-    route("/users/{id}/approve") {
-        install(NotarizedRoute()) {
-            tags = setOf("User")
-            security = mapOf(
-                "BearerAuth" to emptyList())
-            parameters = listOf(
-                Parameter(
-                    name = "id",
-                    `in` = Parameter.Location.path,
-                    schema = TypeDefinition.STRING)
-            )
-
-            put = PutInfo.builder {
-                summary("Approve User")
-                description("Approve a registered user (admin only)")
-                response {
-                    responseCode(HttpStatusCode.OK)
-                    responseType<SimpleResponse>()
-                    description("User approved successfully")
-                }
-            }
-        }
-
-        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
-        put {
-            val id = UUID.fromString(call.parameters["id"]!!)
-            userService.approveUser(id)
-            call.respond(HttpStatusCode.OK, SimpleResponse("User approved successfully"))
-        }
-        }
-    }
-
 }

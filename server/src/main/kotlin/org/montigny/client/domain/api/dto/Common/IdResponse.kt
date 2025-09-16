@@ -13,13 +13,14 @@ data class IdResponse(val id: String)
 data class SimpleResponse(val message: String)
 
 @Serializable
-data class ActivateRequest(val active: Boolean)
-@Serializable
 data class ErrorResponse(
     val error: String,
     val code: Int
 )
 
+
+
+//KEEP FOR POSTERITY used to patch kompedium
 @Serializable
 data class CustomBearerSecurityRequirement(
     val name: String = "BearerAuth",

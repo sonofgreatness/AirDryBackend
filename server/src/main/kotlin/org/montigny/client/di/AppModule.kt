@@ -5,15 +5,19 @@ import org.koin.dsl.module
 import org.montigny.client.config.DatabaseFactory
 import org.montigny.client.config.JwtProvider
 import org.montigny.client.persistence.implementation.BCryptPasswordHasher
+import org.montigny.client.persistence.implementation.OrganizationRepositoryImpl
 import org.montigny.client.persistence.implementation.UserRepositoryImpl
+import org.montigny.client.persistence.repository.OrganizationRepository
 import org.montigny.client.persistence.repository.PasswordHasher
 import org.montigny.client.persistence.repository.UserRepository
+import org.montigny.client.service.OrganizationService
 import org.montigny.client.service.UserService
 
 val appModule = module {
     single<PasswordHasher> { BCryptPasswordHasher() }
     // Repository
     single<UserRepository> { UserRepositoryImpl(get()) }
+    single<OrganizationRepository> { OrganizationRepositoryImpl()}
     // JWT
     single {
         val config = get<ApplicationConfig>().config("ktor.jwt")
@@ -25,4 +29,6 @@ val appModule = module {
         )
     }
     // Service
-    single { UserService(get(), get()) }}
+    single { UserService(get(), get()) }
+    single { OrganizationService(get()) }
+}

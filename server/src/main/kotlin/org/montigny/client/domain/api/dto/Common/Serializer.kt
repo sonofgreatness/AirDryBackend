@@ -21,6 +21,7 @@ import java.util.UUID
 import kotlin.reflect.KClass
 import kotlinx.serialization.ContextualSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
+import java.util.Base64
 
 object UUIDSerializer : KSerializer<UUID> {
     override val descriptor: SerialDescriptor =
@@ -47,9 +48,6 @@ object AnySerializer : KSerializer<Any> {
     override fun serialize(encoder: Encoder, value: Any) {
         val jsonEncoder = encoder as? JsonEncoder
             ?: throw IllegalStateException("This serializer can only be used with JSON.")
-
-        // We use a ContextualSerializer to ensure that the registered serializer for `Any` is used.
-        // This prevents the infinite loop and the "Serializer not found" error.
         val contextualSerializer = ContextualSerializer(Any::class, null, emptyArray())
 
         when (value) {
@@ -58,13 +56,9 @@ object AnySerializer : KSerializer<Any> {
                 // We serialize the inner `value` property using the contextual serializer
                 contextualSerializer.serialize(encoder, value.value)
             }
-
-
             is BearerAuth -> {
-                println("PRINT SCHEMA BBBBBBBBBBBBBBBBB")
                 SecuritySchemaSerializer.serialize(encoder, value)
             }
-
             is Number -> Json.encodeToJsonElement(value)
             is String -> Json.encodeToJsonElement(value)
             is Boolean -> Json.encodeToJsonElement(value)
@@ -83,5 +77,18 @@ object AnySerializer : KSerializer<Any> {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw IllegalStateException("This serializer can only be used with JSON.")
         return jsonDecoder.decodeJsonElement()
+    }
+}
+
+object ByteArrayBase64Serializer : KSerializer<ByteArray> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("ByteArrayBase64__", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: ByteArray) {
+        val base64 = Base64.getEncoder().encodeToString(value)
+        encoder.encodeString(base64)
+    }
+    override fun deserialize(decoder: Decoder): ByteArray {
+        val base64 = decoder.decodeString()
+        return Base64.getDecoder().decode(base64)
     }
 }

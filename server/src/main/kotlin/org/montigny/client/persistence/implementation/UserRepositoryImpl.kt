@@ -1,30 +1,16 @@
 package org.montigny.client.persistence.implementation
 
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.andWhere
-import io.ktor.server.application.*
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
-import org.montigny.client.domain.api.dto.User.CurrentUserDTO
-import org.montigny.client.domain.api.dto.User.NamedEntityResponse
-import org.montigny.client.domain.api.dto.User.UserRegisterRequest
-import org.montigny.client.domain.api.dto.User.UserResponse
+import org.montigny.client.domain.api.dto.Common.PaginatedResponse
+import org.montigny.client.domain.api.dto.User.*
 import org.montigny.client.domain.api.route.auth.UserRole
-import org.montigny.client.persistence.AppUsers
-import org.montigny.client.persistence.AppUsers.userTypeId
-import org.montigny.client.persistence.Departments
-import org.montigny.client.persistence.Organizations
-import org.montigny.client.persistence.Sections
-import org.montigny.client.persistence.UserTypes
+import org.montigny.client.persistence.*
 import org.montigny.client.persistence.repository.PasswordHasher
 import org.montigny.client.persistence.repository.UserRepository
-import org.montigny.client.util.UserUtils
+import org.montigny.client.util.Constants
 import org.montigny.client.util.UserUtils.isSuperUser
-import java.util.UUID
+import java.util.*
 
 class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepository {
 
@@ -99,13 +85,13 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             sectionId = row[AppUsers.sectionId]?.value
         )
     }
-    override fun getUsers(currentUser: CurrentUserDTO): List<UserResponse> = transaction {
-        // Get logged-in user's organization ID
-        val currentOrgId  = currentUser.organizationId
+    override fun getUsers(currentUser: CurrentUserDTO,
+                          page: Int,
+                          pageSize: Int): PaginatedResponse<UserResponse> = transaction {
+        val currentOrgId = currentUser.organizationId
         val isSuperUser = isSuperUser(currentUser)
 
-        // Build base query
-        val query = AppUsers
+        val baseQuery = AppUsers
             .join(UserTypes, JoinType.LEFT, additionalConstraint = { AppUsers.userTypeId eq UserTypes.id })
             .join(Organizations, JoinType.LEFT, additionalConstraint = { AppUsers.organizationId eq Organizations.id })
             .join(Departments, JoinType.LEFT, additionalConstraint = { AppUsers.departmentId eq Departments.id })
@@ -129,13 +115,15 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 Sections.displayname
             )
             .selectAll()
-        println("SELECT ALL")
+
         if (!isSuperUser && currentOrgId != null) {
-            println("SELECT ALL NoT SUper")
-            query.andWhere { AppUsers.organizationId eq currentOrgId }
+            baseQuery.andWhere { AppUsers.organizationId eq currentOrgId }
         }
 
-        query.map { row ->
+        val totalCount = baseQuery.count()
+        val paginatedQuery = baseQuery.limit(pageSize, offset = ((page - 1) * pageSize).toLong())
+
+        val users = paginatedQuery.map { row ->
             UserResponse(
                 id = row[AppUsers.id].value,
                 name = row[AppUsers.name],
@@ -159,26 +147,105 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 }
             )
         }
+        PaginatedResponse(
+            items = users,
+            page = page,
+            pageSize = pageSize,
+            totalCount = totalCount,
+            totalPages = (totalCount / pageSize + if (totalCount % pageSize > 0) 1 else 0).toInt()
+        )
     }
 
-    override fun approveUser(id: UUID) = transaction {
-        AppUsers.update({ AppUsers.id eq id }) { it[isApproved] = true }
+    override  fun getUserTypes():List<UserTypesDTO> = transaction {
+         UserTypes.select{
+             UserTypes.displayname neq(UserRole.SUPER_USER.displayName)
+         }.map {
+             UserTypesDTO(id = it[UserTypes.id].value,
+                 displayName = it[UserTypes.displayname])
+         }
+
     }
 
-    override fun updateUser(id: UUID, req: UserRegisterRequest) = transaction {
-        AppUsers.update({ AppUsers.id eq id }) {
-            it[name] = req.name
-            it[surname] = req.surname
-            it[phoneNumber] = req.phoneNumber
-            it[secondaryPhone] = req.secondaryPhoneNumber
-            it[userTypeId] = req.userTypeId
-            it[organizationId] = req.organizationId
-            it[sectionId] = req.sectionId
-            it[email] = req.email
-            req.password.let { p -> it[passwordHash] = passwordHasher.hash(p) }
+
+    override fun updateUser(id: UUID, req: UpdateUserDTO) = transaction {
+        // 1. Load the current user row
+        val currentUser = AppUsers.select { AppUsers.id eq id }.firstOrNull()
+            ?: throw IllegalArgumentException("User with id $id not found")
+        val currentOrgId = currentUser[AppUsers.organizationId]?.value
+        val currentDeptId = currentUser[AppUsers.departmentId]?.value
+
+        // 2. Validation: Department must belong to current user's organization (if provided)
+        if (req.updated_departmentId != null) {
+            val validDepartments = getPossibleDepartmentIdsForUser(id)
+            if (req.updated_departmentId !in validDepartments) {
+                throw IllegalArgumentException(Constants.DEPARTMENTS_VALIDATION_ERROR)
+            }
+        }
+        // 3. Validation: Section must belong to the selected (or existing) department
+        if (req.updated_sectionId != null) {
+            val deptToCheck = req.updated_departmentId ?: currentDeptId
+            val validSections = getPossibleSectionsForDepartment(deptToCheck, currentOrgId)
+            if (req.updated_sectionId !in validSections) {
+                throw IllegalArgumentException(Constants.SECTION_VALIDATION_ERROR)
+            }
+        }
+        // 4. Validation: User type must not be SUPER_USER (privilege escalation prevention)
+        if (req.updated_userTypeId != null) {
+            val newUserType = UserTypes.select { UserTypes.id eq req.updated_userTypeId }.firstOrNull()
+                ?: throw IllegalArgumentException(Constants.USER_TYPE_VALIDATION_ERROR)
+
+            if (newUserType[UserTypes.displayname].equals(UserRole.SUPER_USER.displayName, ignoreCase = true)) {
+                throw IllegalArgumentException("Cannot assign SUPER_USER role")
+            }
+        }
+
+        // 5. Apply partial updates (only non-null fields)
+        AppUsers.update({ AppUsers.id eq id })
+           {
+            it[updatedBy]=currentUser[AppUsers.id].value
+            req.updated_name?.let { n -> it[name] = n }
+            req.updated_surname?.let { s -> it[surname] = s }
+            req.updated_phoneNumber?.let { p -> it[phoneNumber] = p }
+            req.updated_secondaryPhoneNumber?.let { sp -> it[secondaryPhone] = sp }
+            req.updated_userTypeId?.let { ut -> it[userTypeId] = ut }
+            req.updated_departmentId?.let { dept -> it[departmentId] = dept }
+            req.updated_sectionId?.let { sec -> it[sectionId] = sec }
+            req.updated_email?.let { e -> it[email] = e }
+            req.updated_password?.let { p -> it[passwordHash] = passwordHasher.hash(p) }
+            req.isActive?.let { active -> it[isActive] = active }
+            req.isApproved?.let { approved -> it[isApproved] = approved }
         }
     }
+    private  fun getPossibleDepartmentIdsForUser(userId: UUID): List<UUID> = transaction {
+        // Get the user's current organization
+        val userRow = AppUsers
+            .slice(AppUsers.organizationId)
+            .select { AppUsers.id eq userId }
+            .firstOrNull() ?: return@transaction emptyList()
 
+        val orgId = userRow[AppUsers.organizationId]?.value ?: return@transaction emptyList()
+        Departments
+            .slice(Departments.id)
+            .select { Departments.organizationId eq orgId }
+            .map { it[Departments.id].value }
+    }
+    fun getPossibleSectionsForDepartment(departmentId: UUID?, organizationId: UUID?): List<UUID> = transaction {
+        if (departmentId == null || organizationId == null) return@transaction emptyList()
+
+        // Verify that the department belongs to the given organization first
+        val deptOrgId = Departments
+            .slice(Departments.organizationId)
+            .select { Departments.id eq departmentId }
+            .map { it[Departments.organizationId].value }
+            .firstOrNull() ?: return@transaction emptyList()
+
+        if (deptOrgId != organizationId) return@transaction emptyList()
+        // Now fetch sections under this department
+        Sections
+            .slice(Sections.id)
+            .select { Sections.departmentId eq departmentId }
+            .map { it[Sections.id].value }
+    }
     override fun authenticateByPhoneAndPassword(email: String, password: String): UserRegisterRequest? = transaction {
         val row = AppUsers.select { AppUsers.email eq email }.singleOrNull() ?: return@transaction null
         val storedHash = row[AppUsers.passwordHash] ?: return@transaction null

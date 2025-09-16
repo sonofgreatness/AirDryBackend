@@ -141,12 +141,33 @@ object UserUtils {
     }
 
 
-    fun isSuperUser_(user: CurrentUserDTO): Boolean {
-        return user.userTypeName?.equals(UserRole.SUPER_USER.displayName, ignoreCase = true) == true
+
+    /**
+     * Helper: check if a user is SUPER_USER
+     */
+    fun isSuperUser_(userRow: ResultRow): Boolean {
+        val superUserTypeId = transaction {
+            UserTypes
+                .slice(UserTypes.id)
+                .select { UserTypes.displayname eq UserRole.SUPER_USER.displayName }
+                .map { it[UserTypes.id].value }
+                .firstOrNull()
+        }
+        return (superUserTypeId != null && userRow[AppUsers.userTypeId]?.value == superUserTypeId)
     }
 
-    fun isAdminUser_(user: CurrentUserDTO): Boolean {
-        return user.userTypeName?.equals(UserRole.ADMIN.displayName, ignoreCase = true) == true
+    /**
+     * Helper: check if a user is ADMIN
+     */
+    fun isAdminUser_(userRow: ResultRow): Boolean {
+        val adminUserTypeId = transaction {
+            UserTypes
+                .slice(UserTypes.id)
+                .select { UserTypes.displayname eq UserRole.ADMIN.displayName }
+                .map { it[UserTypes.id].value }
+                .firstOrNull()
+        }
+        return (adminUserTypeId != null && userRow[AppUsers.userTypeId]?.value == adminUserTypeId)
     }
 
 }

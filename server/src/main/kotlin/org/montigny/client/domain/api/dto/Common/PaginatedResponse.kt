@@ -1,4 +1,12 @@
 package org.montigny.client.domain.api.dto.Common
 
-class PaginationResponse {
-}
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class PaginatedResponse<T>(
+    val items: List<T>,
+    val page: Int,
+    val pageSize: Int,
+    val totalCount: Long,
+    val totalPages: Int
+)

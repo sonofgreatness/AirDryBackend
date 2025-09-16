@@ -39,7 +39,7 @@ fun Route.authorize(
 enum class UserRole(val displayName: String) {
     ADMIN("admin"),
     CAPTURER("capturer"),
-    CASUAL_WORKER("casual_worker"),
+    CASUAL_WORKER("casual"),
     SUPER_USER("super_user");
 
     companion object {
