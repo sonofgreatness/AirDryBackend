@@ -1,0 +1,32 @@
+ALTER TABLE user_type
+ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN created_by UUID NULL REFERENCES app_user(id),
+ADD COLUMN updated_by UUID NULL REFERENCES app_user(id);
+
+-- Add audit fields to organization
+ALTER TABLE organization
+ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN created_by UUID NULL REFERENCES app_user(id),
+ADD COLUMN updated_by UUID NULL REFERENCES app_user(id);
+
+-- Add audit fields to department
+ALTER TABLE department
+ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN created_by UUID NULL REFERENCES app_user(id),
+ADD COLUMN updated_by UUID NULL REFERENCES app_user(id);
+
+-- Add audit fields to section
+ALTER TABLE section
+ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN created_by UUID NULL REFERENCES app_user(id),
+ADD COLUMN updated_by UUID NULL REFERENCES app_user(id);
+
+-- Add audit fields to app_user
+ALTER TABLE app_user
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN created_by UUID NULL REFERENCES app_user(id),
+ADD COLUMN updated_by UUID NULL REFERENCES app_user(id);
