@@ -14,6 +14,7 @@ class Constants {
         const val  UPDATE_USER_DESCRIPTION = "Update user details"
         const val UPDATED_USER_SUCCESS_DESCRIPTION = "Updated user successfully"
         const val UPDATED_SUCCESS_DESCRIPTION = "Updated  successfully"
+        const val  DELETED_SUCCESS_DESCRIPTION = "Deleted successfully"
         const val CREATED_ID_DESCRIPTION = "Returns the ID of the newly created record"
         const val CREATED_SUCCESS_DESCRIPTION = "Updated  successfully"
         const val REGISTER_ORGANIZATION_DESCRIPTION = "Creates a new organization in the system, including optional logo upload."

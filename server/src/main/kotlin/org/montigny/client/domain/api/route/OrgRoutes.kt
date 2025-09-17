@@ -11,7 +11,6 @@ import io.bkbn.kompendium.oas.payload.Parameter
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.authenticate
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -22,7 +21,6 @@ import org.montigny.client.domain.api.dto.Common.SimpleResponse
 import org.montigny.client.domain.api.dto.Organization.CreateDptDTO
 import org.montigny.client.domain.api.dto.Organization.CreateOrgDTO
 import org.montigny.client.domain.api.dto.Organization.GetOrgDTO
-import org.montigny.client.domain.api.dto.User.UserRegisterRequest
 import org.montigny.client.domain.api.route.auth.UserRole
 import org.montigny.client.domain.api.route.auth.authorize
 import org.montigny.client.service.OrganizationService
@@ -30,12 +28,12 @@ import org.montigny.client.service.UserService
 import org.montigny.client.util.Constants
 import org.montigny.client.util.Constants.Companion.BEARER_AUTH_TAG
 import org.montigny.client.util.Constants.Companion.CREATED_ID_DESCRIPTION
+import org.montigny.client.util.Constants.Companion.DELETED_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.REGISTER_ORGANIZATION_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.UPDATED_SUCCESS_DESCRIPTION
-import org.montigny.client.util.Constants.Companion.UPDATED_USER_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.UPDATE_ORGANIZATION_DESCRIPTION
 import org.montigny.client.util.UserUtils
-import java.util.UUID
+import java.util.*
 
 
 fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
@@ -248,7 +246,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                 response {
                     responseCode(HttpStatusCode.OK)
                     responseType<SimpleResponse>()
-                    description("Organization deleted successfully.")
+                    description(DELETED_SUCCESS_DESCRIPTION)
                 }
             }
         }
@@ -261,7 +259,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
 
                     val currentUser = UserUtils.getLoggedInUser(call)
                     orgService.deleteOrgById(currentUser,orgId)
-                    call.respond(HttpStatusCode.OK, SimpleResponse("Organization deleted successfully"))
+                    call.respond(HttpStatusCode.OK, SimpleResponse(DELETED_SUCCESS_DESCRIPTION))
                 } catch (e: Exception) {
                     e.printStackTrace()
                     call.respond(
@@ -362,6 +360,95 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
             }
             }
         }
+    //======== UPDATE DEPARTMENT =======================================
+    route("/org/department/update"){
+        install(NotarizedRoute()){
+            tags = setOf("Organization")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            post = PostInfo.builder {
+                summary("Update Department")
+                description("Update department for the organization")
+                request {
+                    requestType<CreateDptDTO>()
+                    description("Update department for the organization")
+                    examples(
+                        "application/json" to MediaType.Example(
+                            value = Json.encodeToJsonElement(
+                                CreateDptDTO.serializer(),
+                                CreateDptDTO(
+                                    id = UUID.randomUUID(),
+                                    displayName = "updated department name",
+                                    organizationId = UUID.randomUUID()
+                                )
+                            )
+                        )
+                    )
+                    mediaTypes("application/json")
+                }
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<SimpleResponse>()
+                    description(UPDATED_SUCCESS_DESCRIPTION)
+                }
+                authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+                    post{
+                        try {
+                            val currentUser = UserUtils.getLoggedInUser(call)
+                            val req = call.receive<CreateDptDTO>()
+                            val createdId = orgService.updateDept(currentUser, req)
+                            call.respond(HttpStatusCode.OK, SimpleResponse(UPDATED_SUCCESS_DESCRIPTION))
+                        }
+                        catch (e: IllegalArgumentException){
+                            call.respond(HttpStatusCode.BadRequest, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 400))
+                        }
+                        catch (e:Exception){
+                            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 500))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    route("org/department/delete/{id}"){
+        install(NotarizedRoute()){
+            tags = setOf("Organization")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            parameters = listOf(
+                Parameter(
+                    name = "id",
+                    `in` = Parameter.Location.path,
+                    schema = TypeDefinition.STRING))
+            delete = DeleteInfo.builder {
+                summary("Delete Department")
+                description("Deletes a department if there are no dependent sections.")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<SimpleResponse>()
+                    description(DELETED_SUCCESS_DESCRIPTION)
+                }
+            }
+        }
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+            delete {
+                try {
+                    val dptId = call.parameters["id"]?.let { UUID.fromString(it) }
+                        ?: return@delete call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing id", 400))
+
+                    val currentUser = UserUtils.getLoggedInUser(call)
+                    orgService.deleteDeptById(currentUser,dptId)
+                    call.respond(HttpStatusCode.OK, SimpleResponse(DELETED_SUCCESS_DESCRIPTION))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Unexpected server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+
+    }
 
 
 }

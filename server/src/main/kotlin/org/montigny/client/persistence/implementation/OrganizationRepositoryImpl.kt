@@ -13,6 +13,7 @@ import org.montigny.client.domain.api.dto.User.CurrentUserDTO
 import org.montigny.client.persistence.AppUsers
 import org.montigny.client.persistence.Departments
 import org.montigny.client.persistence.Organizations
+import org.montigny.client.persistence.Sections
 import org.montigny.client.persistence.repository.OrganizationRepository
 import org.montigny.client.util.Constants
 import java.util.UUID
@@ -87,7 +88,27 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
                 organizationId = row[Departments.organizationId].value)
         }.singleOrNull()
     }
+    override fun updateDept(currentUser: CurrentUserDTO, req: CreateDptDTO): Int = transaction{
+        checkIfBelongsToOrganization(currentUser, req.organizationId)
+        val currentDept = Departments.select {Departments.id eq req.id}.firstOrNull() ?:
+        throw IllegalArgumentException("Department with id ${req.id} not found")
+        Departments.update(where = { Departments.id eq currentDept[Departments.id].value }) {
+            it[updatedBy] = currentUser.id
+            it[displayname] = req.displayName}
+    }
 
+
+    override fun deleteDeptById(currentUser: CurrentUserDTO, deptId: UUID) = transaction{
+
+        Departments.select { Departments.id eq deptId }.firstOrNull()
+            ?:throw IllegalArgumentException("Department with id $id not found")
+
+        val hasSections = Sections.select { Sections.departmentId eq deptId }.any()
+        if (hasSections)
+               throw  IllegalArgumentException("Department has dependant sections")
+        Departments.deleteWhere { Departments.id eq deptId }
+
+    }
     private fun checkIfBelongsToOrganization(
         currentUser: CurrentUserDTO,
         orgId: UUID

@@ -26,4 +26,11 @@ class OrganizationService(private val orgRepo: OrganizationRepository) {
     fun getDeptById(dptId: UUID):CreateDptDTO?{
         return orgRepo.getDeptById(dptId)
     }
+    fun updateDept(currentUser: CurrentUserDTO, req: CreateDptDTO)
+    {
+        orgRepo.updateDept(currentUser, req)
+    }
+    fun deleteDeptById(currentUser: CurrentUserDTO,dptId: UUID): Int = orgRepo.deleteDeptById(currentUser,dptId)
+
+
 }
