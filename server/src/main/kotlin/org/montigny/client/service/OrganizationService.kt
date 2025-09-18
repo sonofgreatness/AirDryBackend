@@ -2,6 +2,7 @@ package org.montigny.client.service
 
 import org.montigny.client.domain.api.dto.Organization.CreateDptDTO
 import org.montigny.client.domain.api.dto.Organization.CreateOrgDTO
+import org.montigny.client.domain.api.dto.Organization.CreateSectDTO
 import org.montigny.client.domain.api.dto.Organization.GetOrgDTO
 import org.montigny.client.domain.api.dto.User.CurrentUserDTO
 import org.montigny.client.persistence.repository.OrganizationRepository
@@ -31,6 +32,6 @@ class OrganizationService(private val orgRepo: OrganizationRepository) {
         orgRepo.updateDept(currentUser, req)
     }
     fun deleteDeptById(currentUser: CurrentUserDTO,dptId: UUID): Int = orgRepo.deleteDeptById(currentUser,dptId)
-
+    fun createSect(currentUser: CurrentUserDTO,req: CreateSectDTO) : UUID = orgRepo.createSect(currentUser, req)
 
 }

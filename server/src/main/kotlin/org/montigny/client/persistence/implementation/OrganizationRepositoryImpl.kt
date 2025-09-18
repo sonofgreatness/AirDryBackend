@@ -8,14 +8,17 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.montigny.client.domain.api.dto.Organization.CreateDptDTO
 import org.montigny.client.domain.api.dto.Organization.CreateOrgDTO
+import org.montigny.client.domain.api.dto.Organization.CreateSectDTO
 import org.montigny.client.domain.api.dto.Organization.GetOrgDTO
 import org.montigny.client.domain.api.dto.User.CurrentUserDTO
 import org.montigny.client.persistence.AppUsers
 import org.montigny.client.persistence.Departments
 import org.montigny.client.persistence.Organizations
 import org.montigny.client.persistence.Sections
+import org.montigny.client.persistence.Sections.departmentId
 import org.montigny.client.persistence.repository.OrganizationRepository
 import org.montigny.client.util.Constants
+import java.time.LocalDateTime
 import java.util.UUID
 
 class OrganizationRepositoryImpl(): OrganizationRepository {
@@ -109,6 +112,35 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
         Departments.deleteWhere { Departments.id eq deptId }
 
     }
+    override  fun createSect(currentUser: CurrentUserDTO,req: CreateSectDTO) : UUID =
+    transaction{
+        val departmentOrganization = Departments.select { Departments.id eq req.departmentId }.firstOrNull() ?:
+        throw  IllegalArgumentException("Department with id ${req.departmentId} not found")
+
+        val orgId = departmentOrganization[Departments.organizationId].value
+        checkIfBelongsToOrganization(currentUser,orgId)
+        Sections.insertAndGetId {
+            it[updatedBy] = currentUser.id
+            it[displayname] = req.displayName
+            it[id] = req.id
+            it[departmentId] = req.departmentId
+        }.value
+
+    }
+   override fun updateSect(currentUser: CurrentUserDTO,req: CreateSectDTO) : Int =transaction{
+        Sections.select {Sections.id eq req.id }.firstOrNull() ?: throw IllegalArgumentException("Section with id ${req.departmentId} not found")
+       val departmentOrganization = Departments.select { Departments.id eq req.departmentId }.firstOrNull() ?:
+       throw  IllegalArgumentException("Department-Section with id ${req.departmentId} not found")
+
+       val orgId = departmentOrganization[Departments.organizationId].value
+       checkIfBelongsToOrganization(currentUser,orgId)
+       Sections.update({ Sections.id eq req.id }) {
+           it[updatedBy] = currentUser.id
+           it[displayname] = req.displayName
+       }
+   }
+
+
     private fun checkIfBelongsToOrganization(
         currentUser: CurrentUserDTO,
         orgId: UUID

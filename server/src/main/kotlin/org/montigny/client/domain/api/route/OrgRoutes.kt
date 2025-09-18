@@ -19,6 +19,7 @@ import org.montigny.client.domain.api.dto.Common.ErrorResponse
 import org.montigny.client.domain.api.dto.Common.IdResponse
 import org.montigny.client.domain.api.dto.Common.SimpleResponse
 import org.montigny.client.domain.api.dto.Organization.CreateDptDTO
+import org.montigny.client.domain.api.dto.Organization.CreateSectDTO
 import org.montigny.client.domain.api.dto.Organization.CreateOrgDTO
 import org.montigny.client.domain.api.dto.Organization.GetOrgDTO
 import org.montigny.client.domain.api.route.auth.UserRole
@@ -310,7 +311,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                     call.respond(HttpStatusCode.OK, IdResponse(createdId.toString()))
                 }
                 catch (e: IllegalArgumentException){
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse(Constants.ERROR_EXCEPTION, 400))
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 400))
                 }
                 catch (e:Exception){
                     call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 500))
@@ -409,7 +410,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
             }
         }
     }
-
+    //=============CREATE DEPARTMENT===================================
     route("org/department/delete/{id}"){
         install(NotarizedRoute()){
             tags = setOf("Organization")
@@ -449,6 +450,57 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
         }
 
     }
+    route("org/department/section/register"){
+        install(NotarizedRoute()){
+            tags = setOf("Organization")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            post = PostInfo.builder {
+                summary("Register Section")
+                description("Register a section for the organization")
+                request {
+                    requestType<CreateSectDTO>()
+                    description("Register a section for the organization")
+                    examples(
+                        "application/json" to MediaType.Example(
+                            value = Json.encodeToJsonElement(
+                                CreateSectDTO.serializer(),
+                                CreateSectDTO(
+                                    id = UUID.randomUUID(),
+                                    displayName = "section name",
+                                    departmentId = UUID.randomUUID()
+                                )
+                            )
+                        )
+                    )
+                    mediaTypes("application/json")
+                }
+                response {
+                    responseCode(HttpStatusCode.Created)
+                    responseType<IdResponse>()
+                    description(CREATED_ID_DESCRIPTION)
+                }
+            }
+            authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+                post{
+                    try {
+                        val currentUser = UserUtils.getLoggedInUser(call)
+                        val req = call.receive<CreateSectDTO>()
+                        val createdId = orgService.createSect(currentUser, req)
+                        call.respond(HttpStatusCode.OK, IdResponse(createdId.toString()))
+                    }
+                    catch (e: IllegalArgumentException){
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 400))
+                    }
+                    catch (e:Exception){
+                        call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 500))
+                    }
+                }
+            }
+
+        }
+    }
+
+
 
 
 }
