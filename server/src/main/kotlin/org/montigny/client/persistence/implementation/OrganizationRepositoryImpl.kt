@@ -106,7 +106,7 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
         Departments.select { Departments.id eq deptId }.firstOrNull()
             ?:throw IllegalArgumentException("Department with id $id not found")
 
-        val hasSections = Sections.select { Sections.departmentId eq deptId }.any()
+        val hasSections = Sections.select { departmentId eq deptId }.any()
         if (hasSections)
                throw  IllegalArgumentException("Department has dependant sections")
         Departments.deleteWhere { Departments.id eq deptId }
@@ -139,7 +139,21 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
            it[displayname] = req.displayName
        }
    }
+   override fun deleteSectById(currentUser: CurrentUserDTO,sectId: UUID) = transaction{
 
+    val section = Sections.select { Sections.id eq sectId }.firstOrNull()
+        ?:throw IllegalArgumentException("Section with id ${sectId} not found")
+
+   val department  = Departments.select { Departments.id eq section[departmentId].value }.firstOrNull()
+        ?:throw  IllegalArgumentException("Section Department not found")
+
+    checkIfBelongsToOrganization(currentUser,department[Departments.organizationId].value)
+
+    Sections.deleteWhere {
+        Sections.id  eq sectId
+    }
+
+}
 
     private fun checkIfBelongsToOrganization(
         currentUser: CurrentUserDTO,

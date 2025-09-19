@@ -396,7 +396,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                         try {
                             val currentUser = UserUtils.getLoggedInUser(call)
                             val req = call.receive<CreateDptDTO>()
-                            val createdId = orgService.updateDept(currentUser, req)
+                             orgService.updateDept(currentUser, req)
                             call.respond(HttpStatusCode.OK, SimpleResponse(UPDATED_SUCCESS_DESCRIPTION))
                         }
                         catch (e: IllegalArgumentException){
@@ -410,7 +410,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
             }
         }
     }
-    //=============CREATE DEPARTMENT===================================
+    //=============CREATE DEPARTMENT=============================
     route("org/department/delete/{id}"){
         install(NotarizedRoute()){
             tags = setOf("Organization")
@@ -450,6 +450,8 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
         }
 
     }
+
+    //=============CREATE SECTION================================
     route("org/department/section/register"){
         install(NotarizedRoute()){
             tags = setOf("Organization")
@@ -500,9 +502,97 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
         }
     }
 
+    //================UPDATE SECTION===========================
+    route("org/department/section/update"){
+        install(NotarizedRoute()){
+            tags = setOf("Organization")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
 
+            post = PostInfo.builder {
+                summary("Update Section")
+                description("Update section in organization")
+                request {
+                    requestType<CreateSectDTO>()
+                    description("Update section for the organization")
+                    examples(
+                        "application/json" to MediaType.Example(
+                            value = Json.encodeToJsonElement(
+                                CreateSectDTO.serializer(),
+                                CreateSectDTO(
+                                    id = UUID.randomUUID(),
+                                    displayName = "updated section name",
+                                    departmentId = UUID.randomUUID()
+                                )
+                            )
+                        )
+                    )
+                    mediaTypes("application/json")
+                }
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<SimpleResponse>()
+                    description(UPDATED_SUCCESS_DESCRIPTION)
+                }
+            }
+            authorize(userService, UserRole.ADMIN,
+                UserRole.SUPER_USER) {
+                post{
+                    try {
+                        val currentUser = UserUtils.getLoggedInUser(call)
+                        val req = call.receive<CreateSectDTO>()
+                        orgService.updateSect(currentUser, req)
+                        call.respond(HttpStatusCode.OK, SimpleResponse(UPDATED_SUCCESS_DESCRIPTION))
+                    }
+                    catch (e: IllegalArgumentException){
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 400))
+                    }
+                    catch (e:Exception){
+                        call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 500))
+                    }
+                }
+            }
+        }
+    }
 
+    //==============DELETE SECTION============================
+    route("org/department/section/{id}/delete"){
+        install(NotarizedRoute()){
+            tags = setOf("Organization")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            parameters = listOf(
+                Parameter(
+                    name = "id",
+                    `in` = Parameter.Location.path,
+                    schema = TypeDefinition.STRING))
+            delete = DeleteInfo.builder {
+                summary("Delete Section")
+                description("Deletes a section.")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<SimpleResponse>()
+                    description(DELETED_SUCCESS_DESCRIPTION)
+                }
+            }
+        }
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+            delete {
+                try {
+                    val dptId = call.parameters["id"]?.let { UUID.fromString(it) }
+                        ?: return@delete call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing id", 400))
 
+                    val currentUser = UserUtils.getLoggedInUser(call)
+                    orgService.deleteSectById(currentUser,dptId)
+                    call.respond(HttpStatusCode.OK, SimpleResponse(DELETED_SUCCESS_DESCRIPTION))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Unexpected server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
 }
 
 
