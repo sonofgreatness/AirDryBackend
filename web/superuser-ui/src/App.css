@@ -1,0 +1,153 @@
+.portlet-lgt .mt-comment,
+.tab-pane .mt-comment {
+    padding: 4px 8px 6px;
+    margin: 6px auto;
+    border-left: 2px solid #1BBC9B;
+    background: #fdfdfd;
+    position: relative;
+}
+
+.mt-comments .mt-comment .mt-comment-body .mt-comment-info .mt-comment-author {
+    color: #999 !important;
+}
+
+.mt-comments .mt-comment .mt-comment-body .mt-comment-text {
+    color: #060606 !important;
+}
+
+.label:not(.md-skip).label-sm {
+    font-size: 13px;
+    padding: 2px 5px;
+    font-weight: normal;
+}
+
+.doc-iframe {
+    position: relative;
+    width: 90%;
+    height: 99%;
+    border: none;
+    background: #fff;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #eee
+}
+
+.ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ticket-btn {
+    cursor: pointer;
+    user-select: none;
+    background: cyan;
+    padding: 1px 6px;
+    border-radius: 16px;
+    text-align: center;
+    font-weight: 700;
+    color: #555;
+    margin: 0 auto;
+    min-width: 80px;
+}
+
+
+@font-face {
+    font-family: "Poppins";
+    src: url("./pages/assets/Poppins.ttf");
+}
+@font-face {
+    font-family: "Poppins-Light";
+    src: url("./pages/assets/Poppins-Light.ttf");
+}
+
+
+*{
+    font-family: 'Poppins-Light';
+}
+
+/* === Sidebar Base Styling === */
+.page-sidebar-wrapper {
+ margin-top: 7vh;
+ margin-right: 50vw; 
+    width: 50vw;
+  background-color: #222;
+  color: white;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  transition: all 0.3s ease-in-out;
+  z-index: 999;
+}
+
+.page-container {
+  display: flex;
+  min-height: calc(100vh - 60px); /* subtract header height */
+}
+
+.page-content {
+  flex-grow: 1;
+  overflow: auto;
+  background: #f8f9fa;
+}
+
+
+
+/* Cover for mobile mode */
+.page-sidebar-cover {
+  display: none;
+  background: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 998;
+}
+
+/* === Collapsed Sidebar (Desktop) === */
+body.page-sidebar-closed .page-sidebar-wrapper {
+  width: 60px;
+}
+
+/* Push content when collapsed */
+body.page-sidebar-closed .page-content {
+  margin-left: 60px;
+}
+body.page-sidebar-closed .page-sidebar-wrapper .title {
+  display: none; /* hide text labels, leave just icons */
+}
+
+/* === Mobile Sidebar === */
+@media (max-width: 991px) {
+  .page-sidebar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%);
+    z-index: 999;
+  }
+
+  body.page-sidebar-mobile-offcanvas-open .page-sidebar-wrapper {
+    transform: translateX(0);
+  }
+
+
+  body.page-sidebar-mobile-offcanvas-open .page-sidebar-cover {
+    display: block;
+  }
+
+  /* Prevent main content from being pushed on mobile */
+  .page-content {
+    margin-left: 0 !important;
+  }
+
+
+  .page-sidebar-menu .nav-item.active > a {
+  background-color: #355E3B; /* your theme green */
+  border-left: 4px solid #1BBC9B;
+  color: #fff;
+}
+}
+
