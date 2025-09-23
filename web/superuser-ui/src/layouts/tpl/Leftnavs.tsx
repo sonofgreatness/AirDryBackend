@@ -1,5 +1,5 @@
-import {useEffect} from "react";
-import {Link} from "react-router-dom";
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import bell from "../../assets/icons/bell-solid.svg";
 import user from "../../assets/icons/user-solid.svg";
 import gear from "../../assets/icons/gear-solid.svg";
@@ -16,38 +16,36 @@ export default function Leftnavs() {
     }
   };
 
+  // ✅ Close mobile sidebar fully
   const closeResponsiveSidebar = (
     e?: React.MouseEvent<HTMLAnchorElement | HTMLDivElement, MouseEvent>
   ) => {
     if (e) e.preventDefault();
-    $("body").removeClass("page-sidebar-mobile-offcanvas-open");
+    $("body").removeClass("page-sidebar-mobile-offcanvas-open page-sidebar-closed");
     $(".page-sidebar-cover").hide();
-    console.log("close sidebare called")
+    console.log("close sidebar called");
   };
 
   const init = () => {
     let wh = $(window).height();
-    if (wh != undefined) {
-      let h = wh - 0;
-      $(".sidebarScrollDiv").css({ height: h + "px" });
-    }
-    else { 
-      console.log("wh undefined")
+    if (wh !== undefined) {
+      $(".sidebarScrollDiv").css({ height: wh + "px" });
+    } else {
+      console.log("wh undefined");
     }
   };
 
   useEffect(() => {
     init();
     $(window).off("resize");
-    $(window).resize(() => {
-      init();
-    });
+    $(window).resize(() => init());
   }, []);
 
   return (
     <>
-      <div className="page-sidebar-cover" onClick={(e) => closeResponsiveSidebar(e)}
-      ></div>
+      {/* Cover for mobile mode */}
+      <div className="page-sidebar-cover" onClick={(e) => closeResponsiveSidebar(e)}></div>
+
       <div className="page-sidebar-wrapper d-print-none">
         <div className="page-sidebar navbar-collapse1 collapse1">
           <div className="sidebarScrollDiv">
@@ -58,19 +56,14 @@ export default function Leftnavs() {
               data-slide-speed="200"
               onClick={(e) => setNavActive(e)}
             >
-              <li className="sidebar-mobile-offcanvas-toggler ">
-                <a
-                  href="/"
-                  className="responsive-toggler"
-                  onClick={(e) => closeResponsiveSidebar(e)}
-                >
-                  <i className="icon-logout"></i>
+              <li className="sidebar-mobile-offcanvas-toggler">
+                <a href="/" className="responsive-toggler" onClick={(e) => closeResponsiveSidebar(e)}>
                 </a>
               </li>
 
               <li className="nav-item start">
                 <Link to="/dashboard" className="nav-link">
-                  <img src={bell} alt="notifications" height={15} /> 
+                  <img src={bell} alt="notifications" height={15} />
                   <span className="title">Dashboard</span>
                 </Link>
               </li>
@@ -81,21 +74,21 @@ export default function Leftnavs() {
 
               <li className="nav-item">
                 <Link to="/users" className="nav-link">
-                  <img src={user} alt="user" height={15} /> 
+                  <img src={user} alt="user" height={15} />
                   <span className="title">Users &amp; Users</span>
                 </Link>
               </li>
 
               <li className="nav-item">
                 <Link to="/settings" className="nav-link">
-                  <img src={gear} alt="gear" height={15} /> 
+                  <img src={gear} alt="gear" height={15} />
                   <span className="title">Settings</span>
                 </Link>
               </li>
 
               <li className="nav-item">
                 <Link to="/organizations" className="nav-link">
-                  <img src={plus} alt="plus" height={15} /> 
+                  <img src={plus} alt="plus" height={15} />
                   <span className="title">Organizations</span>
                 </Link>
               </li>
