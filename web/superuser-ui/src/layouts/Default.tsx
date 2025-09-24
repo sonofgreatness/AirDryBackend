@@ -2,16 +2,19 @@ import React, { useEffect } from "react";
 import Header from "./tpl/Header";
 import Leftnavs from "./tpl/Leftnavs";
 import Footer from "./tpl/Footer";
+import util from "../util/util"
+import {useNavigate} from "react-router-dom";
 
 type DefaultLayoutProps = {
   children: React.ReactNode;
 };
-
 export default function Default({ children }: DefaultLayoutProps) {
+  const navigate = useNavigate();
   useEffect(() => {
-    // Example auth check
-    // if (!util.isLogged()) navigate('/');
-  }, []);
+    if (!util.getToken() || util.isTokenExpired()) {
+      navigate("/login");
+    }
+  }, [navigate]);
 
   return (
     <>

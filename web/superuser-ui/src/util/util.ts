@@ -1,6 +1,10 @@
 // src/util/util.ts
 import moment from 'moment';
 import { Modal } from 'antd';
+import {jwtDecode} from "jwt-decode";
+import { message } from "antd";
+
+const TOKEN_KEY = "jwt_token";
 
 declare global {
   interface Window {
@@ -13,6 +17,51 @@ const $ = window.$;
 type OrientationType = 'portrait' | 'landscape';
 
 class Util {
+
+   /** ---------------- TOKEN HELPERS ---------------- */
+  getToken = (): string | null => {
+    return localStorage.getItem(TOKEN_KEY);
+  };
+  setToken = (token: string): void => localStorage.setItem(TOKEN_KEY, token);
+  clearToken = (): void => localStorage.removeItem(TOKEN_KEY);
+
+  /** JWT Decoding */
+  decodeToken = <T = any>(token?: string): T | null => {
+    try {
+      return jwtDecode<T>(token ?? this.getToken() ?? "");
+    } catch {
+      return null;
+    }
+  };
+
+  /** Check if token expired */
+  isTokenExpired = (token?: string): boolean => {
+    const decoded: any = this.decodeToken(token);
+    if (!decoded?.exp) return true;
+    return Date.now() >= decoded.exp * 1000;
+  };
+
+
+ /** Axios Error Handler */
+  handleAxiosError = (error: any): void => {
+    if (!error.response) {
+      message.error("Network error. Please check your connection.");
+      return;
+    }
+
+    const status = error.response.status;
+    if (status === 401) {
+      this.clearToken();
+      message.warning("Session expired. Please log in again.");
+    } else if (status === 403) {
+      message.error("Access denied.");
+    } else if (status >= 500) {
+      message.error("Server error. Please try again later.");
+    } else if (error.response.data?.message) {
+      message.error(error.response.data.message);
+    }
+  };
+
   /** Array helpers */
   arr = <T = any>(arg: T[] | any): T[] => (Array.isArray(arg) ? arg : []);
   obj = (arg: object | any): object => (typeof arg !== 'object' || arg === null ? {} : arg);

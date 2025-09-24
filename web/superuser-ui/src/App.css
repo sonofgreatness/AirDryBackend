@@ -1,3 +1,17 @@
+:root {
+  /* Embroidery Thread Palette */
+  --green-nile: #a4c639;
+  --green-kelly: #4cbb17;
+  --green-light: #8fd694;
+  --green-main: #355e3b;
+  --brown-driftwood: #af8751;
+  --brown-dark: #4e3629;
+
+  /* Utility Colors */
+  --text-dark: #060606;
+  --text-muted: #999;
+  --bg-light: #f8f9fa;
+}
 .portlet-lgt .mt-comment,
 .tab-pane .mt-comment {
     padding: 4px 8px 6px;
@@ -41,12 +55,12 @@
 .ticket-btn {
     cursor: pointer;
     user-select: none;
-    background: cyan;
+    background: var(--green-light); 
     padding: 1px 6px;
     border-radius: 16px;
     text-align: center;
     font-weight: 700;
-    color: #555;
+    color: var(--brown-dark);
     margin: 0 auto;
     min-width: 80px;
 }
@@ -143,10 +157,10 @@ body.page-sidebar-closed .page-sidebar-wrapper .title {
     }
 }
 .page-sidebar-menu .nav-item.active > a {
-        background-color: #355E3B; /* your theme green */
-        border-left: 4px solid #1BBC9B;
-        color: #fff;
-    }
+    background-color: var(--green-main);
+    border-left: 4px solid var(--green-kelly);
+    color: #fff;
+}
     .page-sidebar-menu {
   list-style: none;      /* removes bullets */
   margin: 0;             /* removes default margin */
