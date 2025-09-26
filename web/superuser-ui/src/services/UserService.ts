@@ -76,5 +76,19 @@ export const UserService = {
     const { data } = await axiosInstance.get(`/user/${id}/get_by_id`);
     return data; 
   },
+  async getOrganizations(): Promise<UserTypesDTO[]> {
+    const { data } = await axiosInstance.get("org/get_all_organizations");
+    return data;
+  },
+  async getDepartments(): Promise<UserTypesDTO[]> {
+    const { data } = await axiosInstance.get("org/departments/get_all_departments");
+    return data;
+  },
+   async getSectionss(): Promise<UserTypesDTO[]> {
+    const { data } = await axiosInstance.get("/org/departments/get_all_sections");
+    return data;
+  },
+
+  
 };
 

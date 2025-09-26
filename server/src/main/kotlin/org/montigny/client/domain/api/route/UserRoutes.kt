@@ -431,10 +431,11 @@ fun Route.userRoutes(userService: UserService) {
                     val surname = call.request.queryParameters["surname"]
                     val email = call.request.queryParameters["email"]
                     val phoneNumber = call.request.queryParameters["phoneNumber"]
-                    val organizationId= call.parameters[Constants.ORGANIZATION_ID]
-                    val departmentId = call.parameters[Constants.DEPARTMENT_ID]
-                    val sectionId = call.parameters[Constants.SECTION_ID]
-                    val userTypeId = call.parameters[Constants.USER_TYPE_ID]
+                    val organizationId= call.request.queryParameters[Constants.ORGANIZATION_ID]
+                    val departmentId = call.request.queryParameters[Constants.DEPARTMENT_ID]
+                    val sectionId = call.request.queryParameters[Constants.SECTION_ID]
+                    val userTypeId = call.request.queryParameters[Constants.USER_TYPE_ID]
+                    println("parameters ${call.request.queryParameters}")
 
                     val filters = mutableMapOf<String, String>()
                     name?.takeIf { it.isNotBlank() }?.let { filters["name"] = it }

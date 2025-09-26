@@ -19,6 +19,7 @@ import org.montigny.client.persistence.Sections
 import org.montigny.client.persistence.Sections.departmentId
 import org.montigny.client.persistence.repository.OrganizationRepository
 import org.montigny.client.util.Constants
+import org.montigny.client.util.UserUtils.isSuperUser
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -157,26 +158,71 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
 }
     override fun getAllOrg (currentUserDTO: CurrentUserDTO):List<CreateOrgDTO>
     =transaction {
-        Organizations.selectAll().map {
-            CreateOrgDTO(id = it[Organizations.id].value,
-                displayName = it[Organizations.displayname]
+        val isSuperUser = isSuperUser(currentUserDTO)
+        if (isSuperUser){
+
+            Organizations.selectAll().map {
+                CreateOrgDTO(id = it[Organizations.id].value,
+                    displayName = it[Organizations.displayname]
                 )
+            }
         }
+            else{
+            Organizations.select{
+                Organizations.id eq currentUserDTO.organizationId
+            }.map {
+                CreateOrgDTO(id = it[Organizations.id].value,
+                    displayName = it[Organizations.displayname]
+                )
+            }
+            }
     }
+
+
 
     override fun getAllDept(currentUserDTO: CurrentUserDTO): List<CreateOrgDTO> =transaction {
-        Departments.selectAll().map{
-            CreateOrgDTO(id = it[Departments.id].value,
-                displayName = it[Departments.displayname])
+       val isSuperUser = isSuperUser(currentUserDTO)
+        if (isSuperUser){
+            Departments.selectAll().map{
+                CreateOrgDTO(id = it[Departments.id].value,
+                    displayName = it[Departments.displayname])}
+        }else{
+            Departments.select{
+                Departments.id eq currentUserDTO.departmentId
+            }.map{
+                CreateOrgDTO(id = it[Departments.id].value,
+                    displayName = it[Departments.displayname])
+            }
+        }
+
+    }
+
+    override fun getAllSect(currentUserDTO: CurrentUserDTO): List<CreateOrgDTO> = transaction {
+        val isSuperUser = isSuperUser(currentUserDTO)
+
+        if (isSuperUser) {
+            Sections
+                .selectAll()
+                .map {
+                    CreateOrgDTO(
+                        id = it[Sections.id].value,
+                        displayName = it[Sections.displayname]
+                    )
+                }
+        } else {
+            val orgId = currentUserDTO.organizationId
+            (Sections innerJoin Departments innerJoin Organizations)
+                .slice(Sections.id, Sections.displayname)
+                .select { Organizations.id eq orgId }
+                .map {
+                    CreateOrgDTO(
+                        id = it[Sections.id].value,
+                        displayName = it[Sections.displayname]
+                    )
+                }
         }
     }
 
-    override fun getAllSect(currentUserDTO: CurrentUserDTO): List<CreateOrgDTO> =transaction{
-        Sections.selectAll().map {
-            CreateOrgDTO(id = it[Sections.id].value,
-                displayName = it[Sections.displayname])
-        }
-    }
     private fun checkIfBelongsToOrganization(
         currentUser: CurrentUserDTO,
         orgId: UUID

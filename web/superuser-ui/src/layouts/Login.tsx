@@ -28,7 +28,7 @@ export default function Login() {
       await AuthService.login(form);
       toast.success("Login successful!", {
         position: "top-right",
-        autoClose: 3000, // readable duration
+        autoClose: 2000, // readable duration
         hideProgressBar: false,
         pauseOnHover: true,
         closeOnClick: true,

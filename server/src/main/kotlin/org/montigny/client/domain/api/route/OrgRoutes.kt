@@ -22,6 +22,7 @@ import org.montigny.client.domain.api.dto.Organization.CreateDptDTO
 import org.montigny.client.domain.api.dto.Organization.CreateSectDTO
 import org.montigny.client.domain.api.dto.Organization.CreateOrgDTO
 import org.montigny.client.domain.api.dto.Organization.GetOrgDTO
+import org.montigny.client.domain.api.dto.User.UserTypesDTO
 import org.montigny.client.domain.api.route.auth.UserRole
 import org.montigny.client.domain.api.route.auth.authorize
 import org.montigny.client.service.OrganizationService
@@ -30,6 +31,11 @@ import org.montigny.client.util.Constants
 import org.montigny.client.util.Constants.Companion.BEARER_AUTH_TAG
 import org.montigny.client.util.Constants.Companion.CREATED_ID_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.DELETED_SUCCESS_DESCRIPTION
+import org.montigny.client.util.Constants.Companion.ERROR_EXCEPTION
+import org.montigny.client.util.Constants.Companion.GET_DPTS_DESCRIPTION_TYPE
+import org.montigny.client.util.Constants.Companion.GET_ORGS_DESCRIPTION_TYPE
+import org.montigny.client.util.Constants.Companion.GET_SECTS_DESCRIPTION_TYPE
+import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION_TYPE
 import org.montigny.client.util.Constants.Companion.REGISTER_ORGANIZATION_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.UPDATED_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.UPDATE_ORGANIZATION_DESCRIPTION
@@ -589,6 +595,109 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                         HttpStatusCode.InternalServerError,
                         ErrorResponse("Unexpected server error: ${e.message}", 500)
                     )
+                }
+            }
+        }
+    }
+
+
+    //=================GET ALL ORGS =============
+    route("org/get_all_organizations"){
+        install(NotarizedRoute()){
+            tags = setOf("Organization")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            get = GetInfo.builder {
+                summary(GET_ORGS_DESCRIPTION_TYPE)
+                description(GET_ORGS_DESCRIPTION_TYPE)
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<UserTypesDTO>>()
+                    description(GET_ORGS_DESCRIPTION_TYPE)
+                }
+            }
+            }
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+
+            get{
+                try {
+                    val currentUser = UserUtils.getLoggedInUser(call)
+                    val orgs = orgService.getAllOrg(currentUser)
+                    call.respond(HttpStatusCode.OK,orgs)
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(HttpStatusCode.InternalServerError,ErrorResponse("$ERROR_EXCEPTION :${e.message}",500))
+                }
+            }
+        }
+        }
+    //===============GET ALL DEPARTMENTS================
+    route("org/departments/get_all_departments"){
+        install(NotarizedRoute()){
+            tags = setOf("Organization")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            get = GetInfo.builder {
+                summary(GET_DPTS_DESCRIPTION_TYPE)
+                description(GET_DPTS_DESCRIPTION_TYPE)
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<UserTypesDTO>>()
+                    description(GET_DPTS_DESCRIPTION_TYPE)
+                }
+            }
+        }
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+
+            get{
+                try {
+                    val currentUser = UserUtils.getLoggedInUser(call)
+                    val orgs = orgService.getAllDept(currentUser)
+                    call.respond(HttpStatusCode.OK,orgs)
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(HttpStatusCode.InternalServerError,ErrorResponse("$ERROR_EXCEPTION :${e.message}",500))
+                }
+            }
+        }
+    }
+
+
+//=============GET ALL SECTIONS
+    route("org/departments/get_all_sections"){
+        install(NotarizedRoute()){
+            tags = setOf("Organization")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            get = GetInfo.builder {
+                summary(GET_SECTS_DESCRIPTION_TYPE)
+                description(GET_SECTS_DESCRIPTION_TYPE)
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<UserTypesDTO>>()
+                    description(GET_SECTS_DESCRIPTION_TYPE)
+                }
+            }
+        }
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+
+            get{
+                try {
+                    val currentUser = UserUtils.getLoggedInUser(call)
+                    val orgs = orgService.getAllSect(currentUser)
+                    call.respond(HttpStatusCode.OK,orgs)
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(HttpStatusCode.InternalServerError,ErrorResponse("$ERROR_EXCEPTION :${e.message}",500))
                 }
             }
         }

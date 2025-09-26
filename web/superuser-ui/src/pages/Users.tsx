@@ -73,20 +73,9 @@ const UserPage: React.FC = () => {
   useEffect(() => {
     // Preload dropdowns
     UserService.getUserTypes().then(setUserTypes).catch(console.error);
-
-    // TODO: Replace with API requests
-    setOrganizations([
-      { id: "org-1", displayName: "Org One" },
-      { id: "org-2", displayName: "Org Two" },
-    ]);
-    setDepartments([
-      { id: "dept-1", displayName: "Department A" },
-      { id: "dept-2", displayName: "Department B" },
-    ]);
-    setSections([
-      { id: "sec-1", displayName: "Section X" },
-      { id: "sec-2", displayName: "Section Y" },
-    ]);
+    UserService.getOrganizations().then(setOrganizations).catch(console.error);
+    UserService.getDepartments().then(setDepartments).catch(console.error);
+    UserService.getSectionss().then(setSections).catch(console.error);
   }, []);
 
   const handleFilterSubmit = (e: React.FormEvent) => {
