@@ -23,6 +23,8 @@ data class CurrentUserDTO(
     val organizationId: UUID?,
     val organizationName: String?,  // 👈 new
 
+
+
     // Department
     @Serializable(with = UUIDSerializer::class)
     val departmentId: UUID?,
@@ -32,4 +34,4 @@ data class CurrentUserDTO(
     @Serializable(with = UUIDSerializer::class)
     val sectionId: UUID?,
     val sectionName: String?,       // 👈 new
-)
+    )

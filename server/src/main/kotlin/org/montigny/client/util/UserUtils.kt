@@ -89,16 +89,16 @@ object UserUtils {
             phoneNumber = row[AppUsers.phoneNumber],
 
             userTypeId = row[AppUsers.userTypeId]?.value,
-            userTypeName = row.getOrNull(UserTypes.displayname),  // Safe with join
+            userTypeName = row[AppUsers.userTypeId]?.let { row[UserTypes.displayname] },
 
             organizationId = row[AppUsers.organizationId]?.value,
-            organizationName = row.getOrNull(Organizations.displayname),
+            organizationName = row[AppUsers.organizationId]?.let { row[Organizations.displayname] },
 
             departmentId = row[AppUsers.departmentId]?.value,
-            departmentName = row.getOrNull(Departments.displayname),
+            departmentName = row[AppUsers.departmentId]?.let { row[Departments.displayname] },
 
             sectionId = row[AppUsers.sectionId]?.value,
-            sectionName = row.getOrNull(Sections.displayname)
+            sectionName = row[AppUsers.sectionId]?.let { row[Sections.displayname] },
         )
     }
 

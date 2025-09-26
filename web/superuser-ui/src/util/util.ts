@@ -3,18 +3,32 @@ import moment from 'moment';
 import { Modal } from 'antd';
 import {jwtDecode} from "jwt-decode";
 import { message } from "antd";
-
+import m from "jquery";
+const $ = m;
 const TOKEN_KEY = "jwt_token";
 
-declare global {
-  interface Window {
-    $: any; // tell TypeScript that $ exists
-  }
-}
 
-const $ = window.$;
+
 
 type OrientationType = 'portrait' | 'landscape';
+
+/*- UI Utility function -*/
+ export const toggleResponsiveSidebarCollapse = (
+  e?: React.MouseEvent<HTMLDivElement | HTMLAnchorElement>
+) => {
+  if (e) e.preventDefault();
+
+  const body = $("body");
+  const isOpen = body.hasClass("page-sidebar-mobile-offcanvas-open");
+
+  if (isOpen) {
+    body.removeClass("page-sidebar-mobile-offcanvas-open page-sidebar-closed");
+    $(".page-sidebar-cover").hide();
+  } else {
+    body.addClass("page-sidebar-mobile-offcanvas-open").removeClass("page-sidebar-closed");
+    $(".page-sidebar-cover").show();
+  }
+};
 
 class Util {
 
@@ -48,7 +62,6 @@ class Util {
       message.error("Network error. Please check your connection.");
       return;
     }
-
     const status = error.response.status;
     if (status === 401) {
       this.clearToken();
@@ -77,6 +90,10 @@ class Util {
     const m = n % 60;
     return `${sign}${h}:${m}`;
   };
+
+
+
+
 
   /** CSV helpers */
   convertToCSVBlob = (objArray: any[], header: string[]): Blob => {
@@ -176,7 +193,7 @@ class Util {
     if (decreaseHeight) n = decreaseHeight;
 
     if (fullHeight) {
-      const h = $(window).outerHeight() - n;
+      const h = ($(window).outerHeight()??0) - n;
       obj.find(".modal-body").css({ 'overflow': 'auto', height: fixFullHeight ? `${h}px` : 'auto', 'max-height': !fixFullHeight ? `${h}px` : undefined });
     }
 

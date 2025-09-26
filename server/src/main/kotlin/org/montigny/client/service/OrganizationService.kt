@@ -35,5 +35,7 @@ class OrganizationService(private val orgRepo: OrganizationRepository) {
     fun createSect(currentUser: CurrentUserDTO,req: CreateSectDTO) : UUID = orgRepo.createSect(currentUser, req)
     fun updateSect(currentUser: CurrentUserDTO,req: CreateSectDTO) : Int = orgRepo.updateSect(currentUser,req)
     fun deleteSectById(currentUser: CurrentUserDTO,sectId: UUID): Int = orgRepo.deleteSectById(currentUser,sectId)
-
+    fun getAllOrg (currentUserDTO: CurrentUserDTO):List<CreateOrgDTO> = orgRepo.getAllOrg(currentUserDTO)
+    fun getAllDept(currentUserDTO: CurrentUserDTO):List<CreateOrgDTO> = orgRepo.getAllDept(currentUserDTO)
+    fun getAllSect(currentUserDTO: CurrentUserDTO):List<CreateOrgDTO> = orgRepo.getAllSect(currentUserDTO)
 }

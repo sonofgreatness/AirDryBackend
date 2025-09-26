@@ -19,7 +19,10 @@ class Constants {
         const val CREATED_SUCCESS_DESCRIPTION = "Updated  successfully"
         const val REGISTER_ORGANIZATION_DESCRIPTION = "Creates a new organization in the system, including optional logo upload."
         const val UPDATE_ORGANIZATION_DESCRIPTION = "Update a new organization in the system, including optional logo upload."
-
+        const val ORGANIZATION_ID = "organizationId"
+        const val DEPARTMENT_ID = "departmentId"
+        const val  SECTION_ID = "sectionId"
+        const val  USER_TYPE_ID = "userTypeId"
 
 
     }

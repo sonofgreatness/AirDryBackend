@@ -33,6 +33,7 @@ class UserService(private val userRepo: UserRepository, private val jwtProvider:
         if (!user.isActive || !user.isApproved) throw IllegalStateException("User not active or approved")
         return jwtProvider.generateToken(user)
     }
+
     fun resolveUserRole(userTypeId: String): UserRole? {
         return try {
             val uuid = UUID.fromString(userTypeId)
@@ -42,4 +43,16 @@ class UserService(private val userRepo: UserRepository, private val jwtProvider:
             null // invalid UUID
         }
     }
+    fun deleteUserId(userId: UUID): Int = userRepo.deleteUserId(userId)
+
+   fun getUsersFiltered(
+    currentUser: CurrentUserDTO,
+    page: Int,
+    pageSize: Int,
+    filters: MutableMap<String, String>
+    ):PaginatedResponse<UserResponse> =userRepo.getUsersFiltered(currentUser,page,pageSize,filters);
+
+    fun findById(id: UUID): UserRegisterRequest? = userRepo.findById(id)
+
 }
+

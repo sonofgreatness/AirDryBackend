@@ -5,6 +5,8 @@ import { Dropdown } from "antd";
 import { Menu, User, LogOut, ChevronDown } from "lucide-react";
 import userIcon from "../../assets/icons/user-solid1.svg";
 import $ from "jquery";
+import { toggleResponsiveSidebarCollapse } from "../../util/util";
+import { AuthService } from "../../services/AuthService";
 
 export default function Header() {
   // ✅ Desktop sidebar toggle (only works on large screens)
@@ -12,26 +14,9 @@ export default function Header() {
     e.preventDefault();
     if (window.innerWidth > 991) {
       $("body").toggleClass("page-sidebar-closed");
-      console.log("sidebar toggle called");
     }
   };
 
-  // ✅ Mobile sidebar toggle (ensures full open/close, no lingering state)
-  const toggleResponsiveSidebarCollapse = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    const body = $("body");
-    const isOpen = body.hasClass("page-sidebar-mobile-offcanvas-open");
-
-    if (isOpen) {
-      // Close completely
-      body.removeClass("page-sidebar-mobile-offcanvas-open page-sidebar-closed");
-      $(".page-sidebar-cover").hide();
-    } else {
-      // Open sidebar, remove any collapsed state
-      body.addClass("page-sidebar-mobile-offcanvas-open").removeClass("page-sidebar-closed");
-      $(".page-sidebar-cover").show();
-    }
-  };
 
   useEffect(() => {
     // Any initialization logic can go here
@@ -50,7 +35,7 @@ export default function Header() {
       label: (
         <div
           className="cursor-pointer d-flex align-items-center gap-2"
-          onClick={() => util.geLoggedinName()}
+          onClick={() => AuthService.logout()}
         >
           <LogOut size={16} /> Logout
         </div>
@@ -70,9 +55,11 @@ export default function Header() {
       >
         {/* Logo + Sidebar Toggle */}
         <div className="d-flex align-items-center gap-3 flex-grow-1">
+          
           <div className="menu-toggler sidebar-toggler text-white" onClick={toggleSidebarCollapse}>
             <Menu size={20} />
           </div>
+
           <div className="text-white fw-semibold d-none d-md-block">
             Inventory Management System
           </div>

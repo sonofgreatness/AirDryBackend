@@ -18,9 +18,9 @@ import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.request.httpMethod
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import org.koin.dsl.module
@@ -66,16 +66,33 @@ fun Application.module() {
     }
 
     install(CORS) {
-        allowHost("*", schemes = listOf("http"))
+        allowHost("localhost:5173", schemes = listOf("http"))
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
+        allowHeader(HttpHeaders.Accept)
+        allowHeader(HttpHeaders.Origin)
+        allowHeader(HttpHeaders.AccessControlRequestHeaders)
         allowMethod(HttpMethod.Options)
-        allowMethod(HttpMethod.Put)
-        allowMethod(HttpMethod.Delete)
-        allowMethod(HttpMethod.Patch)
-        allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Patch)
+        allowMethod(HttpMethod.Delete)
+        allowHeader("timezoneoffset")
+        allowCredentials = true
+
+
+        //remove before deploy
+        anyHost()
     }
+
+    intercept(ApplicationCallPipeline.Features) {
+        if (call.request.httpMethod == HttpMethod.Options) {
+            call.respond(HttpStatusCode.OK)
+            finish() // stops the pipeline
+        }
+    }
+
     // Content Negotiation
     install(ContentNegotiation) { json(
 
@@ -118,6 +135,9 @@ fun Application.module() {
     }
 
     routing {
+        staticResources("/", "static") {
+            default("index.html")
+        }
         staticResources("/swagger-ui", "swagger")
         // Serve your OpenAPI specification file from the root of the resources directory
         get("/openapi.json") {
@@ -127,9 +147,6 @@ fun Application.module() {
             } else {
                 call.respondFile(File(resource.toURI()))
             }
-        }
-        get("/") {
-            call.respondText("Ktor: ${Greeting().greet()}")
         }
         userRoutes(userService)
         orgRoutes(organizationService,userService)

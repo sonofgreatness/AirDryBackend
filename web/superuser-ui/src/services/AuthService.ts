@@ -18,6 +18,7 @@ export const AuthService = {
   },
 
   logout(): void {
+    console.log("logout called")
     util.clearToken();
     window.location.href = "/login";
   },

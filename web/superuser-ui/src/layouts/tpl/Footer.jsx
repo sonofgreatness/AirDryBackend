@@ -1,40 +1,41 @@
-import flag from '../../assets/footer/flag.png'
-import coa from '../../assets/footer/coa.png'
-import phone from '../../assets/icons/phone-solid.svg'
-import user from '../../assets/icons/user-solid1.svg'
-/*import util from '../../../utils/util'
-*/
 const Footer = () => {
   return (
+    <footer className="app-footer">
+      <div className="footer-content">
+        {/* Left Section */}
+        <div className="footer-left">
+          <span>
+            Powered by{" "}
+            <a href="mailto:simphiweiq@gmail.com" className="footer-link">
+              Simphiwe Magagula
+            </a>
+          </span>
+        </div>
 
-    <div style={{marginTop:"4%"}} >
-    
-    <div className='footer-height shadow-sm  container-sm gray ' style={{height:"8%"}}>
-  
-  <div >
-  <div className=' px-5 '>
+        {/* Center Section */}
+        <div className="footer-center">
+          <a
+            href="https://facebook.com/SimphiweMagagula"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-link"
+          >
+            Facebook
+          </a>
+        </div>
 
-
-  <div className='px-3 d-flex justify-content-between mb-5'>
-
-          <ul className='d-flex list-unstyled mx-5 pt-3'>
-              <li className='mx-3'><img src={flag} alt="flag" style={{height:"25%"}} className=' rounded-lg'/></li>
-              <li className='mx-3'><img src={coa} alt="coa" style={{height:"25%"}} /></li>
-
-          </ul>  
-      <p className='blue'> <img src={phone} alt="phone Icon" height={12} />  Help Line:76911464/79487461 <br /><img src={user} alt="phone Icon" height={12} />  Logged in as: Simphiwe Magagula</p>
-
-  </div>
-</div>
-  </div>
-
-
-</div>
-    </div>
-
-
-
-  )
-}
-
-export default Footer
+        {/* Right Section */}
+        <div className="footer-right">
+          <a href="tel:+26876911464" className="footer-link">
+            +268 7691 1464
+          </a>
+          <span className="footer-separator">|</span>
+          <a href="tel:+26879487461" className="footer-link">
+            +268 7948 7461
+          </a>
+        </div>
+      </div>
+    </footer>
+  );
+};
+export default Footer;

@@ -28,7 +28,7 @@ export default function Login() {
       await AuthService.login(form);
       toast.success("Login successful!", {
         position: "top-right",
-        autoClose: 5000, // readable duration
+        autoClose: 3000, // readable duration
         hideProgressBar: false,
         pauseOnHover: true,
         closeOnClick: true,
@@ -62,7 +62,7 @@ export default function Login() {
 
       toast.error(message, {
         position: "top-right",
-        autoClose: 10000, // show error long enough
+        autoClose: 5000, // show error long enough
         hideProgressBar: false,
         pauseOnHover: true,
         closeOnClick: true,

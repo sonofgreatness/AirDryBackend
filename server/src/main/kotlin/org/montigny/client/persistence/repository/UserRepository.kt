@@ -18,7 +18,13 @@ interface UserRepository {
     fun updateUser(id: UUID, req: UpdateUserDTO): Int
     fun authenticateByPhoneAndPassword(email: String, password: String): UserRegisterRequest?
     fun getUserTypeDisplayName(userTypeId: UUID): String?
-
+    fun deleteUserId(userId: UUID): Int
+    fun getUsersFiltered(
+        currentUser: CurrentUserDTO,
+        page: Int,
+        pageSize: Int,
+        filters: MutableMap<String, String>
+    ):PaginatedResponse<UserResponse>
 
 
 

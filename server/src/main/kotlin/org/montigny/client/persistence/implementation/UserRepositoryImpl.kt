@@ -1,6 +1,7 @@
 package org.montigny.client.persistence.implementation
 
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.montigny.client.domain.api.dto.Common.PaginatedResponse
 import org.montigny.client.domain.api.dto.User.*
@@ -15,6 +16,15 @@ import java.util.*
 class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepository {
 
     override fun createUser(req: UserRegisterRequest): UUID = transaction {
+        val superUserTypeId = UserTypes
+            .select { UserTypes.displayname eq UserRole.SUPER_USER.displayName }
+            .map { it[UserTypes.id].value }
+            .firstOrNull()
+         if(superUserTypeId!=null)
+             if (superUserTypeId == req.userTypeId)
+                  throw IllegalArgumentException("Can no create super user, 1 already exists")
+
+
         val id = AppUsers.insertAndGetId {
             it[name] = req.name
             it[surname] = req.surname
@@ -62,11 +72,13 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 name = row[AppUsers.name],
                 surname = row[AppUsers.surname],
                 phoneNumber = row[AppUsers.phoneNumber],
+                secondaryPhoneNumber = row[AppUsers.secondaryPhone],
                 isApproved = row[AppUsers.isApproved],
                 isActive = row[AppUsers.isActive],
                 userTypeId = row[AppUsers.userTypeId]!!.value,
                 organizationId = row[AppUsers.organizationId]?.value,
-                sectionId = row[AppUsers.sectionId]?.value
+                sectionId = row[AppUsers.sectionId]?.value,
+                email =  row[AppUsers.email],
             )
         }.singleOrNull()
     }
@@ -82,7 +94,8 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             isActive = row[AppUsers.isActive],
             userTypeId = row[AppUsers.userTypeId]!!.value,
             organizationId = row[AppUsers.organizationId]?.value,
-            sectionId = row[AppUsers.sectionId]?.value
+            sectionId = row[AppUsers.sectionId]?.value,
+            email =  row[AppUsers.email],
         )
     }
     override fun getUsers(currentUser: CurrentUserDTO,
@@ -167,6 +180,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
     }
 
 
+
     override fun updateUser(id: UUID, req: UpdateUserDTO) = transaction {
         // 1. Load the current user row
         val currentUser = AppUsers.select { AppUsers.id eq id }.firstOrNull()
@@ -216,6 +230,15 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             req.isApproved?.let { approved -> it[isApproved] = approved }
         }
     }
+
+
+
+    override fun deleteUserId(userId: UUID): Int = transaction {
+        AppUsers.deleteWhere { AppUsers.id eq userId }
+    }
+
+
+
     private  fun getPossibleDepartmentIdsForUser(userId: UUID): List<UUID> = transaction {
         // Get the user's current organization
         val userRow = AppUsers
@@ -271,6 +294,126 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             .singleOrNull()
 
     }
+    //================== SERVICE IMPLEMENTATION ==================
+    override fun getUsersFiltered(
+        currentUser: CurrentUserDTO,
+        page: Int,
+        pageSize: Int,
+        filters: MutableMap<String, String>
+    ): PaginatedResponse<UserResponse> = transaction {
+
+        val currentOrgId = currentUser.organizationId
+        val isSuperUser = isSuperUser(currentUser)
+
+        // Base query with joins
+        val baseQuery = AppUsers
+            .join(UserTypes, JoinType.LEFT, additionalConstraint = { AppUsers.userTypeId eq UserTypes.id })
+            .join(Organizations, JoinType.LEFT, additionalConstraint = { AppUsers.organizationId eq Organizations.id })
+            .join(Departments, JoinType.LEFT, additionalConstraint = { AppUsers.departmentId eq Departments.id })
+            .join(Sections, JoinType.LEFT, additionalConstraint = { AppUsers.sectionId eq Sections.id })
+            .slice(
+                AppUsers.id,
+                AppUsers.name,
+                AppUsers.surname,
+                AppUsers.phoneNumber,
+                AppUsers.secondaryPhone,
+                AppUsers.email,
+                AppUsers.isActive,
+                AppUsers.isApproved,
+                AppUsers.userTypeId,
+                UserTypes.displayname,
+                AppUsers.organizationId,
+                Organizations.displayname,
+                AppUsers.departmentId,
+                Departments.displayname,
+                AppUsers.sectionId,
+                Sections.displayname
+            )
+            .selectAll()
+
+        // Restrict to current organization if not superuser
+        if (!isSuperUser && currentOrgId != null) {
+            baseQuery.andWhere { AppUsers.organizationId eq currentOrgId }
+        }
+
+        // Apply filters dynamically (case-insensitive for strings, eq for UUIDs)
+        filters["name"]?.takeIf { it.isNotBlank() }?.let {
+            val query = it.lowercase().trim()
+            baseQuery.andWhere { AppUsers.name.lowerCase() like "%$query%" }
+        }
+        filters["surname"]?.takeIf { it.isNotBlank() }?.let {
+            val query = it.lowercase().trim()
+            baseQuery.andWhere { AppUsers.surname.lowerCase() like "%$query%" }
+        }
+        filters["email"]?.takeIf { it.isNotBlank() }?.let {
+            val query = it.lowercase().trim()
+            baseQuery.andWhere { AppUsers.email.lowerCase() like "%$query%" }
+        }
+        filters["phoneNumber"]?.takeIf { it.isNotBlank() }?.let {
+            val query = it.lowercase().trim()
+            baseQuery.andWhere { AppUsers.phoneNumber.lowerCase() like "%$query%" }
+        }
+
+        // UUID-based filters (use eq, not like)
+        filters[Constants.ORGANIZATION_ID]?.takeIf { it.isNotBlank() }?.let {
+            runCatching { UUID.fromString(it) }.getOrNull()?.let { uuid ->
+                baseQuery.andWhere { AppUsers.organizationId eq uuid }
+            }
+        }
+        filters[Constants.DEPARTMENT_ID]?.takeIf { it.isNotBlank() }?.let {
+            runCatching { UUID.fromString(it) }.getOrNull()?.let { uuid ->
+                baseQuery.andWhere { AppUsers.departmentId eq uuid }
+            }
+        }
+        filters[Constants.SECTION_ID]?.takeIf { it.isNotBlank() }?.let {
+            runCatching { UUID.fromString(it) }.getOrNull()?.let { uuid ->
+                baseQuery.andWhere { AppUsers.sectionId eq uuid }
+            }
+        }
+        filters[Constants.USER_TYPE_ID]?.takeIf { it.isNotBlank() }?.let {
+            runCatching { UUID.fromString(it) }.getOrNull()?.let { uuid ->
+                baseQuery.andWhere { AppUsers.userTypeId eq uuid }
+            }
+        }
+
+        val totalCount = baseQuery.count()
+
+        val paginatedQuery = baseQuery.limit(pageSize, offset = ((page - 1) * pageSize).toLong())
+
+        val users = paginatedQuery.map { row ->
+            UserResponse(
+                id = row[AppUsers.id].value,
+                name = row[AppUsers.name],
+                surname = row[AppUsers.surname],
+                phoneNumber = row[AppUsers.phoneNumber],
+                secondaryPhoneNumber = row[AppUsers.secondaryPhone],
+                email = row[AppUsers.email],
+                isActive = row[AppUsers.isActive],
+                isApproved = row[AppUsers.isApproved],
+                userType = row[AppUsers.userTypeId]?.value?.let {
+                    NamedEntityResponse(it, row[UserTypes.displayname])
+                },
+                organization = row[AppUsers.organizationId]?.value?.let {
+                    NamedEntityResponse(it, row[Organizations.displayname])
+                },
+                department = row[AppUsers.departmentId]?.value?.let {
+                    NamedEntityResponse(it, row[Departments.displayname])
+                },
+                section = row[AppUsers.sectionId]?.value?.let {
+                    NamedEntityResponse(it, row[Sections.displayname])
+                }
+            )
+        }
+
+        PaginatedResponse(
+            items = users,
+            page = page,
+            pageSize = pageSize,
+            totalCount = totalCount,
+            totalPages = (totalCount / pageSize + if (totalCount % pageSize > 0) 1 else 0).toInt()
+        )
+    }
+
 
 
 

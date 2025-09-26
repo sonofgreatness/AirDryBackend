@@ -1,6 +1,7 @@
 package org.montigny.client.domain.api.route
 
 
+import io.bkbn.kompendium.core.metadata.DeleteInfo
 import io.bkbn.kompendium.core.metadata.GetInfo
 import io.bkbn.kompendium.core.metadata.PostInfo
 import io.bkbn.kompendium.core.metadata.PutInfo
@@ -10,6 +11,7 @@ import io.bkbn.kompendium.oas.payload.MediaType
 import io.bkbn.kompendium.oas.payload.Parameter
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -20,6 +22,7 @@ import org.montigny.client.domain.api.dto.Common.ErrorResponse
 import org.montigny.client.domain.api.dto.Common.IdResponse
 import org.montigny.client.domain.api.dto.Common.PaginatedResponse
 import org.montigny.client.domain.api.dto.Common.SimpleResponse
+import org.montigny.client.domain.api.dto.User.CurrentUserDTO
 import org.montigny.client.domain.api.dto.User.UpdateUserDTO
 import org.montigny.client.domain.api.dto.User.UserRegisterRequest
 import org.montigny.client.domain.api.dto.User.UserResponse
@@ -30,7 +33,9 @@ import org.montigny.client.service.UserService
 import org.montigny.client.util.ApiExamples.Companion.exampleLogin
 import org.montigny.client.util.ApiExamples.Companion.exampleUdateUser
 import org.montigny.client.util.ApiExamples.Companion.exampleUser
+import org.montigny.client.util.Constants
 import org.montigny.client.util.Constants.Companion.BEARER_AUTH_TAG
+import org.montigny.client.util.Constants.Companion.DELETED_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.ERROR_EXCEPTION
 import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION_TYPE
@@ -312,4 +317,214 @@ fun Route.userRoutes(userService: UserService) {
             }
         }
     }
+
+    route("users/{id}/delete"){
+        install(NotarizedRoute()){
+            tags = setOf("User")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            parameters = listOf(
+                Parameter(
+                    name = "id",
+                    `in` = Parameter.Location.path,
+                    schema = TypeDefinition.STRING))
+            delete = DeleteInfo.builder {
+                summary("Delete User")
+                description("Deletes a user.")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<SimpleResponse>()
+                    description(DELETED_SUCCESS_DESCRIPTION)
+                }
+            }
+            authorize(userService, UserRole.ADMIN,UserRole.SUPER_USER) {
+                delete{
+                    try {
+                        val userId = call.parameters["id"]?.let { UUID.fromString(it) }
+                            ?: return@delete call.respond(HttpStatusCode.BadRequest, ErrorResponse("Missing id", 400))
+
+                        userService.deleteUserId(userId)
+                        call.respond(HttpStatusCode.OK, SimpleResponse(DELETED_SUCCESS_DESCRIPTION))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        call.respond(
+                            HttpStatusCode.InternalServerError,
+                            ErrorResponse("Unexpected server error: ${e.message}", 500)
+                        )
+                    }
+                }
+            }
+        }
+    }
+    //=================GET CURRENTUSERDTO
+
+    route("/users/current"){
+        install(NotarizedRoute()){
+            tags = setOf("User")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+        get  = GetInfo.builder {
+            summary("Get User")
+            description(GET_USERS_DESCRIPTION_TYPE)
+            response {
+                responseCode(HttpStatusCode.OK)
+                responseType<CurrentUserDTO>()
+                description("Get User")
+            }
+        }
+            authorize(userService, UserRole.ADMIN,UserRole.SUPER_USER) {
+                get{
+
+
+                    try {
+                        val currentUser = UserUtils.getLoggedInUser(call)
+                        call.respond(HttpStatusCode.OK, currentUser)
+                    }catch (e: IllegalArgumentException) {
+                        call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid credentials", 401))
+                    } catch (e: IllegalStateException) {
+                        call.respond(HttpStatusCode.Forbidden, ErrorResponse(e.message ?: "User not active or approved", 403))
+                    } catch (e: Exception) {
+                        call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Unexpected server error", 500))
+                    }
+
+                }
+            }
+        }
+
+    }
+
+
+    //================== SEARCH USERS WITH FILTERS ==================
+    route("/users/search_users") {
+        install(NotarizedRoute()) {
+            tags = setOf("User")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            parameters = listOf(
+                Parameter(name = "page", `in` = Parameter.Location.query, schema = TypeDefinition.INT),
+                Parameter(name = "pageSize", `in` = Parameter.Location.query, schema = TypeDefinition.INT),
+                Parameter(name = "name", `in` = Parameter.Location.query, schema = TypeDefinition.STRING),
+                Parameter(name = "surname", `in` = Parameter.Location.query, schema = TypeDefinition.STRING),
+                Parameter(name = "email", `in` = Parameter.Location.query, schema = TypeDefinition.STRING),
+                Parameter(name = "phoneNumber", `in` = Parameter.Location.query, schema = TypeDefinition.STRING),
+                Parameter(name = Constants.ORGANIZATION_ID, `in` = Parameter.Location.query, schema = TypeDefinition.STRING),
+                Parameter(name = Constants.DEPARTMENT_ID, `in` = Parameter.Location.query, schema = TypeDefinition.STRING),
+                Parameter(name = Constants.SECTION_ID, `in` = Parameter.Location.query, schema = TypeDefinition.STRING),
+                Parameter(name = Constants.USER_TYPE_ID, `in` = Parameter.Location.query, schema = TypeDefinition.STRING),
+            )
+            get = GetInfo.builder {
+                summary("Search Users")
+                description("Search users with optional filters and return paginated results")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<PaginatedResponse<UserResponse>>()
+                    description("Paginated list of users matching the filters")
+                }
+            }
+        }
+
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+            get {
+                try {
+
+                    val currentUser = UserUtils.getLoggedInUser(call)
+                    val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+                    val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
+                    val name = call.request.queryParameters["name"]
+                    val surname = call.request.queryParameters["surname"]
+                    val email = call.request.queryParameters["email"]
+                    val phoneNumber = call.request.queryParameters["phoneNumber"]
+                    val organizationId= call.parameters[Constants.ORGANIZATION_ID]
+                    val departmentId = call.parameters[Constants.DEPARTMENT_ID]
+                    val sectionId = call.parameters[Constants.SECTION_ID]
+                    val userTypeId = call.parameters[Constants.USER_TYPE_ID]
+
+                    val filters = mutableMapOf<String, String>()
+                    name?.takeIf { it.isNotBlank() }?.let { filters["name"] = it }
+                    surname?.takeIf { it.isNotBlank() }?.let { filters["surname"] = it }
+                    email?.takeIf { it.isNotBlank() }?.let { filters["email"] = it }
+                    phoneNumber?.takeIf { it.isNotBlank() }?.let { filters["phoneNumber"]=it}
+                    organizationId?.takeIf { it.isNotBlank() }?.let { filters[Constants.ORGANIZATION_ID]=it}
+                    departmentId?.takeIf { it.isNotBlank() }?.let { filters[Constants.DEPARTMENT_ID]=it }
+                    sectionId?.takeIf { it.isNotBlank() }?.let { filters[Constants.SECTION_ID] = it }
+                    userTypeId?.takeIf { it.isNotBlank() }?.let { filters[Constants.USER_TYPE_ID] = it}
+                    val users = userService.getUsersFiltered(currentUser, page, pageSize, filters)
+                    call.respond(HttpStatusCode.OK, users)
+
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}", 400))
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}", 400))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("$ERROR_EXCEPTION :${e.message}", 500))
+                }
+            }
+        }
+    }
+
+    //=== Get user by id endpoint
+    route("/user/{id}/get_by_id") {
+  install(NotarizedRoute()){
+      tags = setOf("User")
+      parameters = listOf(Parameter(name = "id",
+          `in` = Parameter.Location.path,
+          schema = TypeDefinition.STRING))
+      security = mapOf(BEARER_AUTH_TAG to emptyList())
+      get = GetInfo.builder {
+          summary("Get Users")
+          description("Get Users")
+          response {
+              responseCode(HttpStatusCode.OK)
+              responseType<UserRegisterRequest>()
+              description("users  with matching id")
+          }
+
+      }
+  }
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+            get {
+                try {
+                    val idParam = call.parameters["id"]
+                        ?: return@get call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponse("Missing id", 400)
+                        )
+
+                    val userId = try {
+                        UUID.fromString(idParam)
+                    } catch (e: IllegalArgumentException) {
+                        return@get call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponse("Invalid UUID format", 400)
+                        )
+                    }
+
+                    val user = userService.findById(userId)
+                        ?: return@get call.respond(
+                            HttpStatusCode.NotFound,
+                            ErrorResponse("User not found", 404)
+                        )
+
+                    call.respond(HttpStatusCode.OK, user)
+                } catch (e: IllegalStateException) {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        ErrorResponse("$ERROR_EXCEPTION : ${e.message}", 400)
+                    )
+                } catch (e: IllegalArgumentException) {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        ErrorResponse("$ERROR_EXCEPTION : ${e.message}", 400)
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("$ERROR_EXCEPTION : ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+
+
 }
+

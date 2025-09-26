@@ -4,6 +4,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import org.montigny.client.domain.api.dto.Organization.CreateDptDTO
@@ -154,7 +155,28 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
     }
 
 }
+    override fun getAllOrg (currentUserDTO: CurrentUserDTO):List<CreateOrgDTO>
+    =transaction {
+        Organizations.selectAll().map {
+            CreateOrgDTO(id = it[Organizations.id].value,
+                displayName = it[Organizations.displayname]
+                )
+        }
+    }
 
+    override fun getAllDept(currentUserDTO: CurrentUserDTO): List<CreateOrgDTO> =transaction {
+        Departments.selectAll().map{
+            CreateOrgDTO(id = it[Departments.id].value,
+                displayName = it[Departments.displayname])
+        }
+    }
+
+    override fun getAllSect(currentUserDTO: CurrentUserDTO): List<CreateOrgDTO> =transaction{
+        Sections.selectAll().map {
+            CreateOrgDTO(id = it[Sections.id].value,
+                displayName = it[Sections.displayname])
+        }
+    }
     private fun checkIfBelongsToOrganization(
         currentUser: CurrentUserDTO,
         orgId: UUID
