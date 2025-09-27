@@ -58,7 +58,13 @@ export const UserService = {
   },
 
   async updateUser(id: string, req: UpdateUserDTO) {
-    const { data } = await axiosInstance.put(`/users/${id}/update`, req);
+    console.log("Update Payload:", JSON.stringify(req, null, 2));
+    const { data } = await axiosInstance.put(`/users/${id}/update`, 
+       JSON.stringify(req), // 👈 force stringification
+  {
+    headers: { "Content-Type": "application/json" }
+  }
+    );
     return data;
   },
 

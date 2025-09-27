@@ -86,7 +86,22 @@ const UserPage: React.FC = () => {
 
   return (
     <div className="user-page">
-      <h1 className="title">User Management</h1>
+      <div>
+        <h1 className="title">User Management</h1>
+        <div className="my_wide_button"
+        style={{ width: '100%' }}
+        >
+          <button type="submit"
+            style={{
+              width: '20%'
+             }}
+            className="ticket-btn"
+          onClick={() => navigate('/users/create')}>
+            CREATE  NEW USER
+          </button> 
+      </div>
+      </div>
+      
 
       <form className="filter-form" onSubmit={handleFilterSubmit}>
         {/* Primary filters */}
