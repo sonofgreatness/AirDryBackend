@@ -7,6 +7,6 @@ import java.util.UUID
 @Serializable
 data class CreateOrgDTO(
     @Serializable(with = UUIDSerializer::class)
-    val id : UUID = UUID.randomUUID(),
+    val id : UUID? = UUID.randomUUID(),
     val displayName : String = ""
 )

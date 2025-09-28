@@ -23,16 +23,22 @@ import kotlinx.serialization.ContextualSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import java.util.Base64
 
-object UUIDSerializer : KSerializer<UUID> {
+object UUIDSerializer : KSerializer<UUID?> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("UUID", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: UUID) {
-        encoder.encodeString(value.toString())
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun serialize(encoder: Encoder, value: UUID?) {
+        if (value == null) {
+            encoder.encodeNull()
+        } else {
+            encoder.encodeString(value.toString())
+        }
     }
 
-    override fun deserialize(decoder: Decoder): UUID {
-        return UUID.fromString(decoder.decodeString())
+    override fun deserialize(decoder: Decoder): UUID? {
+        val str = decoder.decodeString()
+        return if (str.isBlank()) null else UUID.fromString(str)
     }
 }
 

@@ -254,7 +254,7 @@ background: linear-gradient(270deg, var(--green-nile), var(--brown-driftwood), v
   top: 0;           /* ✅ stick to the top of viewport */
   z-index: 1100;    /* ✅ ensures it stays above content & sidebar */
   width: 100%;
-  height: 60px;
+  height: 7vh;
   background-color: #355e3b;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
@@ -366,7 +366,7 @@ background: linear-gradient(270deg, var(--green-nile), var(--brown-driftwood), v
     display: none; /* Remove visual clutter on small screens */
   }
 }
-/* Hide on large devices (desktop and above) */
+/* Hide on large devices (desktop and above) 
 @media (min-width: 767px) {
   .menu-toggler {
     margin: 9px;
@@ -375,7 +375,7 @@ background: linear-gradient(270deg, var(--green-nile), var(--brown-driftwood), v
     justify-content: center;
     cursor: pointer;
   }
-}
+}*/
 
 /* Show only on tablets and phones */
 @media (max-width: 991px) {

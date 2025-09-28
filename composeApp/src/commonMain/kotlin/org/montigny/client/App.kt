@@ -1,48 +1,66 @@
 package org.montigny.client
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
 
-import desktop.composeapp.generated.resources.Res
-import desktop.composeapp.generated.resources.compose_multiplatform
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import org.montigny.client.auth.SessionManager
+import org.montigny.client.navigation.Destination
+import org.montigny.client.navigation.NavGraph
+import org.montigny.client.ui.settings.SettingsNavItem
 
 @Composable
-@Preview
-fun App() {
+fun App(sessionManager: SessionManager) {
     MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
+        var currentDestination by remember { mutableStateOf<Destination>(Destination.Users) }
+
+        Row(modifier = Modifier.fillMaxSize()) {
+            NavigationRail(
+                modifier = Modifier.fillMaxHeight(),
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Spacer(Modifier.height(12.dp))
+                NavigationRailItem(
+                    selected = currentDestination == Destination.Users,
+                    onClick = { currentDestination = Destination.Users },
+                    icon = { Icon(Icons.Default.People, contentDescription = "Users") }
+                )
+                NavigationRailItem(
+                    selected = currentDestination == Destination.Organizations,
+                    onClick = { currentDestination = Destination.Organizations },
+                    icon = { Icon(Icons.Default.Business, contentDescription = "Organizations") }
+                )
+                /*NavigationRailItem(
+                    selected = currentDestination == Destination.Login,
+                    onClick = { currentDestination = Destination.Login },
+                    icon = { Icon(Icons.Default.Login, contentDescription = "Login") }
+                )*/
+                NavigationRailItem(
+                    selected = currentDestination == Destination.Work,
+                    onClick = { currentDestination = Destination.Work },
+                    icon = { Icon(Icons.Default.Work, contentDescription = "Work") }
+                )
+
+                NavigationRailItem(
+                    selected = currentDestination == Destination.Reports,
+                    onClick = { currentDestination = Destination.Reports },
+                    icon = { Icon(Icons.Default.Assessment, contentDescription = "Reports") }
+                )
+                Spacer(Modifier.weight(1f))
+                SettingsNavItem(sessionManager = sessionManager) { destination ->
+                    currentDestination = destination
                 }
+            }
+            // main content area -> delegated to NavGraph
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                NavGraph(currentDestination,sessionManager)
             }
         }
     }

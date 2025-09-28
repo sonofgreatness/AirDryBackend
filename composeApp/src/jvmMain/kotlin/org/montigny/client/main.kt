@@ -2,12 +2,21 @@ package org.montigny.client
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import org.koin.compose.koinInject
+import org.koin.core.context.startKoin
+import org.montigny.client.auth.SessionManager
+import org.montigny.client.di.appModule
 
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Desktop",
+        title = "IMS (GUNDANE@MONTIGNY)",
     ) {
-        App()
+        startKoin {
+            modules(appModule)
+        }
+        val sessionManager: SessionManager = koinInject()
+        //PUT All injected instances here
+        App(sessionManager)
     }
 }

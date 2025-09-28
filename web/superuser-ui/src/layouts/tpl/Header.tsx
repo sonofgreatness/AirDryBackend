@@ -12,7 +12,7 @@ export default function Header() {
   // ✅ Desktop sidebar toggle (only works on large screens)
   const toggleSidebarCollapse = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (window.innerWidth > 767) {
+    if (window.innerWidth > 991) {
       $("body").toggleClass("page-sidebar-closed");
     }
   };

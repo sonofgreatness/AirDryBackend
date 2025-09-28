@@ -225,7 +225,13 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             req.updated_departmentId?.let { dept -> it[departmentId] = dept }
             req.updated_sectionId?.let { sec -> it[sectionId] = sec }
             req.updated_email?.let { e -> it[email] = e }
-            req.updated_password?.let { p -> it[passwordHash] = passwordHasher.hash(p) }
+            req.updated_password?.let {
+
+                p ->
+                if(p.length> 2)
+                { println("RESETTING PASSSWORD")
+                    it[passwordHash] = passwordHasher.hash(p)}
+            }
             req.isActive?.let { active -> it[isActive] = active }
             req.isApproved?.let { approved -> it[isApproved] = approved }
         }

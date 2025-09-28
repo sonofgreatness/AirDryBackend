@@ -35,6 +35,7 @@ import org.montigny.client.util.ApiExamples.Companion.exampleUdateUser
 import org.montigny.client.util.ApiExamples.Companion.exampleUser
 import org.montigny.client.util.Constants
 import org.montigny.client.util.Constants.Companion.BEARER_AUTH_TAG
+import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import org.montigny.client.util.Constants.Companion.DELETED_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.ERROR_EXCEPTION
 import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION
@@ -272,12 +273,6 @@ fun Route.userRoutes(userService: UserService) {
             }
         }
     }
-
-
-
-
-
-
     // ----------------- LOGIN -----------------
     route("/users/login") {
         install(NotarizedRoute()) {
@@ -317,7 +312,6 @@ fun Route.userRoutes(userService: UserService) {
             }
         }
     }
-
     route("users/{id}/delete"){
         install(NotarizedRoute()){
             tags = setOf("User")
@@ -426,7 +420,7 @@ fun Route.userRoutes(userService: UserService) {
 
                     val currentUser = UserUtils.getLoggedInUser(call)
                     val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
-                    val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
+                    val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
                     val name = call.request.queryParameters["name"]
                     val surname = call.request.queryParameters["surname"]
                     val email = call.request.queryParameters["email"]

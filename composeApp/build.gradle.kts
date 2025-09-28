@@ -13,7 +13,7 @@ kotlin {
     jvm()
     
     @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
+    /*wasmJs {
         outputModuleName.set("composeApp")
         browser {
             val rootDirPath = project.rootDir.path
@@ -31,18 +31,21 @@ kotlin {
             }
         }
         binaries.executable()
-    }
+    }*/
     
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation("com.auth0:java-jwt:4.4.0")
+
             implementation(projects.shared)
         }
         commonTest.dependencies {
@@ -51,6 +54,8 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation("io.insert-koin:koin-core:3.3.3")
+            implementation("io.insert-koin:koin-compose:1.1.2")
         }
     }
 }

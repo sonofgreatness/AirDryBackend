@@ -26,6 +26,7 @@ class Constants {
         const val GET_ORGS_DESCRIPTION_TYPE = "Get all organizations"
         const val GET_DPTS_DESCRIPTION_TYPE = "Get all departments"
         const val GET_SECTS_DESCRIPTION_TYPE = "Get all sections"
+        const val  DEFAULT_PAGE_SIZE =20
 
 
     }

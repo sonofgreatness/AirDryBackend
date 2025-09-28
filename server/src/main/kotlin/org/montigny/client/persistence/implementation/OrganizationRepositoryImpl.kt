@@ -30,7 +30,7 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
         logo: ByteArray?
     ): UUID = transaction{
         Organizations.insertAndGetId {
-            it[id] = req.id
+            it[id] = req.id!!
             it[createdBy] = currentUser.id
             it[displayname] = req.displayName
             it[this.logo] = logo
@@ -53,7 +53,7 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
         req: CreateOrgDTO,
         logo: ByteArray?
     ): Int =transaction{
-        checkIfBelongsToOrganization(currentUser, req.id)
+        checkIfBelongsToOrganization(currentUser, req.id!!)
         val currentOrg = Organizations.select { Organizations.id eq req.id }.firstOrNull()
             ?: throw IllegalArgumentException("Organization with id $id not found")
         Organizations.update({ Organizations.id eq currentOrg[Organizations.id].value }) {
@@ -75,11 +75,11 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
     }
 
     override fun createDept(currentUser:CurrentUserDTO, req: CreateDptDTO) : UUID =transaction{
-        checkIfBelongsToOrganization(currentUser,req.organizationId)
+        checkIfBelongsToOrganization(currentUser,req.organizationId!!)
         Departments.insertAndGetId {
             it[createdBy] = currentUser.id
             it[displayname] = req.displayName
-            it[id] = req.id
+            it[id] = req.id!!
             it[organizationId] = req.organizationId
         }.value
     }
@@ -94,7 +94,7 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
         }.singleOrNull()
     }
     override fun updateDept(currentUser: CurrentUserDTO, req: CreateDptDTO): Int = transaction{
-        checkIfBelongsToOrganization(currentUser, req.organizationId)
+        checkIfBelongsToOrganization(currentUser, req.organizationId!!)
         val currentDept = Departments.select {Departments.id eq req.id}.firstOrNull() ?:
         throw IllegalArgumentException("Department with id ${req.id} not found")
         Departments.update(where = { Departments.id eq currentDept[Departments.id].value }) {
@@ -124,8 +124,8 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
         Sections.insertAndGetId {
             it[updatedBy] = currentUser.id
             it[displayname] = req.displayName
-            it[id] = req.id
-            it[departmentId] = req.departmentId
+            it[id] = req.id!!
+            it[departmentId] = req.departmentId!!
         }.value
 
     }
