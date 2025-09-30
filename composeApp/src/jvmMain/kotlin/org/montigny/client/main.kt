@@ -6,6 +6,7 @@ import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.di.appModule
+import org.montigny.client.di.databaseModule
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 
 fun main() = application {
@@ -14,7 +15,7 @@ fun main() = application {
         title = "IMS (GUNDANE@MONTIGNY)",
     ) {
         startKoin {
-            modules(appModule)
+            modules(appModule, databaseModule)
         }
        val sessionManager: SessionManager = koinInject()
        val authViewModel: AuthViewModel = koinInject()

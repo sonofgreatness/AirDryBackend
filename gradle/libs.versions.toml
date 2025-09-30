@@ -8,7 +8,7 @@ kotlinx-coroutines = "1.10.2"
 ktor = "2.3.11"
 old_ktor = "3.2.2"
 logback = "1.5.18"
-sqldelight = "2.0.2"
+sqldelight = "2.0.0"
 h2 = "2.2.220" #
 
 [libraries]
@@ -24,7 +24,7 @@ ktor-serverNetty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "kt
 ktor-serverTestHost = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor" }
 ktor-serVerCore = {module = "io.ktor:ktor-server-core",version.ref = "ktor" }
 #kompendium-core = { module = "io.bkbn:kompendium-core", version = "3.14.1" }
-
+h2 = { module = "com.h2database:h2", version.ref = "h2" }
 
 
 [plugins]
@@ -35,4 +35,4 @@ kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-
+sqlDelight = {id ="app.cash.sqldelight" ,version.ref = "sqldelight"}

@@ -8,7 +8,9 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    alias(libs.plugins.sqlDelight)
 }
+val sqldelightVersion = libs.versions.sqldelight.get()
 
 kotlin {
     jvm()
@@ -34,43 +36,50 @@ kotlin {
         binaries.executable()
     }*/
 
+
     sourceSets {
-        commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.materialIconsExtended)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation("com.auth0:java-jwt:4.4.0")
-            // Ktor Client (use CIO or OkHttp engine for desktop)
-            implementation("io.ktor:ktor-client-core:2.3.11")
-            implementation("io.ktor:ktor-client-cio:2.3.11")
-            implementation("io.ktor:ktor-client-content-negotiation:2.3.11")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
-            implementation("io.ktor:ktor-client-logging:2.3.11")
-            implementation("org.slf4j:slf4j-api:2.0.13")
-            implementation("ch.qos.logback:logback-classic:1.4.14")
+        val commonMain by getting {
+            dependencies {
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material3)
+                implementation(compose.materialIconsExtended)
+                implementation(compose.ui)
+                implementation(compose.components.resources)
+                implementation(compose.components.uiToolingPreview)
+                implementation(libs.androidx.lifecycle.viewmodelCompose)
+                implementation(libs.androidx.lifecycle.runtimeCompose)
+                implementation("com.auth0:java-jwt:4.4.0")
+                implementation("io.ktor:ktor-client-core:2.3.11")
+                implementation("io.ktor:ktor-client-cio:2.3.11")
+                implementation("io.ktor:ktor-client-content-negotiation:2.3.11")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
+                implementation("io.ktor:ktor-client-logging:2.3.11")
+                implementation("org.slf4j:slf4j-api:2.0.13")
+                implementation("ch.qos.logback:logback-classic:1.4.14")
+                implementation("app.cash.sqldelight:runtime:${sqldelightVersion}")
 
-
-
-            implementation(projects.shared)
+                implementation(projects.shared)
+            }
         }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
+
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+            }
         }
-        jvmMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutinesSwing)
-            implementation("io.insert-koin:koin-core:3.3.3")
-            implementation("io.insert-koin:koin-compose:1.1.2")
+
+        val jvmMain by getting {
+            dependencies {
+                implementation(compose.desktop.currentOs)
+                implementation(libs.kotlinx.coroutinesSwing)
+                implementation("io.insert-koin:koin-core:3.3.3")
+                implementation("io.insert-koin:koin-compose:1.1.2")
+                implementation("app.cash.sqldelight:sqlite-driver:${sqldelightVersion}")
+            }
         }
     }
 }
-
 
 
 compose.desktop {
@@ -85,5 +94,12 @@ compose.desktop {
     }
 }
 
-
+sqldelight {
+    databases {
+        create("AppDatabase") {
+            packageName.set("org.montigny.client.database")
+            // sourceFolders = listOf("sqldelight")
+        }
+    }
+}
 
