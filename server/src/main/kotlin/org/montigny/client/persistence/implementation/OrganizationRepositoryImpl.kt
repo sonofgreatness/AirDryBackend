@@ -1,5 +1,6 @@
 package org.montigny.client.persistence.implementation
 
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
@@ -7,11 +8,11 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
-import org.montigny.client.domain.api.dto.Organization.CreateDptDTO
-import org.montigny.client.domain.api.dto.Organization.CreateOrgDTO
-import org.montigny.client.domain.api.dto.Organization.CreateSectDTO
-import org.montigny.client.domain.api.dto.Organization.GetOrgDTO
-import org.montigny.client.domain.api.dto.User.CurrentUserDTO
+import org.montigny.client.dto.Organization.CreateDptDTO
+import org.montigny.client.dto.Organization.CreateOrgDTO
+import org.montigny.client.dto.Organization.CreateSectDTO
+import org.montigny.client.dto.Organization.GetOrgDTO
+import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.persistence.AppUsers
 import org.montigny.client.persistence.Departments
 import org.montigny.client.persistence.Organizations
@@ -20,7 +21,6 @@ import org.montigny.client.persistence.Sections.departmentId
 import org.montigny.client.persistence.repository.OrganizationRepository
 import org.montigny.client.util.Constants
 import org.montigny.client.util.UserUtils.isSuperUser
-import java.time.LocalDateTime
 import java.util.UUID
 
 class OrganizationRepositoryImpl(): OrganizationRepository {
@@ -77,10 +77,11 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
     override fun createDept(currentUser:CurrentUserDTO, req: CreateDptDTO) : UUID =transaction{
         checkIfBelongsToOrganization(currentUser,req.organizationId!!)
         Departments.insertAndGetId {
+            val orgId : UUID? =  req.organizationId
             it[createdBy] = currentUser.id
             it[displayname] = req.displayName
             it[id] = req.id!!
-            it[organizationId] = req.organizationId
+            it[organizationId] = EntityID(req.organizationId as UUID, Organizations)
         }.value
     }
     override fun getDeptById(dptId: UUID) :CreateDptDTO?= transaction{
@@ -103,15 +104,15 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
     }
 
 
-    override fun deleteDeptById(currentUser: CurrentUserDTO, deptId: UUID) = transaction{
+    override fun deleteDeptById(currentUser: CurrentUserDTO, dptId: UUID) = transaction{
 
-        Departments.select { Departments.id eq deptId }.firstOrNull()
+        Departments.select { Departments.id eq dptId }.firstOrNull()
             ?:throw IllegalArgumentException("Department with id $id not found")
 
-        val hasSections = Sections.select { departmentId eq deptId }.any()
+        val hasSections = Sections.select { departmentId eq dptId }.any()
         if (hasSections)
                throw  IllegalArgumentException("Department has dependant sections")
-        Departments.deleteWhere { Departments.id eq deptId }
+        Departments.deleteWhere { Departments.id eq dptId }
 
     }
     override  fun createSect(currentUser: CurrentUserDTO,req: CreateSectDTO) : UUID =

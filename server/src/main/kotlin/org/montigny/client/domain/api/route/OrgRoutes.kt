@@ -15,19 +15,18 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
-import org.montigny.client.domain.api.dto.Common.ErrorResponse
-import org.montigny.client.domain.api.dto.Common.IdResponse
-import org.montigny.client.domain.api.dto.Common.SimpleResponse
-import org.montigny.client.domain.api.dto.Organization.CreateDptDTO
-import org.montigny.client.domain.api.dto.Organization.CreateSectDTO
-import org.montigny.client.domain.api.dto.Organization.CreateOrgDTO
-import org.montigny.client.domain.api.dto.Organization.GetOrgDTO
-import org.montigny.client.domain.api.dto.User.UserTypesDTO
+import org.montigny.client.dto.Common.ErrorResponse
+import org.montigny.client.dto.Common.IdResponse
+import org.montigny.client.dto.Common.SimpleResponse
+import org.montigny.client.dto.Organization.CreateDptDTO
+import org.montigny.client.dto.Organization.CreateSectDTO
+import org.montigny.client.dto.Organization.CreateOrgDTO
+import org.montigny.client.dto.Organization.GetOrgDTO
+import org.montigny.client.dto.User.UserTypesDTO
 import org.montigny.client.domain.api.route.auth.UserRole
 import org.montigny.client.domain.api.route.auth.authorize
 import org.montigny.client.service.OrganizationService
 import org.montigny.client.service.UserService
-import org.montigny.client.util.Constants
 import org.montigny.client.util.Constants.Companion.BEARER_AUTH_TAG
 import org.montigny.client.util.Constants.Companion.CREATED_ID_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.DELETED_SUCCESS_DESCRIPTION
@@ -35,7 +34,6 @@ import org.montigny.client.util.Constants.Companion.ERROR_EXCEPTION
 import org.montigny.client.util.Constants.Companion.GET_DPTS_DESCRIPTION_TYPE
 import org.montigny.client.util.Constants.Companion.GET_ORGS_DESCRIPTION_TYPE
 import org.montigny.client.util.Constants.Companion.GET_SECTS_DESCRIPTION_TYPE
-import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION_TYPE
 import org.montigny.client.util.Constants.Companion.REGISTER_ORGANIZATION_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.UPDATED_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.UPDATE_ORGANIZATION_DESCRIPTION
@@ -317,10 +315,10 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                     call.respond(HttpStatusCode.OK, IdResponse(createdId.toString()))
                 }
                 catch (e: IllegalArgumentException){
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 400))
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("${ERROR_EXCEPTION} ${e.message}", 400))
                 }
                 catch (e:Exception){
-                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 500))
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${ERROR_EXCEPTION} ${e.message}", 500))
                 }
             }
             }
@@ -406,10 +404,10 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                             call.respond(HttpStatusCode.OK, SimpleResponse(UPDATED_SUCCESS_DESCRIPTION))
                         }
                         catch (e: IllegalArgumentException){
-                            call.respond(HttpStatusCode.BadRequest, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 400))
+                            call.respond(HttpStatusCode.BadRequest, ErrorResponse("${ERROR_EXCEPTION} ${e.message}", 400))
                         }
                         catch (e:Exception){
-                            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 500))
+                            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${ERROR_EXCEPTION} ${e.message}", 500))
                         }
                     }
                 }
@@ -497,10 +495,10 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                         call.respond(HttpStatusCode.OK, IdResponse(createdId.toString()))
                     }
                     catch (e: IllegalArgumentException){
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 400))
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("${ERROR_EXCEPTION} ${e.message}", 400))
                     }
                     catch (e:Exception){
-                        call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 500))
+                        call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${ERROR_EXCEPTION} ${e.message}", 500))
                     }
                 }
             }
@@ -550,10 +548,10 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                         call.respond(HttpStatusCode.OK, SimpleResponse(UPDATED_SUCCESS_DESCRIPTION))
                     }
                     catch (e: IllegalArgumentException){
-                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 400))
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("${ERROR_EXCEPTION} ${e.message}", 400))
                     }
                     catch (e:Exception){
-                        call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${Constants.ERROR_EXCEPTION} ${e.message}", 500))
+                        call.respond(HttpStatusCode.InternalServerError, ErrorResponse("${ERROR_EXCEPTION} ${e.message}", 500))
                     }
                 }
             }

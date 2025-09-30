@@ -11,22 +11,31 @@ import io.bkbn.kompendium.oas.payload.MediaType
 import io.bkbn.kompendium.oas.payload.Parameter
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
-import org.montigny.client.domain.api.dto.Auth.AuthRequest
-import org.montigny.client.domain.api.dto.Auth.AuthResponse
-import org.montigny.client.domain.api.dto.Common.ErrorResponse
-import org.montigny.client.domain.api.dto.Common.IdResponse
-import org.montigny.client.domain.api.dto.Common.PaginatedResponse
-import org.montigny.client.domain.api.dto.Common.SimpleResponse
-import org.montigny.client.domain.api.dto.User.CurrentUserDTO
-import org.montigny.client.domain.api.dto.User.UpdateUserDTO
-import org.montigny.client.domain.api.dto.User.UserRegisterRequest
-import org.montigny.client.domain.api.dto.User.UserResponse
-import org.montigny.client.domain.api.dto.User.UserTypesDTO
+import org.montigny.client.API_URL_ADMIN_REGISTER
+import org.montigny.client.API_URL_USERTYPES_GET_ALL
+import org.montigny.client.API_URL_USER_CURRENT
+import org.montigny.client.API_URL_USER_DELETE
+import org.montigny.client.API_URL_USER_GET_ALL
+import org.montigny.client.API_URL_USER_LOGIN
+import org.montigny.client.API_URL_USER_REGISTER
+import org.montigny.client.API_URL_USER_UPDATE
+import org.montigny.client.API_USER_GET_BY_ID
+import org.montigny.client.API_USER_SEARCH
+import org.montigny.client.dto.Auth.AuthRequest
+import org.montigny.client.dto.Auth.AuthResponse
+import org.montigny.client.dto.Common.ErrorResponse
+import org.montigny.client.dto.Common.IdResponse
+import org.montigny.client.dto.Common.PaginatedResponse
+import org.montigny.client.dto.Common.SimpleResponse
+import org.montigny.client.dto.User.CurrentUserDTO
+import org.montigny.client.dto.User.UpdateUserDTO
+import org.montigny.client.dto.User.UserRegisterRequest
+import org.montigny.client.dto.User.UserResponse
+import org.montigny.client.dto.User.UserTypesDTO
 import org.montigny.client.domain.api.route.auth.UserRole
 import org.montigny.client.domain.api.route.auth.authorize
 import org.montigny.client.service.UserService
@@ -42,12 +51,13 @@ import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION_TYPE
 import org.montigny.client.util.Constants.Companion.UPDATED_USER_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.UPDATE_USER_DESCRIPTION
+
 import org.montigny.client.util.UserUtils
 import java.util.*
 
 fun Route.userRoutes(userService: UserService) {
     // ----------------- REGISTER -----------------
-    route("/users/register") {
+    route(API_URL_USER_REGISTER) {
         install(NotarizedRoute()) {
             tags = setOf("User")
             post = PostInfo.builder {
@@ -101,7 +111,7 @@ fun Route.userRoutes(userService: UserService) {
             }
     }
 
-    route("/users/admin_register") {
+    route(API_URL_ADMIN_REGISTER) {
         install(NotarizedRoute()) {
             tags = setOf("User")
             security = mapOf(
@@ -143,7 +153,7 @@ fun Route.userRoutes(userService: UserService) {
     }
 
     //===================UPDATE USER===================
-    route("/users/{id}/update"){
+    route(API_URL_USER_UPDATE){
         install(NotarizedRoute()) {
             tags = setOf("User")
             parameters = listOf(
@@ -193,7 +203,7 @@ fun Route.userRoutes(userService: UserService) {
         }
     }
     //==================GET ALL USERS================
-   route("/users/get_all_users") {
+   route(API_URL_USER_GET_ALL) {
        install(NotarizedRoute()) {
            tags = setOf("User")
            security = mapOf(
@@ -242,7 +252,7 @@ fun Route.userRoutes(userService: UserService) {
        }
    }
 //===============GET ALL USER TYPES ======
-    route("/users/get_all_user_types") {
+    route(API_URL_USERTYPES_GET_ALL) {
         install(NotarizedRoute()) {
             tags = setOf("User")
             security = mapOf(
@@ -274,7 +284,7 @@ fun Route.userRoutes(userService: UserService) {
         }
     }
     // ----------------- LOGIN -----------------
-    route("/users/login") {
+    route(API_URL_USER_LOGIN) {
         install(NotarizedRoute()) {
             tags = setOf("User")
             post = PostInfo.builder {
@@ -312,7 +322,7 @@ fun Route.userRoutes(userService: UserService) {
             }
         }
     }
-    route("users/{id}/delete"){
+    route(API_URL_USER_DELETE){
         install(NotarizedRoute()){
             tags = setOf("User")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -351,7 +361,7 @@ fun Route.userRoutes(userService: UserService) {
     }
     //=================GET CURRENTUSERDTO
 
-    route("/users/current"){
+    route(API_URL_USER_CURRENT){
         install(NotarizedRoute()){
             tags = setOf("User")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -387,7 +397,7 @@ fun Route.userRoutes(userService: UserService) {
 
 
     //================== SEARCH USERS WITH FILTERS ==================
-    route("/users/search_users") {
+    route(API_USER_SEARCH) {
         install(NotarizedRoute()) {
             tags = setOf("User")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -456,7 +466,7 @@ fun Route.userRoutes(userService: UserService) {
     }
 
     //=== Get user by id endpoint
-    route("/user/{id}/get_by_id") {
+    route(API_USER_GET_BY_ID) {
   install(NotarizedRoute()){
       tags = setOf("User")
       parameters = listOf(Parameter(name = "id",

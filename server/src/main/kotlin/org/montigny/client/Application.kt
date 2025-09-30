@@ -29,7 +29,7 @@ import org.koin.ktor.plugin.Koin
 import org.montigny.client.config.DatabaseFactory
 import org.montigny.client.config.JwtProvider
 import org.montigny.client.di.appModule
-import org.montigny.client.domain.api.dto.Common.AnySerializer
+import org.montigny.client.dto.Common.AnySerializer
 import org.montigny.client.domain.api.route.orgRoutes
 import org.montigny.client.domain.api.route.userRoutes
 import org.montigny.client.service.OrganizationService

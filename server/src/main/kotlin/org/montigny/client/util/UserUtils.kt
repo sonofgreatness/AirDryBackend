@@ -10,8 +10,8 @@ import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.plugins.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.montigny.client.domain.api.dto.Common.ErrorResponse
-import org.montigny.client.domain.api.dto.User.CurrentUserDTO
+import org.montigny.client.dto.Common.ErrorResponse
+import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.domain.api.route.auth.UserRole
 import org.montigny.client.persistence.AppUsers
 import org.montigny.client.persistence.Departments

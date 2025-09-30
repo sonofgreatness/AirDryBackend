@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -17,25 +19,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.Alignment
+import org.koin.compose.koinInject
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.navigation.Destination
+import org.montigny.client.navigation.Navigator
 import org.montigny.client.ui.common.StatusDot
+import org.montigny.client.ui.users.viewModels.AuthViewModel
+import org.slf4j.Logger
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsNavItem(sessionManager: SessionManager, onDestinationSelected: (Destination) -> Unit) {
+fun SettingsNavItem(sessionManager: SessionManager, navigator: Navigator) {
+    val authViewModel: AuthViewModel = koinInject()
     var expanded by remember { mutableStateOf(false) }
-
+    val isLoggedIn by sessionManager.isLoggedInFlow.collectAsState()
+    val logger: Logger  = koinInject()
+    logger.info("Is Logged In value : $isLoggedIn")
     NavigationRailItem(
         selected = false,
         onClick = { expanded = !expanded },
         icon = {
             Box {
                 Icon(Icons.Default.Settings, contentDescription = "Settings")
-
-                // Status dot at top right
                 StatusDot(
-                    isOnline = sessionManager.isLoggedIn,
+                    isOnline = isLoggedIn,
                     modifier = Modifier
                         .size(10.dp)
                         .align(Alignment.TopEnd)
@@ -50,12 +57,27 @@ fun SettingsNavItem(sessionManager: SessionManager, onDestinationSelected: (Dest
         onDismissRequest = { expanded = false },
         offset = DpOffset(x = 80.dp, y = 0.dp)
     ) {
-        if (!sessionManager.isLoggedIn) {
+        if (!isLoggedIn) {
             DropdownMenuItem(
                 text = { Text("Login") },
                 onClick = {
                     expanded = false
-                    onDestinationSelected(Destination.Login)
+                    authViewModel.resetState()
+                    authViewModel.clearFields()
+                    navigator.navigateTo(Destination.Login)
+
+                }
+            )
+        } else {
+            DropdownMenuItem(
+                leadingIcon = { Icon(Icons.Default.Logout, contentDescription = "Logout") },
+                text = { Text("Logout") },
+                onClick = {
+                    sessionManager.logout()
+                    expanded = false
+                    authViewModel.resetState()     // ensure stale Success removed
+                    authViewModel.clearFields()
+                    navigator.navigateTo(Destination.Login)
                 }
             )
         }
@@ -63,7 +85,7 @@ fun SettingsNavItem(sessionManager: SessionManager, onDestinationSelected: (Dest
             text = { Text("Main Settings") },
             onClick = {
                 expanded = false
-                onDestinationSelected(Destination.MainSettings)
+                navigator.navigateTo(Destination.MainSettings)
             }
         )
     }

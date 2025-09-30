@@ -1,4 +1,4 @@
-package org.montigny.client.domain.api.dto.Auth
+package org.montigny.client.dto.Auth
 
 import kotlinx.serialization.Serializable
 

@@ -1,6 +1,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
+
+
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -11,7 +12,7 @@ plugins {
 
 kotlin {
     jvm()
-    
+
     @OptIn(ExperimentalWasmDsl::class)
     /*wasmJs {
         outputModuleName.set("composeApp")
@@ -32,7 +33,7 @@ kotlin {
         }
         binaries.executable()
     }*/
-    
+
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -45,6 +46,16 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation("com.auth0:java-jwt:4.4.0")
+            // Ktor Client (use CIO or OkHttp engine for desktop)
+            implementation("io.ktor:ktor-client-core:2.3.11")
+            implementation("io.ktor:ktor-client-cio:2.3.11")
+            implementation("io.ktor:ktor-client-content-negotiation:2.3.11")
+            implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
+            implementation("io.ktor:ktor-client-logging:2.3.11")
+            implementation("org.slf4j:slf4j-api:2.0.13")
+            implementation("ch.qos.logback:logback-classic:1.4.14")
+
+
 
             implementation(projects.shared)
         }
@@ -61,6 +72,7 @@ kotlin {
 }
 
 
+
 compose.desktop {
     application {
         mainClass = "org.montigny.client.MainKt"
@@ -72,3 +84,6 @@ compose.desktop {
         }
     }
 }
+
+
+

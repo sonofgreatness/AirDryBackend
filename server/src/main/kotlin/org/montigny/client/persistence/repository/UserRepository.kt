@@ -1,11 +1,11 @@
 package org.montigny.client.persistence.repository
 
-import org.montigny.client.domain.api.dto.Common.PaginatedResponse
-import org.montigny.client.domain.api.dto.User.CurrentUserDTO
-import org.montigny.client.domain.api.dto.User.UpdateUserDTO
-import org.montigny.client.domain.api.dto.User.UserRegisterRequest
-import org.montigny.client.domain.api.dto.User.UserResponse
-import org.montigny.client.domain.api.dto.User.UserTypesDTO
+import org.montigny.client.dto.Common.PaginatedResponse
+import org.montigny.client.dto.User.CurrentUserDTO
+import org.montigny.client.dto.User.UpdateUserDTO
+import org.montigny.client.dto.User.UserRegisterRequest
+import org.montigny.client.dto.User.UserResponse
+import org.montigny.client.dto.User.UserTypesDTO
 import java.util.*
 
 interface UserRepository {

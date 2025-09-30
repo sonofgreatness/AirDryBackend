@@ -7,7 +7,7 @@ import io.ktor.server.auth.AuthenticationConfig
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.response.respond
-import org.montigny.client.domain.api.dto.User.UserRegisterRequest
+import org.montigny.client.dto.User.UserRegisterRequest
 import java.util.Date
 
 class JwtProvider(private val secret: String, private val issuer: String, private val audience: String, private val expirySeconds: Long) {

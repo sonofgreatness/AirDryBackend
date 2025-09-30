@@ -1,4 +1,4 @@
-package org.montigny.client.domain.api.dto.Common
+package org.montigny.client.dto.Common
 
 import kotlinx.serialization.Serializable
 

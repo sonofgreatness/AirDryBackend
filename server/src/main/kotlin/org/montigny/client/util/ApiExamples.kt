@@ -1,8 +1,8 @@
 package org.montigny.client.util
 
-import org.montigny.client.domain.api.dto.Auth.AuthRequest
-import org.montigny.client.domain.api.dto.User.UpdateUserDTO
-import org.montigny.client.domain.api.dto.User.UserRegisterRequest
+import org.montigny.client.dto.Auth.AuthRequest
+import org.montigny.client.dto.User.UpdateUserDTO
+import org.montigny.client.dto.User.UserRegisterRequest
 import java.util.UUID
 
 class ApiExamples {

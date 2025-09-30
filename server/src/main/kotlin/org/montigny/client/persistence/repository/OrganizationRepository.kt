@@ -1,10 +1,10 @@
 package org.montigny.client.persistence.repository
 
-import org.montigny.client.domain.api.dto.Organization.CreateOrgDTO
-import org.montigny.client.domain.api.dto.Organization.CreateDptDTO
-import org.montigny.client.domain.api.dto.Organization.CreateSectDTO
-import org.montigny.client.domain.api.dto.Organization.GetOrgDTO
-import org.montigny.client.domain.api.dto.User.CurrentUserDTO
+import org.montigny.client.dto.Organization.CreateOrgDTO
+import org.montigny.client.dto.Organization.CreateDptDTO
+import org.montigny.client.dto.Organization.CreateSectDTO
+import org.montigny.client.dto.Organization.GetOrgDTO
+import org.montigny.client.dto.User.CurrentUserDTO
 import java.util.UUID
 
 interface OrganizationRepository {

@@ -1,8 +1,8 @@
-package org.montigny.client.domain.api.dto.User
+package org.montigny.client.dto.User
 
 
 import kotlinx.serialization.Serializable
-import org.montigny.client.domain.api.dto.Common.UUIDSerializer
+import org.montigny.client.dto.Common.UUIDSerializer
 import java.util.UUID
 
 

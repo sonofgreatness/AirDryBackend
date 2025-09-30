@@ -1,8 +1,8 @@
-package org.montigny.client.domain.api.dto.Organization
+package org.montigny.client.dto.Organization
 
 import kotlinx.serialization.Serializable
-import org.montigny.client.domain.api.dto.Common.ByteArrayBase64Serializer
-import org.montigny.client.domain.api.dto.Common.UUIDSerializer
+import org.montigny.client.dto.Common.ByteArrayBase64Serializer
+import org.montigny.client.dto.Common.UUIDSerializer
 import java.util.UUID
 @Serializable
 data class GetOrgDTO(

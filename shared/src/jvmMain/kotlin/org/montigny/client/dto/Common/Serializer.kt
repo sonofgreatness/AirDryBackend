@@ -1,27 +1,16 @@
-package org.montigny.client.domain.api.dto.Common
+package org.montigny.client.dto.Common
 
-import io.bkbn.kompendium.oas.security.BasicAuth
 import io.bkbn.kompendium.oas.security.BearerAuth
-import io.bkbn.kompendium.oas.security.SecuritySchema
 import io.bkbn.kompendium.oas.serialization.SecuritySchemaSerializer
-import kotlinx.serialization.InternalSerializationApi
-import kotlinx.serialization.KSerializer
+import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonEncoder
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.serializer
-import java.util.UUID
+import kotlinx.serialization.json.*
+import java.util.*
 import kotlin.reflect.KClass
-import kotlinx.serialization.ContextualSerializer
-import kotlinx.serialization.ExperimentalSerializationApi
-import java.util.Base64
 
 object UUIDSerializer : KSerializer<UUID?> {
     override val descriptor: SerialDescriptor =

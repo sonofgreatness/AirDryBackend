@@ -3,9 +3,14 @@ package org.montigny.client.persistence.implementation
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.montigny.client.domain.api.dto.Common.PaginatedResponse
-import org.montigny.client.domain.api.dto.User.*
+import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.domain.api.route.auth.UserRole
+import org.montigny.client.dto.User.CurrentUserDTO
+import org.montigny.client.dto.User.NamedEntityResponse
+import org.montigny.client.dto.User.UpdateUserDTO
+import org.montigny.client.dto.User.UserRegisterRequest
+import org.montigny.client.dto.User.UserResponse
+import org.montigny.client.dto.User.UserTypesDTO
 import org.montigny.client.persistence.*
 import org.montigny.client.persistence.repository.PasswordHasher
 import org.montigny.client.persistence.repository.UserRepository
@@ -78,7 +83,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 userTypeId = row[AppUsers.userTypeId]!!.value,
                 organizationId = row[AppUsers.organizationId]?.value,
                 sectionId = row[AppUsers.sectionId]?.value,
-                email =  row[AppUsers.email],
+                email = row[AppUsers.email],
             )
         }.singleOrNull()
     }
@@ -95,7 +100,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             userTypeId = row[AppUsers.userTypeId]!!.value,
             organizationId = row[AppUsers.organizationId]?.value,
             sectionId = row[AppUsers.sectionId]?.value,
-            email =  row[AppUsers.email],
+            email = row[AppUsers.email],
         )
     }
     override fun getUsers(currentUser: CurrentUserDTO,
@@ -168,15 +173,15 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             totalPages = (totalCount / pageSize + if (totalCount % pageSize > 0) 1 else 0).toInt()
         )
     }
-
     override  fun getUserTypes():List<UserTypesDTO> = transaction {
          UserTypes.select{
              UserTypes.displayname neq(UserRole.SUPER_USER.displayName)
          }.map {
-             UserTypesDTO(id = it[UserTypes.id].value,
-                 displayName = it[UserTypes.displayname])
+             UserTypesDTO(
+                 id = it[UserTypes.id].value,
+                 displayName = it[UserTypes.displayname]
+             )
          }
-
     }
 
 
@@ -287,7 +292,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             phoneNumber = row[AppUsers.phoneNumber],
             isApproved = row[AppUsers.isApproved],
             isActive = row[AppUsers.isActive],
-            userTypeId =row[AppUsers.userTypeId]?.value,
+            userTypeId = row[AppUsers.userTypeId]?.value,
             organizationId = row[AppUsers.organizationId]?.value,
             sectionId = row[AppUsers.sectionId]?.value
         )

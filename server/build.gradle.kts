@@ -1,4 +1,4 @@
-
+import org.gradle.api.file.DuplicatesStrategy
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.kotlinSerialization)
@@ -38,7 +38,7 @@ dependencies {
     implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
 
-    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+   implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     //Exposed
@@ -56,14 +56,28 @@ dependencies {
     // Koin for DI
     implementation("io.insert-koin:koin-core:3.3.3")
     implementation("io.insert-koin:koin-ktor:$oldKtor")
+
     implementation(files("libs/kompendium-core-3.14.1-SNAPSHOT.jar"))
     implementation(files("libs/kompendium-json-schema-3.14.1-SNAPSHOT.jar"))
     implementation(files("libs/kompendium-oas-3.14.1-SNAPSHOT.jar"))
 
     implementation("org.instancio:instancio-core:2.14.0")
     implementation("at.favre.lib:bcrypt:0.10.2")
-
-
+}
+// 🔥 Exclude duplicates in packaging tasks
+tasks.withType<Jar> {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
+tasks.withType<Copy> {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// Apply also to distTar and distZip explicitly
+tasks.named<Zip>("distZip") {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+tasks.named<Tar>("distTar") {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
 
