@@ -8,6 +8,7 @@ import org.montigny.client.data.api.implementation.UserApiImpl
 import org.montigny.client.data.api.implementation.provideHttpClient
 import org.montigny.client.data.api.repository.UserApi
 import org.montigny.client.ui.users.viewModels.AuthViewModel
+import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -21,8 +22,8 @@ val appModule = module {
 
 
     single <HttpClient>{provideHttpClient(get())}
-    single<UserApi> {UserApiImpl(get(), get())}
+    single<UserApi> {UserApiImpl(get(), get(), get ())}
     single {AuthViewModel(get(),get(),get()) }
-
+    single { UserViewModel(get(), get(), get()) }
 
 }

@@ -11,14 +11,17 @@ class UserTypeRepositoryImpl(private val db: AppDatabase) : UserTypeRepository {
     private val queries = db.appDatabaseQueries
 
     override suspend fun insert(userType: User_type) {
-        queries.insertUserType(
-            id = userType.id,
-            created_at = userType.created_at,
-            updated_at = userType.updated_at,
-            created_by = userType.created_by,
-            updated_by = userType.updated_by,
-            displayname = userType.displayname
-        )
+
+        queries.transaction{
+            queries.insertUserType(
+                id = userType.id,
+                created_at = userType.created_at,
+                updated_at = userType.updated_at,
+                created_by = userType.created_by,
+                updated_by = userType.updated_by,
+                displayname = userType.displayname
+            )
+        }
     }
 
     override suspend fun getAll(): List<User_type> =
@@ -30,4 +33,8 @@ class UserTypeRepositoryImpl(private val db: AppDatabase) : UserTypeRepository {
     override suspend fun delete(id: String) {
         queries.deleteUserTypeById(id)
     }
+
+
+    override suspend fun deleteAllUserType() = queries.deleteAllUserType()
+
 }

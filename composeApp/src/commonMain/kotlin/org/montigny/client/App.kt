@@ -9,18 +9,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
-import org.koin.java.KoinJavaComponent.inject
 import org.montigny.client.auth.SessionManager
-import org.montigny.client.data.api.repository.UserApi
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.NavGraph
 import org.montigny.client.navigation.Navigator
 import org.montigny.client.ui.settings.SettingsNavItem
 import org.montigny.client.ui.users.viewModels.AuthViewModel
+import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.slf4j.Logger
 
 @Composable
-fun App(sessionManager: SessionManager, authViewModel: AuthViewModel) {
+fun App(sessionManager: SessionManager, authViewModel: AuthViewModel, usersViewModel: UserViewModel) {
     MaterialTheme {
         val logger: Logger  = koinInject()
         logger.info("Desktop app started ")
@@ -67,7 +66,7 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel) {
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background
             ) {
-                NavGraph(navigator, authViewModel,sessionManager)
+                NavGraph(navigator, authViewModel,sessionManager,usersViewModel)
             }
         }
     }

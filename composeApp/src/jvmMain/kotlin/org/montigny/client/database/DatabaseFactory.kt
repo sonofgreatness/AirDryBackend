@@ -7,7 +7,11 @@ object DatabaseFactory : DatabaseProvider {
     override val database: AppDatabase by lazy {
         val dbFile = getDatabasePath()
         val driver = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
-        AppDatabase.Schema.create(driver)
+        if (!dbFile.exists()) {
+            AppDatabase.Schema.create(driver)
+        } else {
+            AppDatabase.Schema.migrate(driver, AppDatabase.Schema.version, AppDatabase.Schema.version)
+        }
         AppDatabase(driver)
     }
 

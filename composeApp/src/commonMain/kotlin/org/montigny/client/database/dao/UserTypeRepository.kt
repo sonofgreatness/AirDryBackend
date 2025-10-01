@@ -7,4 +7,5 @@ interface UserTypeRepository {
     suspend fun getAll(): List<User_type>
     suspend fun getById(id: String): User_type?
     suspend fun delete(id: String)
+    suspend fun deleteAllUserType()
 }

@@ -98,3 +98,7 @@ WHERE id = ?;
 deleteUserTypeById:
 DELETE FROM user_type
 WHERE id = ?;
+
+-- Delete user_type
+deleteAllUserType:
+DELETE FROM user_type;
