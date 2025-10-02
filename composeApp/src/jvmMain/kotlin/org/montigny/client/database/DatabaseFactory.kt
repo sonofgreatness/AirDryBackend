@@ -6,6 +6,7 @@ import java.io.File
 object DatabaseFactory : DatabaseProvider {
     override val database: AppDatabase by lazy {
         val dbFile = getDatabasePath()
+        println("Db file created: ${dbFile.absolutePath}")
         val driver = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
         if (!dbFile.exists()) {
             AppDatabase.Schema.create(driver)

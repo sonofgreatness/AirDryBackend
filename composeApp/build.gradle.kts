@@ -58,6 +58,9 @@ kotlin {
                 implementation("org.slf4j:slf4j-api:2.0.13")
                 implementation("ch.qos.logback:logback-classic:1.4.14")
                 implementation("app.cash.sqldelight:runtime:${sqldelightVersion}")
+                implementation(libs.multiplatform.settings)
+                implementation(libs.multiplatform.settings.no.arg)
+                implementation(libs.kotlinx.datetime)
 
                 implementation(projects.shared)
             }

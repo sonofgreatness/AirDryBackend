@@ -3,10 +3,6 @@
 ----------------------------------------------------------------------
 CREATE TABLE user_type (
     id             TEXT PRIMARY KEY NOT NULL,
-    created_at     TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
-    updated_at     TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
-    created_by     TEXT,
-    updated_by     TEXT,
     displayname    TEXT NOT NULL
 );
 
@@ -82,8 +78,8 @@ CREATE TABLE app_user (
 
 -- Insert a new user_type
 insertUserType:
-INSERT INTO user_type(id, created_at, updated_at, created_by, updated_by, displayname)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO user_type(id,displayname)
+VALUES (?, ?);
 
 -- Get all user_types
 selectAllUserTypes:
@@ -102,3 +98,74 @@ WHERE id = ?;
 -- Delete user_type
 deleteAllUserType:
 DELETE FROM user_type;
+
+---------------------------------
+-- AppUser Queries
+----------------------------------
+
+insertAppUser:
+INSERT INTO app_user (
+    id,
+    name,
+    surname,
+    phone_number,
+    secondary_phone_number,
+    is_approved,
+    is_active,
+    user_type_id,
+    organization_id,
+    department_id,
+    section_id,
+    email,
+    password_hash
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+
+-- Insert minimal AppUser
+insertMinimalAppUser:
+INSERT INTO app_user (
+    id,
+    name,
+    surname,
+    phone_number
+)
+VALUES (?, ?, ?, ?);
+
+-- Delete all users
+deleteAllUsers:
+DELETE FROM app_user;
+
+
+selectUserById:
+SELECT * FROM app_user WHERE id = ?;
+
+selectUserByPhone:
+SELECT * FROM app_user WHERE phone_number = ?;
+
+selectUserByEmail:
+SELECT * FROM app_user WHERE email = ?;
+
+selectAllUsers:
+SELECT
+    u.id,
+    u.name,
+    u.surname,
+    u.phone_number,
+    u.secondary_phone_number,
+    u.email,
+    u.is_active,
+    u.is_approved,
+    u.user_type_id,
+    ut.displayname AS user_type_name,
+    u.organization_id,
+    o.displayname AS organization_name,
+    u.department_id,
+    d.displayname AS department_name,
+    u.section_id,
+    s.displayname AS section_name
+FROM app_user u
+LEFT JOIN user_type ut ON u.user_type_id = ut.id
+LEFT JOIN organization o ON u.organization_id = o.id
+LEFT JOIN department d ON u.department_id = d.id
+LEFT JOIN section s ON u.section_id = s.id;

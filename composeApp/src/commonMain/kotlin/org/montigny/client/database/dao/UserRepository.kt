@@ -1,0 +1,23 @@
+package org.montigny.client.database.dao
+
+import org.com.client.database.App_user
+import org.com.client.database.SelectAllUsers
+import org.com.client.database.User_type
+import org.montigny.client.dto.User.UserRegisterRequest
+import org.montigny.client.dto.User.UserResponse
+
+interface UserRepository {
+    suspend fun deleteAllUsers()
+    suspend fun insertAppUser(user: UserRegisterRequest)
+    suspend fun insertMinimalAppUser(user: UserRegisterRequest)
+    suspend fun selectAllUsers() : List<UserResponse>?
+    suspend fun selectUserById(id: String): UserRegisterRequest?
+    suspend fun selectUserByEmail(email: String): UserRegisterRequest?
+
+    suspend fun insert(userType: User_type)
+    suspend fun getAll(): List<User_type>
+    suspend fun getById(id: String): User_type?
+    suspend fun delete(id: String)
+    suspend fun deleteAllUserType()
+
+}

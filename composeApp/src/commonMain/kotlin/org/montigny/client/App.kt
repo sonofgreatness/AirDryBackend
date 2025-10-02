@@ -4,6 +4,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Assessment
+import androidx.compose.material.icons.outlined.Business
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Workspaces
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -13,6 +17,8 @@ import org.montigny.client.auth.SessionManager
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.NavGraph
 import org.montigny.client.navigation.Navigator
+import org.montigny.client.ui.Theme.Neutral
+import org.montigny.client.ui.Theme.TimberTheme
 import org.montigny.client.ui.settings.SettingsNavItem
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
@@ -20,8 +26,8 @@ import org.slf4j.Logger
 
 @Composable
 fun App(sessionManager: SessionManager, authViewModel: AuthViewModel, usersViewModel: UserViewModel) {
-    MaterialTheme {
-        val logger: Logger  = koinInject()
+    TimberTheme {
+        val logger: Logger = koinInject()
         logger.info("Desktop app started ")
 
         val navigator = remember { Navigator() }
@@ -31,42 +37,80 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel, usersViewM
                 modifier = Modifier.fillMaxHeight(),
                 containerColor = MaterialTheme.colorScheme.surfaceVariant
             ) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(16.dp))
+
+                // USERS
                 NavigationRailItem(
                     selected = navigator.currentDestination.value == Destination.Users,
                     onClick = { navigator.navigateTo(Destination.Users) },
-                    icon = { Icon(Icons.Default.People, contentDescription = "Users") }
+                    icon = {
+                        Icon(
+                            Icons.Outlined.People,
+                            contentDescription = "Users",
+                            tint = if (navigator.currentDestination.value == Destination.Users)
+                                MaterialTheme.colorScheme.primary else Neutral
+                        )
+                    },
+                    label = { Text("Users", style = MaterialTheme.typography.labelSmall) }
                 )
+
+                // ORGANIZATIONS
                 NavigationRailItem(
                     selected = navigator.currentDestination.value == Destination.Organizations,
-                    onClick = {navigator.navigateTo(Destination.Organizations) },
-                    icon = { Icon(Icons.Default.Business, contentDescription = "Organizations") }
+                    onClick = { navigator.navigateTo(Destination.Organizations) },
+                    icon = {
+                        Icon(
+                            Icons.Outlined.Business,
+                            contentDescription = "Organizations",
+                            tint = if (navigator.currentDestination.value == Destination.Organizations)
+                                MaterialTheme.colorScheme.primary else Neutral
+                        )
+                    },
+                    label = { Text("Orgs", style = MaterialTheme.typography.labelSmall) }
                 )
-                /*NavigationRailItem(
-                    selected = currentDestination == Destination.Login,
-                    onClick = { currentDestination = Destination.Login },
-                    icon = { Icon(Icons.Default.Login, contentDescription = "Login") }
-                )*/
+
+                // WORK
                 NavigationRailItem(
                     selected = navigator.currentDestination.value == Destination.Work,
                     onClick = { navigator.navigateTo(Destination.Work) },
-                    icon = { Icon(Icons.Default.Work, contentDescription = "Work") }
+                    icon = {
+                        Icon(
+                            Icons.Outlined.Workspaces,
+                            contentDescription = "Work",
+                            tint = if (navigator.currentDestination.value == Destination.Work)
+                                MaterialTheme.colorScheme.primary else Neutral
+                        )
+                    },
+                    label = { Text("Work", style = MaterialTheme.typography.labelSmall) }
                 )
 
+                // REPORTS
                 NavigationRailItem(
-                    selected = navigator.currentDestination.value  == Destination.Reports,
+                    selected = navigator.currentDestination.value == Destination.Reports,
                     onClick = { navigator.navigateTo(Destination.Reports) },
-                    icon = { Icon(Icons.Default.Assessment, contentDescription = "Reports") }
+                    icon = {
+                        Icon(
+                            Icons.Outlined.Assessment,
+                            contentDescription = "Reports",
+                            tint = if (navigator.currentDestination.value == Destination.Reports)
+                                MaterialTheme.colorScheme.primary else Neutral
+                        )
+                    },
+                    label = { Text("Reports", style = MaterialTheme.typography.labelSmall) }
                 )
+
                 Spacer(Modifier.weight(1f))
-                SettingsNavItem(sessionManager = sessionManager,navigator)
+
+                // SETTINGS AT BOTTOM
+                SettingsNavItem(sessionManager = sessionManager, navigator = navigator)
             }
-            // main content area -> delegated to NavGraph
+
+            // ------- MAIN CONTENT AREA -------
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background
             ) {
-                NavGraph(navigator, authViewModel,sessionManager,usersViewModel)
+                NavGraph(navigator, authViewModel, sessionManager, usersViewModel)
             }
         }
     }
