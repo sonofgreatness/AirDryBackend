@@ -1,15 +1,33 @@
 package org.montigny.client.database.daoImp
 
+import io.ktor.client.call.body
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import org.com.client.database.User_type
+import org.montigny.client.API_URL_USER_LOGIN
+import org.montigny.client.App
+import org.montigny.client.auth.OfflineSessionManager
+import org.montigny.client.auth.SessionManager
 import org.montigny.client.database.AppDatabase
+import org.montigny.client.database.PasswordHasher
 import org.montigny.client.database.dao.UserRepository
+import org.montigny.client.dto.Auth.AuthRequest
+import org.montigny.client.dto.Auth.AuthResponse
 import org.montigny.client.dto.User.NamedEntityResponse
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
+import org.montigny.client.util.Constants.Companion.FAILED_LOGIN
+import org.montigny.client.util.stateClasses.ApiResponse
+import org.slf4j.Logger
 import java.util.UUID
 import kotlin.jvm.Throws
 
-class UserRepositoryImpl(private val db: AppDatabase): UserRepository {
+class UserRepositoryImpl(private val db: AppDatabase,
+                         private val passwordHasher: PasswordHasher,
+private val offlineSessionManager: OfflineSessionManager,
+                         private val logger : Logger): UserRepository {
 
     private val queries = db.appDatabaseQueries
     override suspend fun deleteAllUsers() {
@@ -33,8 +51,9 @@ class UserRepositoryImpl(private val db: AppDatabase): UserRepository {
                     organization_id = user.organizationId?.toString(),
                     department_id = user.departmentId?.toString(),
                     section_id = user.sectionId?.toString(),
-                    password_hash = user.password,
-                )
+                    password_hash =user.password,
+                    is_pending_update = 0L,
+                    is_pending_insert =  0L)
             }
         }
         catch (e:Exception){
@@ -104,6 +123,7 @@ class UserRepositoryImpl(private val db: AppDatabase): UserRepository {
             queries.insertUserType(
                 id = userType.id,
                 displayname = userType.displayname
+                ,0L,0L
             )
         }
     }
@@ -123,6 +143,42 @@ class UserRepositoryImpl(private val db: AppDatabase): UserRepository {
 
 
     override suspend fun deleteAllUserType() = queries.deleteAllUserType()
+
+
+
+
+    override suspend fun authenticate(email: String, password: String): ApiResponse {
+        val row = queries.selectUserByEmail(email).executeAsOneOrNull()
+            ?: return ApiResponse.Error(403, "No user found with email: $email")
+
+        val storedHash = row.password_hash
+            ?: return ApiResponse.Error(403, "No password hash stored for $email")
+
+        logger.info("🔍 Offline auth: email=$email storedHash=$storedHash")
+
+        return if (passwordHasher.verify(password, storedHash)) {
+            ApiResponse.Created(row.id)
+        } else {
+            logger.warn("❌ Password verification failed for user=$email hash=$storedHash")
+            ApiResponse.Error(403, "Password verification failed")
+        }
+    }
+
+
+
+    override suspend fun offlineLogin(username: String, password: String): ApiResponse {
+        val auth = authenticate(username, password)
+        return when (auth) {
+            is ApiResponse.Created -> {
+                offlineSessionManager.login(auth.id)
+                auth
+            }
+            else -> auth // propagate the ApiResponse.Error with details
+        }
+    }
+    override fun offlineLogout() {
+        offlineSessionManager.logout()
+    }
 
     private  fun convertBoolToLong(value: Boolean) = if (value) 1L else 0L
 

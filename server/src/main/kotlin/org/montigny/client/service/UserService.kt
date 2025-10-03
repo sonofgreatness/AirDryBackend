@@ -53,6 +53,9 @@ class UserService(private val userRepo: UserRepository, private val jwtProvider:
     ):PaginatedResponse<UserResponse> =userRepo.getUsersFiltered(currentUser,page,pageSize,filters);
 
     fun findById(id: UUID): UserRegisterRequest? = userRepo.findById(id)
+    fun getUserUnPaginated(currentUserDTO: CurrentUserDTO):List<UserRegisterRequest> = userRepo.getUserUnPaginated(currentUserDTO)
+
+
 
 }
 

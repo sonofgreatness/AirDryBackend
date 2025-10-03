@@ -13,4 +13,4 @@ const val API_URL_USER_DELETE = "users/{id}/delete"
 const val API_URL_USER_CURRENT = "/users/current"
 const val API_USER_SEARCH   = "/users/search_users"
 const val API_USER_GET_BY_ID = "/user/{id}/get_by_id"
-
+const val API_URL_USERS_UNPAGED = "/users/get_all_users_unpaged"

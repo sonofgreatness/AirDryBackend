@@ -5,51 +5,38 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Card
 import androidx.compose.material.Icon
-import androidx.compose.material.Surface
 import androidx.compose.material.TabRowDefaults.Divider
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Group
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.stylusHoverIcon
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import org.koin.compose.koinInject
 import org.montigny.client.dto.User.UserResponse
+import org.montigny.client.navigation.Destination
+import org.montigny.client.navigation.Navigator
 import org.montigny.client.ui.Theme.Danger
-import org.montigny.client.ui.Theme.Info
-import org.montigny.client.ui.Theme.Merriweather
 import org.montigny.client.ui.Theme.Neutral
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import org.montigny.client.ui.Theme.TextMuted
-import org.montigny.client.ui.Theme.TimberTypography
 import org.montigny.client.ui.users.viewModels.UserViewModel
 
 
-
-
 @Composable
-fun UsersScreen(userViewModel: UserViewModel) {
+fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
     val users by userViewModel.users.collectAsState()
     val listState = rememberLazyListState()
+    val isSyncing by userViewModel.isSyncing.collectAsState()
 
     Column(
         modifier = Modifier
@@ -57,7 +44,7 @@ fun UsersScreen(userViewModel: UserViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // ------- DASHBOARD REGION (unchanged) -------
+        // ------- DASHBOARD REGION -------
         Surface(
             tonalElevation = 6.dp,
             shadowElevation = 8.dp,
@@ -92,43 +79,84 @@ fun UsersScreen(userViewModel: UserViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(onClick = { userViewModel.populateUsers() }) {
-                    Text("Create New User")
+                // Sync Button - far left
+                Button(
+                    onClick = {
+                        userViewModel.synchronizeUserData()
+                    },
+                    enabled = !isSyncing
+                ) {
+                    if (isSyncing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Syncing")
+                    } else {
+                        Icon(Icons.Default.Refresh, contentDescription = "Sync Users")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Sync")
+                    }
+                }
+                Button(
+                    onClick = { navigator.navigateTo(Destination.CreateAccount) }
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Create User")
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Create")
                 }
             }
         }
 
-        // ------- LIST REGION (takes remaining space and scrolls) -------
+        // ------- LIST REGION -------
         Surface(
             tonalElevation = 6.dp,
             shadowElevation = 10.dp,
             shape = MaterialTheme.shapes.medium,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f), // important: gives the list a constrained height so LazyColumn can scroll
+                .weight(1f),
             color = MaterialTheme.colorScheme.surface
         ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                items(items = users, key = { it.id.toString() }) { user ->
-                    UserRow(
-                        user = user,
-                        onEdit = { /* TODO */ },
-                        onDelete = { /* TODO */ }
+            if (users.isEmpty()) {
+                // Placeholder when no users
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No users available",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(items = users, key = { it.id.toString() }) { user ->
+                        UserRow(
+                            user = user,
+                            onEdit = { /* TODO */ },
+                            onDelete = { /* TODO */ }
+                        )
+                    }
                 }
             }
         }
     }
 }
+
 
 
 @Composable
@@ -200,7 +228,7 @@ fun UserRow(user: UserResponse, onEdit: () -> Unit, onDelete: () -> Unit) {
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
                 )
                 Text("📧 ${user.email}", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
-                Text("📱 ${user.phoneNumber}", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
+                Text("📱 ${user.phoneNumber} / ${user.secondaryPhoneNumber}", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
                 Text("Role: ${user.userType?.displayName ?: "NONE"}", style = MaterialTheme.typography.bodySmall)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

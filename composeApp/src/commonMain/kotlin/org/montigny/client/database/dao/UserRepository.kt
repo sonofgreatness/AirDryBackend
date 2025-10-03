@@ -5,6 +5,7 @@ import org.com.client.database.SelectAllUsers
 import org.com.client.database.User_type
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
+import org.montigny.client.util.stateClasses.ApiResponse
 
 interface UserRepository {
     suspend fun deleteAllUsers()
@@ -19,5 +20,10 @@ interface UserRepository {
     suspend fun getById(id: String): User_type?
     suspend fun delete(id: String)
     suspend fun deleteAllUserType()
+
+    suspend fun authenticate(email: String, password: String): ApiResponse
+    suspend fun offlineLogin(username: String, password: String): ApiResponse
+     fun offlineLogout()
+
 
 }

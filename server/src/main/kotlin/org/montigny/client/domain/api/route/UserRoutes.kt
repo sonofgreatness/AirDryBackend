@@ -16,6 +16,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 import org.montigny.client.API_URL_ADMIN_REGISTER
+import org.montigny.client.API_URL_USERS_UNPAGED
 import org.montigny.client.API_URL_USERTYPES_GET_ALL
 import org.montigny.client.API_URL_USER_CURRENT
 import org.montigny.client.API_URL_USER_DELETE
@@ -82,22 +83,6 @@ fun Route.userRoutes(userService: UserService) {
         }
 
             post {
-                /*  val superUser = UserRegisterRequest(
-                "Simphiwe",
-                surname = "Magagula",
-                phoneNumber = "76911464",
-                secondaryPhoneNumber = "79487461",
-                userTypeId =UUID.fromString("fdb72c7b-1ef8-4ca1-a488-4d4f33a219ea") ,
-                organizationId = null,
-                departmentId = null,
-                sectionId = null,
-                email = "simphiweiq@gmail.com",
-                password = "myverystrongpassword"
-            )
-            val createdUserId = userService.registerUser(superUser)
-            call.respond(HttpStatusCode.Created, IdResponse(createdUserId.toString()))
-            */
-
                 try {
                     val req = call.receive<UserRegisterRequest>()
                     val id = userService.registerUser(req)
@@ -531,5 +516,38 @@ fun Route.userRoutes(userService: UserService) {
     }
 
 
+
+    route(API_URL_USERS_UNPAGED){
+        install(NotarizedRoute()){
+            tags = setOf("User")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            get  = GetInfo.builder {
+                summary("Get all users")
+                description(GET_USERS_DESCRIPTION_TYPE)
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<UserRegisterRequest>>()
+                    description("Get all users")
+                }
+            }
+            authorize(userService, UserRole.ADMIN) {
+                get{
+                    try {
+                        val currentUser = UserUtils.getLoggedInUser(call)
+                        val users = userService.getUserUnPaginated(currentUser)
+                        call.respond(HttpStatusCode.OK, users)
+                    }catch (e: IllegalArgumentException) {
+                        call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid credentials", 401))
+                    } catch (e: IllegalStateException) {
+                        call.respond(HttpStatusCode.Forbidden, ErrorResponse(e.message ?: "User not active or approved", 403))
+                    } catch (e: Exception) {
+                        call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Unexpected server error", 500))
+                    }
+
+                }
+            }
+        }
+
+    }
 }
 

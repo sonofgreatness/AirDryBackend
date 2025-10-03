@@ -8,6 +8,7 @@ import org.montigny.client.ui.reports.ReportsScreen
 import org.montigny.client.ui.settings.MainSettingsScreen
 import org.montigny.client.ui.settings.SettingsScreen
 import org.montigny.client.ui.users.LoginScreen
+import org.montigny.client.ui.users.UserFormScreen
 import org.montigny.client.ui.users.UsersScreen
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
@@ -23,7 +24,7 @@ fun NavGraph(
     val currentDestination by navigator.currentDestination
 
     when (currentDestination) {
-        Destination.Users -> UsersScreen(usersViewModel)
+        Destination.Users -> UsersScreen(usersViewModel,navigator)
         Destination.Organizations -> OrganizationsScreen()
         Destination.Work -> WorkScreen()
         Destination.Reports -> ReportsScreen()
@@ -32,5 +33,7 @@ fun NavGraph(
             navigator.navigateTo(Destination.Settings)
         }
         Destination.MainSettings -> MainSettingsScreen()
+        Destination.EditUser -> UserFormScreen(usersViewModel)
+        Destination.CreateAccount -> UserFormScreen(usersViewModel)
     }
 }

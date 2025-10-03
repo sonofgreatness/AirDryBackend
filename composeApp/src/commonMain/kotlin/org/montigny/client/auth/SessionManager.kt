@@ -11,7 +11,7 @@ import org.koin.compose.koinInject
 import org.slf4j.Logger
 
 class SessionManager(private val storage: AppStorage,
-    private val logger: Logger,) {
+    private val logger: Logger) {
 
 
     private val _isLoggedIn = MutableStateFlow(decodeJwtToken(storage.get("jwt_token")))
@@ -30,7 +30,7 @@ class SessionManager(private val storage: AppStorage,
         }
 
     fun logout() {
-        jwtToken = null // will automatically update _isLoggedIn
+        jwtToken = null
     }
 
     private fun decodeJwtToken(token: String?): Boolean {
@@ -60,4 +60,8 @@ class SessionManager(private val storage: AppStorage,
             null
         }
     }
+
+
+
+
 }

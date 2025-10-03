@@ -84,6 +84,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 organizationId = row[AppUsers.organizationId]?.value,
                 sectionId = row[AppUsers.sectionId]?.value,
                 email = row[AppUsers.email],
+                password = row[AppUsers.passwordHash].toString()
             )
         }.singleOrNull()
     }
@@ -184,8 +185,6 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
          }
     }
 
-
-
     override fun updateUser(id: UUID, req: UpdateUserDTO) = transaction {
         // 1. Load the current user row
         val currentUser = AppUsers.select { AppUsers.id eq id }.firstOrNull()
@@ -242,13 +241,9 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
         }
     }
 
-
-
     override fun deleteUserId(userId: UUID): Int = transaction {
         AppUsers.deleteWhere { AppUsers.id eq userId }
     }
-
-
 
     private  fun getPossibleDepartmentIdsForUser(userId: UUID): List<UUID> = transaction {
         // Get the user's current organization
@@ -283,7 +278,6 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
     override fun authenticateByPhoneAndPassword(email: String, password: String): UserRegisterRequest? = transaction {
         val row = AppUsers.select { AppUsers.email eq email }.singleOrNull() ?: return@transaction null
         val storedHash = row[AppUsers.passwordHash] ?: return@transaction null
-        println(" User row ==> $row     hash = $storedHash")
         if (!passwordHasher.verify(password, storedHash)) return@transaction null
         UserRegisterRequest(
             id = row[AppUsers.id].value,
@@ -426,7 +420,19 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
     }
 
 
-
-
+    override fun getUserUnPaginated(currentUserDTO: CurrentUserDTO):List<UserRegisterRequest> =transaction{
+        val currentOrgId = currentUserDTO.organizationId
+        AppUsers.select {
+            AppUsers.organizationId eq currentOrgId
+        }.map {
+            UserRegisterRequest(
+                id = it[AppUsers.id].value, name = it[AppUsers.name],
+                surname = it[AppUsers.surname], phoneNumber = it[AppUsers.phoneNumber],
+                secondaryPhoneNumber = it[AppUsers.secondaryPhone], departmentId = it[AppUsers.departmentId]?.value,
+                email = it[AppUsers.email], sectionId = it[AppUsers.sectionId]?.value,isActive = it[AppUsers.isActive],
+                isApproved = it[AppUsers.isApproved], userTypeId = it[AppUsers.userTypeId]?.value,
+                organizationId = it[AppUsers.organizationId]?.value, password = it[AppUsers.passwordHash]!!)
+        }
+    }
 
 }

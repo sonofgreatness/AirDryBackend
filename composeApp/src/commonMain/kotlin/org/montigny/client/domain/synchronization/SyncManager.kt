@@ -23,19 +23,18 @@ class SyncManager(private val userApi : UserApi,
 
 )
 {
-
-
-
-
       suspend  fun downloadAndInsertUserTypes() {
 
         val remoteUserTypes: List<UserTypesDTO> = userApi.getUserTypes()
         val localUserTypes = userRepository.getAll()
+
         if(localUserTypes.isNotEmpty())
          userRepository.deleteAllUserType()
         val newInserts =  remoteUserTypes.map { User_type(
             id = it.id.toString(),
-            displayname = it.displayName)
+            displayname = it.displayName,
+            0L,
+            is_pending_update = 0L)
         }
         newInserts.forEach {
             type -> userRepository.insert(type)
@@ -44,19 +43,9 @@ class SyncManager(private val userApi : UserApi,
 
     suspend fun  downloadAndInsertUsers(){
         try {
-            val remoteUsers: List<UserRegisterRequest> = userApi.getUsers().items.map {
-                UserRegisterRequest(
-                    id = it.id, name = it.name, email = it.email,
-                    phoneNumber = it.phoneNumber, secondaryPhoneNumber = it.secondaryPhoneNumber,
-                    userTypeId = it.userType?.id, organizationId = it.organization?.id,
-                    departmentId = it.department?.id, sectionId = it.section?.id,
-                    isApproved = it.isApproved, isActive = it.isActive
-                )
-            }
-
+            val remoteUsers: List<UserRegisterRequest> = userApi.getUsersUnPaged()
             val localUsers = userRepository.selectAllUsers()
-
-            if (localUsers?.isNotEmpty() == true)
+            if (!localUsers.isNullOrEmpty())
                 userRepository.deleteAllUsers()
             remoteUsers.forEach {
                 userRepository.insertAppUser(it)
@@ -64,7 +53,6 @@ class SyncManager(private val userApi : UserApi,
         }catch (e:Exception){
             println("Download failed ${e.localizedMessage}")
         }
-
     }
 
     private fun isDataStale(): Boolean{
@@ -80,5 +68,4 @@ class SyncManager(private val userApi : UserApi,
             currentTimestamp - savedTimestamp
         return difference.hours >= 24.hours
     }
-
 }

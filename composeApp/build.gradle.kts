@@ -62,7 +62,9 @@ kotlin {
                 implementation(libs.multiplatform.settings.no.arg)
                 implementation(libs.kotlinx.datetime)
 
+                implementation("at.favre.lib:bcrypt:0.10.2")
                 implementation(projects.shared)
+
             }
         }
 

@@ -8,17 +8,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
+import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.UserApi
+import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.util.Constants.Companion.FAILED_LOGIN
 import org.montigny.client.util.ViewModel
+import org.montigny.client.util.stateClasses.ApiResponse
 import org.montigny.client.util.stateClasses.UiState
 import org.slf4j.Logger
 
 class AuthViewModel(
     private val sessionManager: SessionManager,
+    private val offlineSessionManager: OfflineSessionManager,
                     private  val userApi: UserApi,
-                    private val logger: Logger
+                    private val logger: Logger,
+    private val userRepository: UserRepository
 ) : ViewModel()  {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
@@ -48,24 +53,27 @@ class AuthViewModel(
 
 
     @OptIn(ExperimentalSerializationApi::class)
-
-    fun login() {
+    fun login(isNetworkAvailable: Boolean = false) {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             try {
-                logger.debug("Attempting login for $username")
-                userApi.login(username, password) // may throw MissingFieldException
+                if (!isNetworkAvailable) {
+                val response = userRepository.offlineLogin(username, password)
+                when (response) {
+                    is ApiResponse.Created -> {
+                        _uiState.value = UiState.Success
+                    }
+                    is ApiResponse.Error -> {
+                        logger.warn("Offline login failed ❌ code=${response.code} msg=${response.message}")
+                        _uiState.value = UiState.Error("Offline login failed: ${response.message}")
+                    }
 
-                _uiState.value = UiState.Success
-
-                logger.debug("Login successful for $username")
-            } catch (e: kotlinx.serialization.MissingFieldException) {
-                logger.warn("Invalid credentials for $username", e)
-                _uiState.value = UiState.Error("Invalid username or password")
-            } catch (e: io.ktor.serialization.JsonConvertException) {
-                val msg = e.message ?: "Serialization error"
-                logger.error("Login failed ❌ $msg", e)
-                _uiState.value = UiState.Error(FAILED_LOGIN)
+                    else -> {_uiState.value = UiState.Success}
+                }
+                } else {
+                    userApi.login(username, password)
+                    _uiState.value = UiState.Success
+                }
             } catch (e: Exception) {
                 val msg = e.message ?: "Unexpected error"
                 logger.error("Login failed ❌ $msg", e)
@@ -73,5 +81,16 @@ class AuthViewModel(
             }
         }
     }
+
+
+
+    enum class LoginMode { ONLINE, OFFLINE }
+
+    data class AuthResult(
+        val mode: LoginMode,
+        val success: Boolean,
+        val message: String? = null
+    )
+
 
 }

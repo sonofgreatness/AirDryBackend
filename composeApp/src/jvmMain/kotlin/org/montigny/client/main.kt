@@ -4,6 +4,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
+import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.di.appModule
 import org.montigny.client.di.databaseModule
@@ -20,7 +21,8 @@ fun main() = application {
         }
        val sessionManager: SessionManager = koinInject()
        val authViewModel: AuthViewModel = koinInject()
-        val usersViewModel: UserViewModel = koinInject()
-       App(sessionManager,authViewModel,usersViewModel)
+       val usersViewModel: UserViewModel = koinInject()
+        val offlineSessionManager: OfflineSessionManager = koinInject()
+       App(sessionManager,authViewModel,usersViewModel, offlineSessionManager)
     }
 }

@@ -25,6 +25,8 @@ interface UserRepository {
         pageSize: Int,
         filters: MutableMap<String, String>
     ):PaginatedResponse<UserResponse>
+    fun getUserUnPaginated(currentUserDTO: CurrentUserDTO):List<UserRegisterRequest>
+
 
 
 

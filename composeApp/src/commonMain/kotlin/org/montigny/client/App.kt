@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
+import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.NavGraph
@@ -25,7 +26,7 @@ import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.slf4j.Logger
 
 @Composable
-fun App(sessionManager: SessionManager, authViewModel: AuthViewModel, usersViewModel: UserViewModel) {
+fun App(sessionManager: SessionManager, authViewModel: AuthViewModel, usersViewModel: UserViewModel, offlineSessionManager: OfflineSessionManager) {
     TimberTheme {
         val logger: Logger = koinInject()
         logger.info("Desktop app started ")
@@ -102,7 +103,7 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel, usersViewM
                 Spacer(Modifier.weight(1f))
 
                 // SETTINGS AT BOTTOM
-                SettingsNavItem(sessionManager = sessionManager, navigator = navigator)
+                SettingsNavItem(sessionManager = sessionManager, navigator = navigator, offlineSessionManager = offlineSessionManager)
             }
 
             // ------- MAIN CONTENT AREA -------

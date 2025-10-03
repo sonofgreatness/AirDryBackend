@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.Alignment
 import org.koin.compose.koinInject
+import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.Navigator
@@ -29,12 +30,28 @@ import org.slf4j.Logger
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsNavItem(sessionManager: SessionManager, navigator: Navigator) {
+fun SettingsNavItem(
+    sessionManager: SessionManager,
+    offlineSessionManager: OfflineSessionManager,
+    navigator: Navigator
+) {
     val authViewModel: AuthViewModel = koinInject()
     var expanded by remember { mutableStateOf(false) }
-    val isLoggedIn by sessionManager.isLoggedInFlow.collectAsState()
-    val logger: Logger  = koinInject()
-    logger.info("Is Logged In value : $isLoggedIn")
+    val isOnlineLoggedIn by sessionManager.isLoggedInFlow.collectAsState()
+    val isOfflineLoggedIn by offlineSessionManager.isLoggedInFlow.collectAsState()
+    val logger: Logger = koinInject()
+
+    val isLoggedIn = isOnlineLoggedIn || isOfflineLoggedIn
+    val isOfflineMode = isOfflineLoggedIn && !isOnlineLoggedIn
+
+    val dotColor = when {
+        isOnlineLoggedIn -> MaterialTheme.colorScheme.primary   // online = blue/green
+        isOfflineLoggedIn -> MaterialTheme.colorScheme.tertiary // offline = orange/yellow
+        else -> MaterialTheme.colorScheme.outline               // not logged in = gray
+    }
+
+    logger.info("Online=$isOnlineLoggedIn Offline=$isOfflineLoggedIn")
+
     NavigationRailItem(
         selected = false,
         onClick = { expanded = !expanded },
@@ -42,11 +59,11 @@ fun SettingsNavItem(sessionManager: SessionManager, navigator: Navigator) {
             Box {
                 Icon(Icons.Default.Settings, contentDescription = "Settings")
                 StatusDot(
-                    isOnline = isLoggedIn,
                     modifier = Modifier
                         .size(10.dp)
                         .align(Alignment.TopEnd)
-                        .offset(x = 4.dp, y = (-4).dp)
+                        .offset(x = 4.dp, y = (-4).dp),
+                    color = dotColor
                 )
             }
         }
@@ -65,22 +82,25 @@ fun SettingsNavItem(sessionManager: SessionManager, navigator: Navigator) {
                     authViewModel.resetState()
                     authViewModel.clearFields()
                     navigator.navigateTo(Destination.Login)
-
                 }
             )
         } else {
             DropdownMenuItem(
                 leadingIcon = { Icon(Icons.Default.Logout, contentDescription = "Logout") },
-                text = { Text("Logout") },
+                text = { Text(if (isOfflineMode) "Logout (Offline)" else "Logout") },
                 onClick = {
+                    /*if (isOnlineLoggedIn) sessionManager.logout()
+                    if (isOfflineLoggedIn) offlineSessionManager.logout()*/
                     sessionManager.logout()
+                    offlineSessionManager.logout()
                     expanded = false
-                    authViewModel.resetState()     // ensure stale Success removed
+                    authViewModel.resetState()
                     authViewModel.clearFields()
                     navigator.navigateTo(Destination.Login)
                 }
             )
         }
+
         DropdownMenuItem(
             text = { Text("Main Settings") },
             onClick = {

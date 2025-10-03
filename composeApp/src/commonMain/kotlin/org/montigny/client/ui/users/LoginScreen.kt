@@ -41,12 +41,12 @@ fun LoginScreen(authViewModel: AuthViewModel, sessionManager: SessionManager, on
         PasswordField(
             password = authViewModel.password,
             onPasswordChange = { authViewModel.onPasswordChange(it) },
-            onDone = { authViewModel.login() } // trigger login on IME "Done"
+            onDone = { authViewModel.login() }
         )
 
 
         Button(
-            onClick = { authViewModel.login() },
+            onClick = { authViewModel.login()},
             enabled = uiState !is UiState.Loading
         ) {
             Text(if (uiState is UiState.Loading) "Logging in..." else "Login")
@@ -60,6 +60,7 @@ fun LoginScreen(authViewModel: AuthViewModel, sessionManager: SessionManager, on
             is UiState.Success -> Text(
                 "✅ Logged in successfully!",
                 color = MaterialTheme.colorScheme.primary
+
             )
             else -> {}
         }

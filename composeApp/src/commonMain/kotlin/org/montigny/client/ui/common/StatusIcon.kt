@@ -9,11 +9,24 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-@Composable
+/*@Composable
 fun StatusDot(isOnline: Boolean, modifier: Modifier = Modifier) {
     Canvas(modifier.size(10.dp)) {
         drawCircle(
             color = if (isOnline) Color(0xFF4CAF50) else Color(0xFFF44336), // green/red
+            radius = size.minDimension / 2,
+            center = Offset(size.width / 2, size.height / 2)
+        )
+    }
+}*/
+@Composable
+fun StatusDot(
+    modifier: Modifier = Modifier,
+    color: Color = Color.Gray
+) {
+    Canvas(modifier.size(10.dp)) {
+        drawCircle(
+            color = color,
             radius = size.minDimension / 2,
             center = Offset(size.width / 2, size.height / 2)
         )
