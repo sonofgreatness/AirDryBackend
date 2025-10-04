@@ -61,6 +61,31 @@ private val offlineSessionManager: OfflineSessionManager,
         }
     }
 
+    override suspend fun insertAppUserToCacheForLaterUpload(user: UserRegisterRequest) {
+        try {
+            queries.transaction {
+                queries.insertAppUser(
+                    id = user.id.toString(),
+                    name = user.name,
+                    email = user.email,
+                    surname = user.surname,
+                    phone_number = user.phoneNumber,
+                    secondary_phone_number = user.secondaryPhoneNumber,
+                    is_approved = convertBoolToLong(user.isApproved),
+                    is_active = convertBoolToLong(user.isActive),
+                    user_type_id = user.userTypeId?.toString(),
+                    organization_id = user.organizationId?.toString(),
+                    department_id = user.departmentId?.toString(),
+                    section_id = user.sectionId?.toString(),
+                    password_hash =user.password,
+                    is_pending_update = 1L,
+                    is_pending_insert =  1L)
+            }
+        }
+        catch (e:Exception){
+            println("Error during inserting [cache]${e.localizedMessage}")
+        }
+    }
     override suspend fun insertMinimalAppUser(user: UserRegisterRequest) {
         return
     }

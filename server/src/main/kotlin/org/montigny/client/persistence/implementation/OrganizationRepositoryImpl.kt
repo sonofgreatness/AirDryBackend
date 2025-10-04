@@ -183,13 +183,14 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
 
     override fun getAllDept(currentUserDTO: CurrentUserDTO): List<CreateOrgDTO> =transaction {
        val isSuperUser = isSuperUser(currentUserDTO)
+        println("Departments  id being used ==${currentUserDTO.organizationId}")
         if (isSuperUser){
             Departments.selectAll().map{
                 CreateOrgDTO(id = it[Departments.id].value,
                     displayName = it[Departments.displayname])}
         }else{
             Departments.select{
-                Departments.id eq currentUserDTO.departmentId
+                Departments.organizationId eq currentUserDTO.organizationId
             }.map{
                 CreateOrgDTO(id = it[Departments.id].value,
                     displayName = it[Departments.displayname])
@@ -198,16 +199,17 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
 
     }
 
-    override fun getAllSect(currentUserDTO: CurrentUserDTO): List<CreateOrgDTO> = transaction {
+    override fun getAllSect(currentUserDTO: CurrentUserDTO): List<CreateSectDTO> = transaction {
         val isSuperUser = isSuperUser(currentUserDTO)
 
         if (isSuperUser) {
             Sections
                 .selectAll()
                 .map {
-                    CreateOrgDTO(
+                    CreateSectDTO(
                         id = it[Sections.id].value,
-                        displayName = it[Sections.displayname]
+                        displayName = it[Sections.displayname],
+                        departmentId =it[Sections.departmentId].value
                     )
                 }
         } else {
@@ -216,9 +218,10 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
                 .slice(Sections.id, Sections.displayname)
                 .select { Organizations.id eq orgId }
                 .map {
-                    CreateOrgDTO(
+                    CreateSectDTO(
                         id = it[Sections.id].value,
-                        displayName = it[Sections.displayname]
+                        displayName = it[Sections.displayname],
+                        departmentId =it[Sections.departmentId].value
                     )
                 }
         }

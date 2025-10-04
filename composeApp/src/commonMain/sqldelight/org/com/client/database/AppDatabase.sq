@@ -191,3 +191,32 @@ LEFT JOIN user_type ut ON u.user_type_id = ut.id
 LEFT JOIN organization o ON u.organization_id = o.id
 LEFT JOIN department d ON u.department_id = d.id
 LEFT JOIN section s ON u.section_id = s.id;
+
+-- Department Queries
+getAllDeparts:
+SELECT id, displayname FROM department;
+
+insertMinimalDepartment:
+INSERT INTO department (
+    id,
+    displayname,
+    organization_id,
+    is_pending_insert,
+    is_pending_update
+) VALUES (?, ?, ?, ?, ?);
+
+
+
+-- Section Queries
+selectAllSections:
+SELECT id, displayname, department_id FROM section;
+
+-- Insert minimal section (only required fields)
+insertMinimalSection:
+INSERT INTO section (
+    id,
+    displayname,
+    department_id,
+    is_pending_insert,
+    is_pending_update
+) VALUES (?, ?, ?, ?, ?);

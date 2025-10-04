@@ -5,9 +5,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.com.client.database.User_type
+import org.montigny.client.data.api.repository.OrganizationApi
 import org.montigny.client.data.api.repository.UserApi
+import org.montigny.client.database.dao.OrganizationRepository
 import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.domain.synchronization.SyncManager
+import org.montigny.client.dto.Organization.CreateOrgDTO
+import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.util.ConnectivityObserver
@@ -21,14 +25,22 @@ import kotlin.jvm.Throws
 
 class UserViewModel(private val userRepository: UserRepository,
                     private val userApi: UserApi,
+                    private val organizationRepository: OrganizationRepository,
+                    private val organizationApi: OrganizationApi,
                     private val logger: Logger,
-    private val  connectivityObserver: ConnectivityObserver) : ViewModel() {
+                   private   val syncManager: SyncManager,
+    private val connectivityObserver: ConnectivityObserver
+) : ViewModel() {
 
-
-    val syncManager = SyncManager(userApi,userRepository, settings = Settings())
 
 private val  _useTypes  = MutableStateFlow<List<User_type>> (emptyList())
 val useTypes: StateFlow<List<User_type>> = _useTypes
+
+private val _departments = MutableStateFlow<List<CreateOrgDTO>>(emptyList())
+val  departments: StateFlow<List<CreateOrgDTO>> = _departments
+
+private val _sections = MutableStateFlow<List<CreateSectDTO>>(emptyList())
+val  sections: StateFlow<List<CreateSectDTO>> = _sections
 
 private val _users = MutableStateFlow<List<UserResponse>>(emptyList())
  val users: StateFlow<List<UserResponse>> = _users
@@ -119,7 +131,8 @@ fun resetCreateUserState()
 init {
     populateUserTypes()
     populateUsers()
-
+    populateDepartments()
+    populateSections()
 }
 
     fun synchronizeUserData(){
@@ -130,11 +143,14 @@ init {
         viewModelScope.launch {
             _isSyncing.value = true
             try {
+                println("Dowloading network 00")
                 if (isNetworkAvailable) {
-                    syncManager.downloadAndInsertUserTypes()
-                    syncManager.downloadAndInsertUsers()
+                    println("Dowloading network")
+                    syncManager.downloadUserTypesAndUsers()//deletes old to insert new
+                    syncManager.downLoadDepartmentsAndSections()
                 }
                 populateAUserLists()
+                populateDepartmentsAndSections()
             } catch (e: Exception) {
                 logger.error("Sync failed: ${e.message}")
             } finally {
@@ -202,6 +218,64 @@ private suspend fun pickUserDataSource(isNetworkAvailable: Boolean = false) {
           logger.error("failed to select users Error pickDataSource ${e.message}")
       }
     }
+
+
+fun populateDepartmentsAndSections(){
+    println("Dowloading network --- ${isNetworkAvailable.value}")
+    populateDepartments()
+    populateSections()
+}
+private fun populateDepartments(){
+
+    viewModelScope.launch {
+        try {
+            logger.info("Populating departments")
+            pickDepartmentDataSource(isNetworkAvailable.value)
+        }catch (e: Exception) {
+            logger.error("failed to populate departments Error ${e.message}")
+        }
+    }
+}
+
+private suspend fun pickDepartmentDataSource(isNetworkAvailable: Boolean = false) {
+         try{
+             if (isNetworkAvailable){
+                 val departmentsVariable : List<CreateOrgDTO> =organizationApi.getAllDept()
+                 _departments.value = departmentsVariable
+             }else{
+                 val  departmentsVariable : List<CreateOrgDTO> = organizationRepository.getAllDepartments()
+                 _departments.value = departmentsVariable
+             }
+         }catch (e: Exception){
+             logger.error("failed to populate departments pickDepartmentDataSourceError ${e.message}")
+         }
+    }
+
+private  fun  populateSections(){
+    viewModelScope.launch {
+    try{
+        logger.info("Populating sections")
+        pickSectionDataSource(isNetworkAvailable.value)
+    }
+    catch (e: Exception){
+        logger.error("failed to populate sections Error ${e.message}")
+    }
+    }
+}
+private  suspend fun  pickSectionDataSource(isNetworkAvailable: Boolean = false){
+    try {
+        if(isNetworkAvailable){
+            val sections = organizationApi.getAllSect()
+            _sections.value = sections
+        }
+        else{
+            val sections = organizationRepository.getAllSections()
+            _sections.value = sections
+        }
+    }  catch (e: Exception){}
+
+  }
+
 private    fun deleteUserTypes() {
         viewModelScope.launch {
             try {
@@ -213,13 +287,10 @@ private    fun deleteUserTypes() {
     }
 
 
-    /**
-     * If network is available add to remote Api
-     * if not cache user
-     **/
+
     fun createUser(user: UserRegisterRequest=_createUser.value!!) {
        viewModelScope.launch {
-           pickUserCreateUploadSource(user=user)
+           pickUserCreateUploadSource(isNetworkAvailable.value, user=user)
        }
 
     }
@@ -237,7 +308,7 @@ private    fun deleteUserTypes() {
         }
         else{
             _createUserState.value = UiState.Loading
-            userRepository.insertAppUser(user)
+            userRepository.insertAppUserToCacheForLaterUpload(user=user)
             _createUserState.value = UiState.Success
         }
     }

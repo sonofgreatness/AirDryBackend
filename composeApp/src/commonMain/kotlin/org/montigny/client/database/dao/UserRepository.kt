@@ -10,6 +10,9 @@ import org.montigny.client.util.stateClasses.ApiResponse
 interface UserRepository {
     suspend fun deleteAllUsers()
     suspend fun insertAppUser(user: UserRegisterRequest)
+    suspend fun insertAppUserToCacheForLaterUpload(user: UserRegisterRequest)
+
+
     suspend fun insertMinimalAppUser(user: UserRegisterRequest)
     suspend fun selectAllUsers() : List<UserResponse>?
     suspend fun selectUserById(id: String): UserRegisterRequest?

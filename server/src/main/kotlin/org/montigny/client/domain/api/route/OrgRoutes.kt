@@ -15,6 +15,20 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
+import org.montigny.client.API_URL_ORG_DELETE
+import org.montigny.client.API_URL_ORG_DEPT_ALL
+import org.montigny.client.API_URL_ORG_DEPT_DELETE_BY_ID
+import org.montigny.client.API_URL_ORG_DEPT_GET_BY_ID
+import org.montigny.client.API_URL_ORG_DEPT_REGISTER
+import org.montigny.client.API_URL_ORG_DEPT_UPDATE
+import org.montigny.client.API_URL_ORG_GET_ALL
+import org.montigny.client.API_URL_ORG_GET_BY_ID
+import org.montigny.client.API_URL_ORG_REGISTER
+import org.montigny.client.API_URL_ORG_SECT_ALL
+import org.montigny.client.API_URL_ORG_SECT_DELETE_BY_ID
+import org.montigny.client.API_URL_ORG_SECT_REGISTER
+import org.montigny.client.API_URL_ORG_SECT_UPDATE
+import org.montigny.client.API_URL_ORG_UPDATE
 import org.montigny.client.dto.Common.ErrorResponse
 import org.montigny.client.dto.Common.IdResponse
 import org.montigny.client.dto.Common.SimpleResponse
@@ -44,7 +58,7 @@ import java.util.*
 fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
 
     // ----------------- REGISTER ORGANIZATION -----------------
-    route("/org/register") {
+    route(API_URL_ORG_REGISTER) {
         install(NotarizedRoute()) {
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -117,7 +131,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
         }
     }
     // ----------------- UPDATE ORGANIZATION -----------------
-    route("/org/update") {
+    route(API_URL_ORG_UPDATE) {
         install(NotarizedRoute()) {
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -195,7 +209,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
     }
 
     // ----------------- GET ORGANIZATION -----------------
-    route("/org/{id}/get") {
+    route(API_URL_ORG_GET_BY_ID) {
         install(NotarizedRoute()) {
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -236,7 +250,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
 
 
     // ----------------- DELETE ORGANIZATION -----------------
-    route("/org/delete/{id}") {
+    route(API_URL_ORG_DELETE) {
         install(NotarizedRoute()) {
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -276,7 +290,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
         }
     }
     //================== CREATE DEPARTMENT ============
-    route("/org/department/register") {
+    route(API_URL_ORG_DEPT_REGISTER) {
         install(NotarizedRoute()) {
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -325,7 +339,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
         }
     }
     //==================GET DEPARTMENT==================================
-    route("/org/department/{id}/get"){
+    route(API_URL_ORG_DEPT_GET_BY_ID){
         install(NotarizedRoute()) {
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -366,7 +380,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
             }
         }
     //======== UPDATE DEPARTMENT =======================================
-    route("/org/department/update"){
+    route(API_URL_ORG_DEPT_UPDATE){
         install(NotarizedRoute()){
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -414,8 +428,8 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
             }
         }
     }
-    //=============CREATE DEPARTMENT=============================
-    route("org/department/delete/{id}"){
+    //=============DELETE DEPARTMENT=============================
+    route(API_URL_ORG_DEPT_DELETE_BY_ID){
         install(NotarizedRoute()){
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -456,7 +470,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
     }
 
     //=============CREATE SECTION================================
-    route("org/department/section/register"){
+    route(API_URL_ORG_SECT_REGISTER){
         install(NotarizedRoute()){
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -507,7 +521,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
     }
 
     //================UPDATE SECTION===========================
-    route("org/department/section/update"){
+    route(API_URL_ORG_SECT_UPDATE){
         install(NotarizedRoute()){
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -559,7 +573,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
     }
 
     //==============DELETE SECTION============================
-    route("org/department/section/{id}/delete"){
+    route(API_URL_ORG_SECT_DELETE_BY_ID){
         install(NotarizedRoute()){
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -600,7 +614,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
 
 
     //=================GET ALL ORGS =============
-    route("org/get_all_organizations"){
+    route(API_URL_ORG_GET_ALL){
         install(NotarizedRoute()){
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -633,7 +647,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
         }
         }
     //===============GET ALL DEPARTMENTS================
-    route("org/departments/get_all_departments"){
+    route(API_URL_ORG_DEPT_ALL){
         install(NotarizedRoute()){
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -652,8 +666,8 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
             get{
                 try {
                     val currentUser = UserUtils.getLoggedInUser(call)
-                    val orgs = orgService.getAllDept(currentUser)
-                    call.respond(HttpStatusCode.OK,orgs)
+                    val depts = orgService.getAllDept(currentUser)
+                    call.respond(HttpStatusCode.OK,depts)
                 } catch (e: IllegalStateException) {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
                 } catch (e: IllegalArgumentException) {
@@ -668,7 +682,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
 
 
 //=============GET ALL SECTIONS
-    route("org/departments/get_all_sections"){
+    route(API_URL_ORG_SECT_ALL){
         install(NotarizedRoute()){
             tags = setOf("Organization")
             security = mapOf(BEARER_AUTH_TAG to emptyList())
@@ -677,7 +691,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                 description(GET_SECTS_DESCRIPTION_TYPE)
                 response {
                     responseCode(HttpStatusCode.OK)
-                    responseType<List<UserTypesDTO>>()
+                    responseType<List<CreateSectDTO>>()
                     description(GET_SECTS_DESCRIPTION_TYPE)
                 }
             }

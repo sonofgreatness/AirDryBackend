@@ -228,7 +228,7 @@ fun UserRow(user: UserResponse, onEdit: () -> Unit, onDelete: () -> Unit) {
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
                 )
                 Text("📧 ${user.email}", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
-                Text("📱 ${user.phoneNumber} / ${user.secondaryPhoneNumber}", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
+                Text("📱 ${user.phoneNumber} / ${user.secondaryPhoneNumber?:"NONE" }", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
                 Text("Role: ${user.userType?.displayName ?: "NONE"}", style = MaterialTheme.typography.bodySmall)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

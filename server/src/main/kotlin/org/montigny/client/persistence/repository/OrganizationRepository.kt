@@ -15,7 +15,7 @@ interface OrganizationRepository {
     fun deleteOrgById(currentUser: CurrentUserDTO,orgId: UUID): Int
     fun getAllOrg (currentUserDTO: CurrentUserDTO):List<CreateOrgDTO>
     fun getAllDept(currentUserDTO: CurrentUserDTO):List<CreateOrgDTO>
-    fun getAllSect(currentUserDTO: CurrentUserDTO):List<CreateOrgDTO>
+    fun getAllSect(currentUserDTO: CurrentUserDTO): List<CreateSectDTO>
 
     fun createDept(currentUser: CurrentUserDTO, req: CreateDptDTO) : UUID
     fun getDeptById(dptId: UUID) :CreateDptDTO?

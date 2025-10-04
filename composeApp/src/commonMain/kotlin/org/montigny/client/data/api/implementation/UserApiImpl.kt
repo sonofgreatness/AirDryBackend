@@ -43,11 +43,12 @@ class UserApiImpl(private val client: HttpClient,
         return response
     }
     override suspend  fun findById(id: UUID): UserRegisterRequest? {
-        val response: UserRegisterRequest = client.get("$API_BASE_URL$API_USER_GET_BY_ID") {
+        val response: UserRegisterRequest = client.get("$API_BASE_URL/user/$id/get_by_id") {
             contentType(ContentType.Application.Json)
         }.body()
         return response
     }
+
     override suspend fun getUsers(page: Int, pageSize: Int) :PaginatedResponse<UserResponse>{
         val response : PaginatedResponse<UserResponse> = client.get("$API_BASE_URL$API_URL_USER_GET_ALL"){
             contentType(ContentType.Application.Json)
