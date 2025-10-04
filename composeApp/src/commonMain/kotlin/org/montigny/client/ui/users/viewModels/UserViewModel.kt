@@ -10,6 +10,7 @@ import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.domain.synchronization.SyncManager
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
+import org.montigny.client.util.ConnectivityObserver
 import org.montigny.client.util.ViewModel
 import org.montigny.client.util.stateClasses.ApiResponse
 import org.montigny.client.util.stateClasses.UiState
@@ -20,7 +21,8 @@ import kotlin.jvm.Throws
 
 class UserViewModel(private val userRepository: UserRepository,
                     private val userApi: UserApi,
-                    private val logger: Logger) : ViewModel() {
+                    private val logger: Logger,
+    private val  connectivityObserver: ConnectivityObserver) : ViewModel() {
 
 
     val syncManager = SyncManager(userApi,userRepository, settings = Settings())
@@ -46,7 +48,7 @@ val createUserState: StateFlow<UiState> = _createUserState
 
 private val _isSyncing = MutableStateFlow(false)
 val isSyncing: StateFlow<Boolean> = _isSyncing
-
+val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
 
 
 fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
@@ -119,7 +121,12 @@ init {
     populateUsers()
 
 }
-     fun synchronizeUserData(isNetworkAvailable: Boolean =false) {
+
+    fun synchronizeUserData(){
+        synchronizeUserDataInternal(isNetworkAvailable.value)
+    }
+
+     private fun synchronizeUserDataInternal(isNetworkAvailable: Boolean =false) {
         viewModelScope.launch {
             _isSyncing.value = true
             try {
@@ -136,6 +143,9 @@ init {
         }
     }
 
+
+
+
     fun populateAUserLists(){
         populateUserTypes()
         populateUsers()
@@ -144,7 +154,7 @@ private fun populateUsers(){
     viewModelScope.launch {
         try {
             logger.info("Populating users ")
-            pickUserDataSource()
+            pickUserDataSource(isNetworkAvailable.value)
         }catch (e: Exception) {
             logger.error("failed to populate users Error ${e.message}")
         }
@@ -155,7 +165,7 @@ private fun populateUserTypes() {
         viewModelScope.launch {
             try {
                 logger.info("Populating user types")
-               pickDataSource()
+               pickDataSource(isNetworkAvailable.value)
 
             }catch (e: Exception) {
                 logger.error("failed to populate user types Error ${e.message}")

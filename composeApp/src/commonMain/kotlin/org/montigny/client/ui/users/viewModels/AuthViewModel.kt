@@ -12,6 +12,7 @@ import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.UserApi
 import org.montigny.client.database.dao.UserRepository
+import org.montigny.client.util.ConnectivityObserver
 import org.montigny.client.util.Constants.Companion.FAILED_LOGIN
 import org.montigny.client.util.ViewModel
 import org.montigny.client.util.stateClasses.ApiResponse
@@ -23,11 +24,14 @@ class AuthViewModel(
     private val offlineSessionManager: OfflineSessionManager,
                     private  val userApi: UserApi,
                     private val logger: Logger,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val connectivityObserver: ConnectivityObserver,
 ) : ViewModel()  {
 
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState
+
+    val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
 
     // move form fields here
     var username by mutableStateOf("")
@@ -52,8 +56,15 @@ class AuthViewModel(
 
 
 
+
+
+    fun login()
+    {
+        loginInternal(isNetworkAvailable.value)
+    }
+
     @OptIn(ExperimentalSerializationApi::class)
-    fun login(isNetworkAvailable: Boolean = false) {
+    private fun loginInternal(isNetworkAvailable: Boolean = false) {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
             try {

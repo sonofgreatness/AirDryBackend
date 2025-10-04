@@ -15,6 +15,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
+import org.montigny.client.API_HEALTH
 import org.montigny.client.API_URL_ADMIN_REGISTER
 import org.montigny.client.API_URL_USERS_UNPAGED
 import org.montigny.client.API_URL_USERTYPES_GET_ALL
@@ -26,6 +27,7 @@ import org.montigny.client.API_URL_USER_REGISTER
 import org.montigny.client.API_URL_USER_UPDATE
 import org.montigny.client.API_USER_GET_BY_ID
 import org.montigny.client.API_USER_SEARCH
+import org.montigny.client.SERVER_OK_TEXT
 import org.montigny.client.dto.Auth.AuthRequest
 import org.montigny.client.dto.Auth.AuthResponse
 import org.montigny.client.dto.Common.ErrorResponse
@@ -547,7 +549,24 @@ fun Route.userRoutes(userService: UserService) {
                 }
             }
         }
-
     }
+
+ route(API_HEALTH){
+     install(NotarizedRoute()){
+         tags = setOf("Utility")
+        get = GetInfo.builder {
+            summary("Get health check")
+            description("Health check")
+            response {
+                responseCode(HttpStatusCode.OK)
+                responseType<SimpleResponse>()
+                description("Ok for good server health")
+            }
+        }
+     }
+     get{
+         call.respond(HttpStatusCode.OK, SimpleResponse(SERVER_OK_TEXT))
+     }
+ }
 }
 
