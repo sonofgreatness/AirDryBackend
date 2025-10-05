@@ -43,7 +43,7 @@ single <Settings>{Settings() }
     single { UserViewModel(
         get(),
         get(), get(), get(),
-        get(), get(),get()
+        get(), get(),get(), get()
     ) }
 
 }

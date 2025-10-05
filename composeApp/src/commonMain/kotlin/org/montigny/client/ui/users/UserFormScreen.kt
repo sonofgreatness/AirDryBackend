@@ -88,6 +88,9 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                             expandedSection, { expandedSection = it },
                             userTypes, departments, sections, userViewModel
                         )
+
+                        ToggleFields(createUser, userViewModel)
+
                         PasswordField(
                             password = createUser?.password.orEmpty(),
                             onPasswordChange = {
@@ -108,6 +111,8 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                         expandedSection, { expandedSection = it },
                         userTypes, departments, sections, userViewModel
                     )
+                    
+                    ToggleFields(createUser, userViewModel)
                     PasswordField(
                         password = createUser?.password.orEmpty(),
                         onPasswordChange = {
@@ -296,6 +301,35 @@ private fun DropdownFields(
                     )
                 }
             }
+        }
+    }
+
+}
+@Composable
+private fun ToggleFields(createUser: UserRegisterRequest?, vm: UserViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Active", style = MaterialTheme.typography.labelMedium)
+            Switch(
+                checked = createUser?.isActive ?: false,
+                onCheckedChange = { vm.onCreateUserChange(it.toString(),UserRegisterDTOState.isActive(it)) }
+            )
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Approved", style = MaterialTheme.typography.labelMedium)
+            Switch(
+                checked = createUser?.isApproved ?: false,
+                onCheckedChange = { vm.onCreateUserChange(it.toString(),UserRegisterDTOState.isApproved(it)) }
+            )
         }
     }
 }

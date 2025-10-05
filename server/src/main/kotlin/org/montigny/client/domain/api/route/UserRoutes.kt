@@ -83,11 +83,12 @@ fun Route.userRoutes(userService: UserService) {
                 }
             }
         }
-
+           authorize(userService, UserRole.ADMIN,UserRole.SUPER_USER){
             post {
                 try {
+                    val currentUser = UserUtils.getLoggedInUser(call)
                     val req = call.receive<UserRegisterRequest>()
-                    val id = userService.registerUser(req)
+                    val id = userService.registerUser(currentUser,req)
                     call.respond(HttpStatusCode.Created, IdResponse(id.toString()))
                 } catch (e: Exception) {
                     call.respond(
@@ -96,6 +97,7 @@ fun Route.userRoutes(userService: UserService) {
                     )
                 }
             }
+           }
     }
 
     route(API_URL_ADMIN_REGISTER) {

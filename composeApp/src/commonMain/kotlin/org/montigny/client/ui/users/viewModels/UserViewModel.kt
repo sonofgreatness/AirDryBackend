@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.com.client.database.User_type
+import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.OrganizationApi
 import org.montigny.client.data.api.repository.UserApi
 import org.montigny.client.database.dao.OrganizationRepository
@@ -28,8 +29,9 @@ class UserViewModel(private val userRepository: UserRepository,
                     private val organizationRepository: OrganizationRepository,
                     private val organizationApi: OrganizationApi,
                     private val logger: Logger,
-                   private   val syncManager: SyncManager,
-    private val connectivityObserver: ConnectivityObserver
+                    private   val syncManager: SyncManager,
+                    private val connectivityObserver: ConnectivityObserver,
+                    private val  sessionManager: SessionManager,
 ) : ViewModel() {
 
 
@@ -60,8 +62,9 @@ val createUserState: StateFlow<UiState> = _createUserState
 
 private val _isSyncing = MutableStateFlow(false)
 val isSyncing: StateFlow<Boolean> = _isSyncing
-val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
 
+val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
+val isOnlineLoggedIn : StateFlow<Boolean> =  sessionManager.isLoggedInFlow
 
 fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
 
@@ -80,7 +83,7 @@ fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
             val copy = _createUser.value?.copy(isActive =state.value)
             _createUser.value= copy
         }
-        is  UserRegisterDTOState.isApproved ->{
+        is UserRegisterDTOState.isApproved  ->{
             val copy = _createUser.value?.copy(isApproved =state.value)
             _createUser.value= copy
         }
@@ -138,16 +141,14 @@ init {
 }
 
     fun synchronizeUserData(){
-        synchronizeUserDataInternal(isNetworkAvailable.value)
+        synchronizeUserDataInternal(isNetworkAvailable.value, isOnlineLoggedIn.value)
     }
 
-     private fun synchronizeUserDataInternal(isNetworkAvailable: Boolean =false) {
+     private fun synchronizeUserDataInternal(isNetworkAvailable: Boolean =false,isOnlineLoggedIn : Boolean) {
         viewModelScope.launch {
             _isSyncing.value = true
             try {
-                println("Dowloading network 00")
-                if (isNetworkAvailable) {
-                    println("Dowloading network")
+                if (isNetworkAvailable && isOnlineLoggedIn) {
                     syncManager.downloadUserTypesAndUsers()//deletes old to insert new
                     syncManager.downLoadDepartmentsAndSections()
                 }
@@ -170,7 +171,7 @@ private fun populateUsers(){
     viewModelScope.launch {
         try {
             logger.info("Populating users ")
-            pickUserDataSource(isNetworkAvailable.value)
+            pickUserDataSource(isNetworkAvailable.value, isOnlineLoggedIn.value)
         }catch (e: Exception) {
             logger.error("failed to populate users Error ${e.message}")
         }
@@ -181,7 +182,7 @@ private fun populateUserTypes() {
         viewModelScope.launch {
             try {
                 logger.info("Populating user types")
-               pickDataSource(isNetworkAvailable.value)
+               pickDataSource(isNetworkAvailable.value, isOnlineLoggedIn.value)
 
             }catch (e: Exception) {
                 logger.error("failed to populate user types Error ${e.message}")
@@ -189,8 +190,8 @@ private fun populateUserTypes() {
         }
     }
     @Throws(Exception::class)
-   private suspend fun pickDataSource(isNetworkAvailable: Boolean = false) {
-          if(isNetworkAvailable){
+   private suspend fun pickDataSource(isNetworkAvailable: Boolean = false, isOnlineLoggedIn: Boolean) {
+          if(isNetworkAvailable && isOnlineLoggedIn){
              val userTypes: List<User_type> =  userApi.getUserTypes().map { User_type(
                   id = it.id.toString(),
                   displayname = it.displayName,
@@ -204,9 +205,9 @@ private fun populateUserTypes() {
               _useTypes.value = userTypes
         }
    }
-private suspend fun pickUserDataSource(isNetworkAvailable: Boolean = false) {
+private suspend fun pickUserDataSource(isNetworkAvailable: Boolean = false, isOnlineLoggedIn: Boolean) {
       try {
-          if (isNetworkAvailable) {
+          if (isNetworkAvailable && isOnlineLoggedIn) {
               val users: List<UserResponse> = userApi.getUsers().items
               _users.value = users
 
@@ -228,16 +229,16 @@ private fun populateDepartments(){
     viewModelScope.launch {
         try {
             logger.info("Populating departments")
-            pickDepartmentDataSource(isNetworkAvailable.value)
+            pickDepartmentDataSource(isNetworkAvailable.value,isOnlineLoggedIn.value)
         }catch (e: Exception) {
             logger.error("failed to populate departments Error ${e.message}")
         }
     }
 }
 
-private suspend fun pickDepartmentDataSource(isNetworkAvailable: Boolean = false) {
+private suspend fun pickDepartmentDataSource(isNetworkAvailable: Boolean = false,isOnlineLoggedIn: Boolean) {
          try{
-             if (isNetworkAvailable){
+             if (isNetworkAvailable &&isOnlineLoggedIn){
                  val departmentsVariable : List<CreateOrgDTO> =organizationApi.getAllDept()
                  _departments.value = departmentsVariable
              }else{
@@ -253,16 +254,17 @@ private  fun  populateSections(departmentId:UUID){
     viewModelScope.launch {
     try{
         logger.info("Populating sections")
-        pickSectionDataSource(isNetworkAvailable.value,departmentId)
+        pickSectionDataSource(isNetworkAvailable.value,departmentId, isOnlineLoggedIn.value)
     }
     catch (e: Exception){
         logger.error("failed to populate sections Error ${e.message}")
     }
     }
 }
-private  suspend fun  pickSectionDataSource(isNetworkAvailable: Boolean = false, departmentId:UUID){
+private  suspend fun  pickSectionDataSource(isNetworkAvailable: Boolean = false,
+                                            departmentId:UUID, isOnlineLoggedIn: Boolean){
     try {
-        if(isNetworkAvailable){
+        if(isNetworkAvailable && isOnlineLoggedIn){
 
             val sections = organizationApi.getSectionByDepartmentId(departmentId)
             _sections.value = sections?:emptyList()
@@ -281,12 +283,13 @@ private  suspend fun  pickSectionDataSource(isNetworkAvailable: Boolean = false,
 
     fun createUser(user: UserRegisterRequest=_createUser.value!!) {
        viewModelScope.launch {
-           pickUserCreateUploadSource(isNetworkAvailable.value, user=user)
+           pickUserCreateUploadSource(isNetworkAvailable.value, user=user,isOnlineLoggedIn.value)
        }
 
     }
-    private  suspend  fun pickUserCreateUploadSource(isNetworkAvailable: Boolean = false, user: UserRegisterRequest) {
-        if(isNetworkAvailable){
+    private  suspend  fun pickUserCreateUploadSource(isNetworkAvailable: Boolean = false,
+                                                     user: UserRegisterRequest, isOnlineLoggedIn: Boolean) {
+        if(isNetworkAvailable && isOnlineLoggedIn){
             _createUserState.value = UiState.Loading
             when(val response =  userApi.createUser(user)){
                 is ApiResponse.Error -> {

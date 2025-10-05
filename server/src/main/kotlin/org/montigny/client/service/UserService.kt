@@ -12,8 +12,8 @@ import org.montigny.client.persistence.repository.UserRepository
 import java.util.UUID
 
 class UserService(private val userRepo: UserRepository, private val jwtProvider: JwtProvider) {
-    fun registerUser(req: UserRegisterRequest): UUID {
-        return userRepo.createUser(req)
+    fun registerUser(currentUserDTO: CurrentUserDTO,req: UserRegisterRequest): UUID {
+        return userRepo.createUser(currentUserDTO,req)
     }
     fun registerAdmin(req: UserRegisterRequest): UUID {
         return userRepo.createAdminUser(req)

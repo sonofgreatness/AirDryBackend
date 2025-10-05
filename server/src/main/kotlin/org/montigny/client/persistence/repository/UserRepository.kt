@@ -9,7 +9,7 @@ import org.montigny.client.dto.User.UserTypesDTO
 import java.util.*
 
 interface UserRepository {
-    fun createUser(req: UserRegisterRequest): UUID
+    fun createUser(currentUserDTO: CurrentUserDTO, req: UserRegisterRequest): UUID
     fun createAdminUser(req: UserRegisterRequest): UUID
     fun findById(id: UUID): UserRegisterRequest?
     fun findByPhone(phone: String): UserRegisterRequest?

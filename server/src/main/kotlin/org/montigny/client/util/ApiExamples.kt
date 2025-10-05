@@ -20,6 +20,8 @@ class ApiExamples {
             departmentId = UUID.randomUUID(),
             email = "solo@email.com",
             password = "password",
+            isActive = false,
+            isApproved = false,
         )
 
 

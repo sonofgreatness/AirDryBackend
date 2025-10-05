@@ -6,11 +6,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.Business
+import androidx.compose.material.icons.outlined.CloudDone
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.CloudQueue
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Workspaces
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import org.montigny.client.auth.OfflineSessionManager
@@ -18,15 +24,23 @@ import org.montigny.client.auth.SessionManager
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.NavGraph
 import org.montigny.client.navigation.Navigator
+import org.montigny.client.ui.Theme.Danger
 import org.montigny.client.ui.Theme.Neutral
 import org.montigny.client.ui.Theme.TimberTheme
 import org.montigny.client.ui.settings.SettingsNavItem
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
+import org.montigny.client.util.ConnectivityObserver
 import org.slf4j.Logger
 
 @Composable
-fun App(sessionManager: SessionManager, authViewModel: AuthViewModel, usersViewModel: UserViewModel, offlineSessionManager: OfflineSessionManager) {
+fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
+        usersViewModel: UserViewModel, offlineSessionManager: OfflineSessionManager,
+        connectivityObserver: ConnectivityObserver) {
+    val isOffLineLoggedIn by offlineSessionManager.isLoggedInFlow.collectAsState(initial = false)
+    val isOnlineLoggedIn by sessionManager.isLoggedInFlow.collectAsState(initial = false)
+    val isNetworkAvailable by connectivityObserver.isServerReachable.collectAsState(initial = false)
+
     TimberTheme {
         val logger: Logger = koinInject()
         logger.info("Desktop app started ")
@@ -100,6 +114,13 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel, usersViewM
                     label = { Text("Reports", style = MaterialTheme.typography.labelSmall) }
                 )
 
+
+                ConnectivityStatusItem(
+                    isNetworkAvailable,
+                    isOnlineLoggedIn,
+                    isOffLineLoggedIn,
+                    {navigator.navigateTo(Destination.Login)}
+                )
                 Spacer(Modifier.weight(1f))
 
                 // SETTINGS AT BOTTOM
@@ -113,6 +134,105 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel, usersViewM
             ) {
                 NavGraph(navigator, authViewModel, sessionManager, usersViewModel)
             }
+        }
+    }
+}
+
+
+
+
+
+
+@Composable
+fun ConnectivityStatusItem(
+    isNetworkAvailable: Boolean,
+    isOnlineLoggedIn: Boolean,
+    isOfflineLoggedIn: Boolean,
+    onClick: () -> Unit = {}
+) {
+    when {
+        isNetworkAvailable && !isOnlineLoggedIn -> {
+            NavigationRailItem(
+                selected = false,
+                onClick = onClick,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Outlined.Lock,
+                        contentDescription = "Login required",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
+                label = {
+                    Text(
+                        "Login",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            )
+        }
+
+        !isNetworkAvailable && !isOfflineLoggedIn -> {
+            NavigationRailItem(
+                selected = false,
+                onClick = onClick,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Outlined.CloudOff,
+                        contentDescription = "No connection",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
+                label = {
+                    Text(
+                        "No Conn",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            )
+        }
+
+        isNetworkAvailable && isOnlineLoggedIn -> {
+            NavigationRailItem(
+                selected = false,
+                onClick = {},
+                icon = {
+                    Icon(
+                        imageVector = Icons.Outlined.CloudDone,
+                        contentDescription = "Connected",
+                        tint = Color(0xFF2E7D32) // green
+                    )
+                },
+                label = {
+                    Text(
+                        "Connected",
+                        color = Color(0xFF2E7D32),
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            )
+        }
+
+        !isNetworkAvailable && isOfflineLoggedIn -> {
+            NavigationRailItem(
+                selected = false,
+                onClick = {},
+                icon = {
+                    Icon(
+                        imageVector = Icons.Outlined.CloudQueue,
+                        contentDescription = "Offline mode",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                label = {
+                    Text(
+                        "Offline",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            )
         }
     }
 }

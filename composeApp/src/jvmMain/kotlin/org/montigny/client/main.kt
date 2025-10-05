@@ -10,6 +10,7 @@ import org.montigny.client.di.appModule
 import org.montigny.client.di.databaseModule
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
+import org.montigny.client.util.ConnectivityObserver
 
 fun main() = application {
     Window(
@@ -19,10 +20,11 @@ fun main() = application {
         startKoin {
             modules(databaseModule,appModule)
         }
-       val sessionManager: SessionManager = koinInject()
-       val authViewModel: AuthViewModel = koinInject()
-       val usersViewModel: UserViewModel = koinInject()
-        val offlineSessionManager: OfflineSessionManager = koinInject()
-       App(sessionManager,authViewModel,usersViewModel, offlineSessionManager)
+    val sessionManager: SessionManager = koinInject()
+    val authViewModel: AuthViewModel = koinInject()
+    val usersViewModel: UserViewModel = koinInject()
+    val offlineSessionManager: OfflineSessionManager = koinInject()
+    val connectivityObserver: ConnectivityObserver = koinInject ()
+    App(sessionManager,authViewModel,usersViewModel, offlineSessionManager, connectivityObserver)
     }
 }

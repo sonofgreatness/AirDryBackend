@@ -15,12 +15,14 @@ import org.montigny.client.persistence.*
 import org.montigny.client.persistence.repository.PasswordHasher
 import org.montigny.client.persistence.repository.UserRepository
 import org.montigny.client.util.Constants
+import org.montigny.client.util.UserUtils
 import org.montigny.client.util.UserUtils.isSuperUser
 import java.util.*
 
 class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepository {
 
-    override fun createUser(req: UserRegisterRequest): UUID = transaction {
+    override fun createUser(currentUserDTO: CurrentUserDTO, req: UserRegisterRequest): UUID = transaction {
+
         val superUserTypeId = UserTypes
             .select { UserTypes.displayname eq UserRole.SUPER_USER.displayName }
             .map { it[UserTypes.id].value }
@@ -40,7 +42,11 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             it[departmentId] = req.departmentId
             it[sectionId] = req.sectionId
             it[email] = req.email
-            it[passwordHash] = req.password?.let { p -> passwordHasher.hash(p) }
+            it[passwordHash] = req.password?.let { p -> passwordHasher.hash(p)}
+            it[isActive] =req.isActive
+            it[isApproved] =req.isApproved
+            it[createdBy] = currentUserDTO.id
+
         }.value
 
         id
