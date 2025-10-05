@@ -27,10 +27,10 @@ fun provideHttpClient(sessionManager: SessionManager): HttpClient {
                     "Bearer $token") } }
 
 
-        install(Logging) {
+       /* install(Logging) {
             level = LogLevel.ALL
             logger = Logger.DEFAULT
-        }
+        }*/
 
     }
 }

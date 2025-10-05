@@ -11,6 +11,7 @@ import org.montigny.client.database.AppDatabase
 import org.montigny.client.database.dao.OrganizationRepository
 import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.dto.Organization.CreateDptDTO
+import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserTypesDTO
 import org.montigny.client.util.ConnectivityObserver
@@ -142,11 +143,19 @@ class SyncManager(private val userApi : UserApi,
     }
 
    private suspend fun downloadAndInsertSections(){
-       val downloaded = organizationApi.getAllSect()
+       println("Downloading sections called")
+       var downloaded  = emptyList<CreateSectDTO>()
+       try {
+            downloaded = organizationApi.getAllSect()
+       }catch (e:Exception){
+           println("Download failed ${e.localizedMessage}")
+       }
+       println("Downloading sections called  000")
        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
            if (sessionManager.userId == null)
                throw IllegalStateException(NOT_LOGGED_IN_ERROR)
            downloaded.forEach {section->
+               println("Downloading sections called  111")
                organizationRepository.insertSection(section)
            }
        }

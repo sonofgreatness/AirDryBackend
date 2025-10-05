@@ -5,6 +5,7 @@ import org.montigny.client.database.dao.OrganizationRepository
 import org.montigny.client.dto.Organization.CreateDptDTO
 import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
+import org.montigny.client.util.UtilityFunctions.Companion.toUUIDOrNull
 import org.slf4j.Logger
 import java.util.UUID
 
@@ -55,11 +56,15 @@ class OrganizationRepositoryImpl(
         }
     }
 
-
-    fun String?.toUUIDOrNull(): UUID? =
-        this?.let {
-            runCatching { UUID.fromString(it) }.getOrNull()
-        }
+    override suspend fun getSectionByDepartmentId(departmentId: UUID): List<CreateSectDTO> {
+        return queries.selectSectionsByDepartmentId(departmentId.toString())
+            .executeAsList().map {
+            CreateSectDTO(
+                id = it.id.toUUIDOrNull(),
+                displayName = it.displayname,
+                departmentId = it.department_id.toUUIDOrNull(),)
+            }
+    }
 
 
 }

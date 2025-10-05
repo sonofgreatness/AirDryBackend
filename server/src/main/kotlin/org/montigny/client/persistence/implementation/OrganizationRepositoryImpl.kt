@@ -215,7 +215,7 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
         } else {
             val orgId = currentUserDTO.organizationId
             (Sections innerJoin Departments innerJoin Organizations)
-                .slice(Sections.id, Sections.displayname)
+                .slice(Sections.id, Sections.displayname, Sections.departmentId)
                 .select { Organizations.id eq orgId }
                 .map {
                     CreateSectDTO(
@@ -224,6 +224,25 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
                         departmentId =it[Sections.departmentId].value
                     )
                 }
+        }
+    }
+    override fun getSectionByDepartmentId(currentUserDTO: CurrentUserDTO, dptId : UUID) : List<CreateSectDTO>? =transaction{
+
+        val department = Departments.select { Departments.id eq dptId }.firstOrNull()?:
+         throw IllegalArgumentException("Department with id $dptId not found")
+        val organization = Organizations.select { Organizations.id eq department[Departments.organizationId]}.firstOrNull()?:
+        throw IllegalArgumentException("Organization with id ${department[Departments.organizationId]} not found")
+
+        checkIfBelongsToOrganization(currentUserDTO, organization[Organizations.id].value)
+
+        Sections.select{
+            departmentId eq  dptId
+        }.map {
+            CreateSectDTO(
+                id = it[Sections.id].value,
+                displayName = it[Sections.displayname],
+                departmentId =it[Sections.departmentId].value
+            )
         }
     }
 

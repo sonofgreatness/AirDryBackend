@@ -25,6 +25,9 @@ interface OrganizationRepository {
     fun createSect(currentUser: CurrentUserDTO,req: CreateSectDTO) : UUID
     fun updateSect(currentUser: CurrentUserDTO,req: CreateSectDTO) : Int
     fun deleteSectById(currentUser: CurrentUserDTO,sectId: UUID): Int
+
+    fun getSectionByDepartmentId(currentUserDTO: CurrentUserDTO, dptId : UUID): List<CreateSectDTO>?
+
     /*
     fun getOrgs(currentUserDTO: CurrentUserDTO)
     fun getDepts(currentUserDTO: CurrentUserDTO)

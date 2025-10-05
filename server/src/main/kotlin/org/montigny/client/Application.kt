@@ -99,8 +99,13 @@ fun Application.module() {
         Json {
             serializersModule = SerializersModule {
                 contextual(Any::class, AnySerializer)
+
             }
-        }) }
+        })
+
+
+
+    }
     install(NotarizedApplication()) {
         spec =
             OpenApiSpec(

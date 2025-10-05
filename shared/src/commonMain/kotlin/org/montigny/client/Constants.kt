@@ -31,4 +31,4 @@ const val API_URL_ORG_SECT_DELETE_BY_ID = "/org/department/section/{id}/delete"
 const val  API_URL_ORG_GET_ALL = "/org/get_all_organizations"
 const val API_URL_ORG_DEPT_ALL = "/org/departments/get_all_departments"
 const val API_URL_ORG_SECT_ALL = "/org/departments/get_all_sections"
-
+const val API_URL_GET_DEPARTMENT_SECTIONS = "/org/department/section/{id}/get_department_sections"

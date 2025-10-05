@@ -15,6 +15,10 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import org.montigny.client.API_URL_GET_DEPARTMENT_SECTIONS
 import org.montigny.client.API_URL_ORG_DELETE
 import org.montigny.client.API_URL_ORG_DEPT_ALL
 import org.montigny.client.API_URL_ORG_DEPT_DELETE_BY_ID
@@ -504,7 +508,33 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                 post{
                     try {
                         val currentUser = UserUtils.getLoggedInUser(call)
-                        val req = call.receive<CreateSectDTO>()
+                        val rawBody = call.receiveText()
+                        val jsonElement = Json.parseToJsonElement(rawBody).jsonObject
+
+                        val idStr = jsonElement["id"]?.jsonPrimitive?.contentOrNull
+                        val displayNameStr = jsonElement["displayName"]?.jsonPrimitive?.content
+                        val deptStr = jsonElement["departmentId"]?.jsonPrimitive?.contentOrNull
+
+                        val parsedId = try {
+                            idStr?.let { UUID.fromString(it) }
+                        } catch (e: Exception) {
+                            println("ERROR parsing id: $idStr -> ${e.message}")
+                            throw e
+                        }
+
+                        val parsedDeptId = try {
+
+                            deptStr?.let { UUID.fromString(it) }
+                        } catch (e: Exception) {
+                            println("ERROR parsing departmentId: $deptStr -> ${e.message} size ==${deptStr?.length}")
+                            throw e
+                        }
+
+                        val req = CreateSectDTO(
+                            id = parsedId,
+                            displayName = displayNameStr ?: "",
+                            departmentId = parsedDeptId
+                        )
                         val createdId = orgService.createSect(currentUser, req)
                         call.respond(HttpStatusCode.OK, IdResponse(createdId.toString()))
                     }
@@ -714,6 +744,54 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
             }
         }
     }
+
+
+
+    route(API_URL_GET_DEPARTMENT_SECTIONS){
+        install(NotarizedRoute())
+        {
+            tags = setOf("Organization")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            get = GetInfo.builder {
+                summary("Get sections in department")
+                description("Get sections in department")
+                parameters = listOf(
+                    Parameter(
+                        name = "id",
+                        `in` = Parameter.Location.path,
+                        schema = TypeDefinition.STRING))
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<CreateSectDTO>>()
+                    description("Returns the sections in a department")
+                }
+            }
+        }
+        authorize(userService, UserRole.ADMIN) {
+            get {
+
+                try {
+                    val currentUser = UserUtils.getLoggedInUser(call)
+                    val departmentId = UUID.fromString(call.parameters["id"]!!)
+                    val sections = orgService.getSectionByDepartmentId(currentUser,
+                        departmentId)
+                        ?: return@get call.respond(
+                            HttpStatusCode.NotFound,
+                            ErrorResponse("Sections not found", 404)
+                        )
+                    call.respond(HttpStatusCode.OK, sections)
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid UUID", 400))
+                } catch (e: Exception) {
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Unexpected server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+
 }
 
 

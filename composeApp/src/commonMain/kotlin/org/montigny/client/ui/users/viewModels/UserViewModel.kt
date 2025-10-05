@@ -67,8 +67,10 @@ fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
 
     when (state) {
         is UserRegisterDTOState.departmentId-> {
+            populateSections(UUID.fromString(newValue))
             val copy = _createUser.value?.copy(departmentId = UUID.fromString(newValue))
             _createUser.value= copy
+
         }
         is UserRegisterDTOState.email -> {
             val copy = _createUser.value?.copy(email = newValue)
@@ -132,7 +134,7 @@ init {
     populateUserTypes()
     populateUsers()
     populateDepartments()
-    populateSections()
+
 }
 
     fun synchronizeUserData(){
@@ -158,8 +160,6 @@ init {
             }
         }
     }
-
-
 
 
     fun populateAUserLists(){
@@ -221,9 +221,7 @@ private suspend fun pickUserDataSource(isNetworkAvailable: Boolean = false) {
 
 
 fun populateDepartmentsAndSections(){
-    println("Dowloading network --- ${isNetworkAvailable.value}")
     populateDepartments()
-    populateSections()
 }
 private fun populateDepartments(){
 
@@ -251,41 +249,34 @@ private suspend fun pickDepartmentDataSource(isNetworkAvailable: Boolean = false
          }
     }
 
-private  fun  populateSections(){
+private  fun  populateSections(departmentId:UUID){
     viewModelScope.launch {
     try{
         logger.info("Populating sections")
-        pickSectionDataSource(isNetworkAvailable.value)
+        pickSectionDataSource(isNetworkAvailable.value,departmentId)
     }
     catch (e: Exception){
         logger.error("failed to populate sections Error ${e.message}")
     }
     }
 }
-private  suspend fun  pickSectionDataSource(isNetworkAvailable: Boolean = false){
+private  suspend fun  pickSectionDataSource(isNetworkAvailable: Boolean = false, departmentId:UUID){
     try {
         if(isNetworkAvailable){
-            val sections = organizationApi.getAllSect()
-            _sections.value = sections
+
+            val sections = organizationApi.getSectionByDepartmentId(departmentId)
+            _sections.value = sections?:emptyList()
+
         }
         else{
-            val sections = organizationRepository.getAllSections()
-            _sections.value = sections
-        }
-    }  catch (e: Exception){}
+            val sections = organizationRepository.getSectionByDepartmentId(departmentId)
+            _sections.value = sections?:emptyList()
 
-  }
-
-private    fun deleteUserTypes() {
-        viewModelScope.launch {
-            try {
-                userRepository.deleteAllUserType()
-            }catch (e: Exception) {
-                logger.error("failed to delete user type error ${e.message}")
-            }
         }
+    }  catch (e: Exception){
+        println("Error populating sections ${e.message}")
     }
-
+  }
 
 
     fun createUser(user: UserRegisterRequest=_createUser.value!!) {

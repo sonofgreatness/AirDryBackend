@@ -33,7 +33,10 @@ fun NavGraph(
             navigator.navigateTo(Destination.Settings)
         }
         Destination.MainSettings -> MainSettingsScreen()
-        Destination.EditUser -> UserFormScreen(usersViewModel)
-        Destination.CreateAccount -> UserFormScreen(usersViewModel)
+        Destination.EditUser -> UserFormScreen(
+            usersViewModel,
+            navigator = navigator
+        )
+        Destination.CreateAccount -> UserFormScreen(usersViewModel,navigator)
     }
 }

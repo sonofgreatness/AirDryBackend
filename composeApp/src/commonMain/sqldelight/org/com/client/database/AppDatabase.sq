@@ -220,3 +220,8 @@ INSERT INTO section (
     is_pending_insert,
     is_pending_update
 ) VALUES (?, ?, ?, ?, ?);
+
+
+selectSectionsByDepartmentId:
+SELECT id, displayname, department_id FROM section
+WHERE department_id = ? ;
