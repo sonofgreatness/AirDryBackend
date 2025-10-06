@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import desktop.composeapp.generated.resources.Res
 import org.com.client.database.User_type
 import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
@@ -48,6 +49,15 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
         userViewModel.initializeEmptyCreateUse()
     }
 
+    // Validation state
+    val hasValidationErrors = createUser?.let {
+        it.name.isNullOrBlank() ||
+                it.surname.isNullOrBlank() ||
+                it.email.isNullOrBlank() ||
+                it.phoneNumber.isNullOrBlank() || it.phoneNumber!!.length != 8 ||
+                (!it.secondaryPhoneNumber.isNullOrBlank() && it.secondaryPhoneNumber!!.length != 8)
+    } ?: true
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -77,8 +87,10 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
             if (isWideScreen) {
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        NameFields(createUser, userViewModel)
-                        ContactFields(createUser, userViewModel)
+                        NameFields(createUser, {newValues, state ->
+                            userViewModel.onCreateUserChange(newValues, state)})
+                        ContactFields(createUser, {newValues, state ->
+                            userViewModel.onCreateUserChange(newValues, state)})
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         DropdownFields(
@@ -86,10 +98,12 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                             expandedUserType, { expandedUserType = it },
                             expandedDepartment, { expandedDepartment = it },
                             expandedSection, { expandedSection = it },
-                            userTypes, departments, sections, userViewModel
+                            userTypes, departments, sections, {newValues, state ->
+                                userViewModel.onCreateUserChange(newValues, state)}
                         )
 
-                        ToggleFields(createUser, userViewModel)
+                        ToggleFields(createUser,{newValues, state ->
+                            userViewModel.onCreateUserChange(newValues, state)})
 
                         PasswordField(
                             password = createUser?.password.orEmpty(),
@@ -102,17 +116,22 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    NameFields(createUser, userViewModel)
-                    ContactFields(createUser, userViewModel)
+                    NameFields(createUser, {newValues, state ->
+                        userViewModel.onCreateUserChange(newValues, state)})
+                    ContactFields(createUser, {newValues, state ->
+                        userViewModel.onCreateUserChange(newValues, state)})
                     DropdownFields(
                         selectedUserType, selectedDepartment, selectedSection,
                         expandedUserType, { expandedUserType = it },
                         expandedDepartment, { expandedDepartment = it },
                         expandedSection, { expandedSection = it },
-                        userTypes, departments, sections, userViewModel
+                        userTypes, departments, sections, {newValues, state ->
+                            userViewModel.onCreateUserChange(newValues, state)}
                     )
-                    
-                    ToggleFields(createUser, userViewModel)
+
+                    ToggleFields(createUser,
+                        {newValues, state ->
+                            userViewModel.onCreateUserChange(newValues, state)})
                     PasswordField(
                         password = createUser?.password.orEmpty(),
                         onPasswordChange = {
@@ -129,7 +148,7 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Button(
                     onClick = { userViewModel.createUser() },
-                    enabled = uiState !is UiState.Loading
+                    enabled = !hasValidationErrors && uiState !is UiState.Loading && uiState !is UiState.Success
                 ) {
                     Text(if (uiState is UiState.Loading) "Creating..." else "Create")
                 }
@@ -165,52 +184,93 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
 
 // --- Helpers for cleaner layout ---
 @Composable
-private fun NameFields(createUser: UserRegisterRequest?, vm: UserViewModel) {
+fun NameFields(createUser: UserRegisterRequest?,
+               onClick :(newValues:String,state: UserRegisterDTOState)
+               ->Unit = {_, _->}) {
+    val nameError = createUser?.name.isNullOrBlank()
+    val surnameError = createUser?.surname.isNullOrBlank()
+
     OutlinedTextField(
         value = createUser?.name.orEmpty(),
-        onValueChange = { vm.onCreateUserChange(it, UserRegisterDTOState.name) },
+        onValueChange = { onClick(it, UserRegisterDTOState.name) },
         label = { Text("Name", style = MaterialTheme.typography.labelMedium) },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        isError = nameError
     )
+    if (nameError) {
+        Text("Name cannot be empty", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+    }
+
     OutlinedTextField(
         value = createUser?.surname.orEmpty(),
-        onValueChange = { vm.onCreateUserChange(it, UserRegisterDTOState.surname) },
+        onValueChange = { onClick(it, UserRegisterDTOState.surname) },
         label = { Text("Surname", style = MaterialTheme.typography.labelMedium) },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        isError = surnameError
     )
+    if (surnameError) {
+        Text("Surname cannot be empty", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+    }
 }
 
 @Composable
-private fun ContactFields(createUser: UserRegisterRequest?, vm: UserViewModel) {
+fun ContactFields(createUser: UserRegisterRequest?,
+                  onClick :(newValues:String,state: UserRegisterDTOState)
+                  ->Unit = {_, _->}) {
+    val phoneError = when {
+        createUser?.phoneNumber.isNullOrBlank() -> "Phone number is required"
+        createUser.phoneNumber!!.length != 8 -> "Phone number must be 8 digits"
+        else -> null
+    }
+    val secondaryPhoneError = if (!createUser?.secondaryPhoneNumber.isNullOrBlank() &&
+        createUser.secondaryPhoneNumber!!.length != 8
+    ) "Secondary phone must be 8 digits" else null
+    val emailError = createUser?.email.isNullOrBlank()
+
     OutlinedTextField(
         value = createUser?.phoneNumber.orEmpty(),
-        onValueChange = { vm.onCreateUserChange(it, UserRegisterDTOState.phoneNumber) },
+        onValueChange = { onClick(it, UserRegisterDTOState.phoneNumber) },
         label = { Text("Phone", style = MaterialTheme.typography.labelMedium) },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        isError = phoneError != null
     )
+    if (phoneError != null) {
+        Text(phoneError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+    }
+
     OutlinedTextField(
         value = createUser?.secondaryPhoneNumber.orEmpty(),
-        onValueChange = { vm.onCreateUserChange(it, UserRegisterDTOState.secondaryPhoneNumber) },
+        onValueChange = { onClick(it, UserRegisterDTOState.secondaryPhoneNumber) },
         label = { Text("Secondary Phone", style = MaterialTheme.typography.labelMedium) },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        isError = secondaryPhoneError != null
     )
+    if (secondaryPhoneError != null) {
+        Text(secondaryPhoneError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+    }
+
     OutlinedTextField(
         value = createUser?.email.orEmpty(),
-        onValueChange = { vm.onCreateUserChange(it, UserRegisterDTOState.email) },
+        onValueChange = { onClick(it, UserRegisterDTOState.email) },
         label = { Text("Email", style = MaterialTheme.typography.labelMedium) },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        isError = emailError
     )
+    if (emailError) {
+        Text("Email cannot be empty", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DropdownFields(
+fun DropdownFields(
     selectedUserType: User_type?, selectedDepartment: CreateOrgDTO?, selectedSection: CreateSectDTO?,
     expandedUserType: Boolean, onExpandUserType: (Boolean) -> Unit,
     expandedDepartment: Boolean, onExpandDepartment: (Boolean) -> Unit,
     expandedSection: Boolean, onExpandSection: (Boolean) -> Unit,
     userTypes: List<User_type>, departments: List<CreateOrgDTO>, sections: List<CreateSectDTO>,
-    vm: UserViewModel
+    onClick :(newValues:String,state: UserRegisterDTOState)
+    ->Unit = {_, _->}
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // === User Type Dropdown ===
@@ -236,7 +296,7 @@ private fun DropdownFields(
                         text = { Text(type.displayname, style = MaterialTheme.typography.bodyMedium) },
                         onClick = {
                             onExpandUserType(false)
-                            vm.onCreateUserChange(type.id, UserRegisterDTOState.userTypeId)
+                            onClick(type.id, UserRegisterDTOState.userTypeId)
                         }
                     )
                 }
@@ -266,7 +326,7 @@ private fun DropdownFields(
                         text = { Text(dept.displayName, style = MaterialTheme.typography.bodyMedium) },
                         onClick = {
                             onExpandDepartment(false)
-                            vm.onCreateUserChange(dept.id.toString(), UserRegisterDTOState.departmentId)
+                            onClick(dept.id.toString(), UserRegisterDTOState.departmentId)
                         }
                     )
                 }
@@ -296,17 +356,19 @@ private fun DropdownFields(
                         text = { Text(section.displayName, style = MaterialTheme.typography.bodyMedium) },
                         onClick = {
                             onExpandSection(false)
-                            vm.onCreateUserChange(section.id.toString(), UserRegisterDTOState.sectionId)
+                            onClick(section.id.toString(), UserRegisterDTOState.sectionId)
                         }
                     )
                 }
             }
         }
     }
-
 }
+
 @Composable
-private fun ToggleFields(createUser: UserRegisterRequest?, vm: UserViewModel) {
+fun ToggleFields(createUser: UserRegisterRequest?,
+                 onClick :(newValues:String,state: UserRegisterDTOState)
+                 ->Unit = {_, _->}) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -316,7 +378,7 @@ private fun ToggleFields(createUser: UserRegisterRequest?, vm: UserViewModel) {
             Text("Active", style = MaterialTheme.typography.labelMedium)
             Switch(
                 checked = createUser?.isActive ?: false,
-                onCheckedChange = { vm.onCreateUserChange(it.toString(),UserRegisterDTOState.isActive(it)) }
+                onCheckedChange = { onClick(it.toString(),UserRegisterDTOState.isActive(it)) }
             )
         }
 
@@ -328,7 +390,7 @@ private fun ToggleFields(createUser: UserRegisterRequest?, vm: UserViewModel) {
             Text("Approved", style = MaterialTheme.typography.labelMedium)
             Switch(
                 checked = createUser?.isApproved ?: false,
-                onCheckedChange = { vm.onCreateUserChange(it.toString(),UserRegisterDTOState.isApproved(it)) }
+                onCheckedChange = { onClick(it.toString(),UserRegisterDTOState.isApproved(it)) }
             )
         }
     }

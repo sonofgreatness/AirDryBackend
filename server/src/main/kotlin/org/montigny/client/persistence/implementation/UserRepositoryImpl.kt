@@ -38,7 +38,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             it[phoneNumber] = req.phoneNumber
             it[secondaryPhone] = req.secondaryPhoneNumber
             it[userTypeId] = req.userTypeId
-            it[organizationId] = req.organizationId
+            it[organizationId] = currentUserDTO.organizationId
             it[departmentId] = req.departmentId
             it[sectionId] = req.sectionId
             it[email] = req.email

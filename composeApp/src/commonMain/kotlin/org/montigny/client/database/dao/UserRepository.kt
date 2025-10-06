@@ -27,6 +27,13 @@ interface UserRepository {
     suspend fun authenticate(email: String, password: String): ApiResponse
     suspend fun offlineLogin(username: String, password: String): ApiResponse
      fun offlineLogout()
+    suspend fun  deleteUnCachedUsers()
+    suspend fun selectCachedForInsertUsers() : List<UserRegisterRequest>
+    suspend fun  selectCachedForUpdateUsers() : List<UserRegisterRequest>
+    suspend fun  unCacheUserForInsert(id : String)
+    suspend fun  unCacheUserForUpdate(id : String)
+
+
 
 
 }

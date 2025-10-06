@@ -13,6 +13,7 @@ interface OrganizationRepository {
     suspend fun insertDepartment(createDptDTO: CreateDptDTO)
     suspend fun insertSection(createSectDTO: CreateSectDTO)
     suspend fun getSectionByDepartmentId(departmentId: UUID): List<CreateSectDTO>?
-
+    suspend fun deleteUnCachedSections()
+    suspend fun deleteUnCachedDepartments()
 
 }

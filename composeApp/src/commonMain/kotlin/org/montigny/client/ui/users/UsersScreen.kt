@@ -30,6 +30,7 @@ import org.montigny.client.ui.Theme.Danger
 import org.montigny.client.ui.Theme.Neutral
 import org.montigny.client.ui.Theme.TextMuted
 import org.montigny.client.ui.users.viewModels.UserViewModel
+import org.montigny.client.util.UtilityFunctions.Companion.toStringCustom
 
 
 @Composable
@@ -37,7 +38,8 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
     val users by userViewModel.users.collectAsState()
     val listState = rememberLazyListState()
     val isSyncing by userViewModel.isSyncing.collectAsState()
-
+    val isNetworkAvailable by userViewModel.isNetworkAvailable.collectAsState()
+    val isOnlineLoggedIn by userViewModel.isOnlineLoggedIn.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -82,12 +84,15 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Sync Button - far left
                 Button(
                     onClick = {
+                        if(isNetworkAvailable &&isOnlineLoggedIn)
                         userViewModel.synchronizeUserData()
+                        else
+                            if(isNetworkAvailable)
+                            navigator.navigateTo(Destination.Login)
                     },
-                    enabled = !isSyncing
+                    enabled = !isSyncing && isNetworkAvailable,
                 ) {
                     if (isSyncing) {
                         CircularProgressIndicator(
@@ -147,7 +152,7 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                     items(items = users, key = { it.id.toString() }) { user ->
                         UserRow(
                             user = user,
-                            onEdit = { /* TODO */ },
+                            onEdit = { navigator.navigateTo(Destination.EditUser(user.id.toString())) },
                             onDelete = { /* TODO */ }
                         )
                     }
@@ -214,7 +219,7 @@ fun DashboardCard(
 }
 
 @Composable
-fun UserRow(user: UserResponse, onEdit: () -> Unit, onDelete: () -> Unit) {
+fun UserRow(user: UserResponse, onEdit: (userId:String ) -> Unit, onDelete: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
     ) {
@@ -233,7 +238,7 @@ fun UserRow(user: UserResponse, onEdit: () -> Unit, onDelete: () -> Unit) {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
-                    onClick = onEdit,
+                    onClick = { onEdit(user.id.toStringCustom()) },
                     colors = ButtonDefaults.buttonColors(containerColor = Neutral)
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = "Edit")

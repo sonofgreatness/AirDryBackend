@@ -8,7 +8,7 @@ sealed class Destination(val route: String) {
     object Settings : Destination("settings")
     object Login : Destination("login")
     object MainSettings : Destination("main_settings")
-    object  EditUser: Destination("edit_user")
+    data class EditUser(val userId: String) : Destination("edit_user/$userId")
     object  CreateAccount: Destination("create_user")
 
 }

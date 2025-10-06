@@ -16,6 +16,9 @@ import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.util.ConnectivityObserver
+import org.montigny.client.util.UtilityFunctions.Companion.toStringCustom
+import org.montigny.client.util.UtilityFunctions.Companion.toUUID
+import org.montigny.client.util.UtilityFunctions.Companion.toUUIDOrNull
 import org.montigny.client.util.ViewModel
 import org.montigny.client.util.stateClasses.ApiResponse
 import org.montigny.client.util.stateClasses.UiState
@@ -59,6 +62,11 @@ val createUser: StateFlow<UserRegisterRequest?> = _createUser
 
 private val _createUserState = MutableStateFlow<UiState> (UiState.Idle)
 val createUserState: StateFlow<UiState> = _createUserState
+
+private val _updateUserState = MutableStateFlow<UiState> (UiState.Idle)
+val updateUserState: StateFlow<UiState> = _updateUserState
+
+
 
 private val _isSyncing = MutableStateFlow(false)
 val isSyncing: StateFlow<Boolean> = _isSyncing
@@ -122,11 +130,93 @@ fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
     }
 }
 
+
+fun onUpdateUserChange(newValue: String, state: UserRegisterDTOState) {
+    when (state) {
+        is UserRegisterDTOState.departmentId-> {
+            println("updating sections")
+            populateSections(UUID.fromString(newValue))
+            val copy = _updateUser.value?.copy(departmentId = UUID.fromString(newValue))
+            _updateUser.value= copy
+
+        }
+        is UserRegisterDTOState.email -> {
+            val copy = _updateUser.value?.copy(email = newValue)
+            _updateUser.value= copy
+        }
+        is UserRegisterDTOState.isActive -> {
+            val copy = _updateUser.value?.copy(isActive =state.value)
+            _updateUser.value= copy
+        }
+        is UserRegisterDTOState.isApproved  ->{
+            val copy = _updateUser.value?.copy(isApproved =state.value)
+            _updateUser.value= copy
+        }
+        is  UserRegisterDTOState.name -> {
+            val copy = _updateUser.value?.copy(name =newValue)
+            _updateUser.value= copy
+        }
+        is UserRegisterDTOState.organizationId -> {
+            val copy = _updateUser.value?.copy(organizationId = UUID.fromString(newValue))
+            _updateUser.value= copy
+        }
+        is UserRegisterDTOState.password -> {
+            val copy = _updateUser.value?.copy(password = newValue)
+            _updateUser.value= copy
+        }
+        is UserRegisterDTOState.phoneNumber -> {
+            val copy = _updateUser.value?.copy(phoneNumber = newValue)
+            _updateUser.value= copy
+        }
+        is UserRegisterDTOState.secondaryPhoneNumber -> {
+            val copy = _updateUser.value?.copy(secondaryPhoneNumber = newValue)
+            _updateUser.value= copy
+        }
+        is UserRegisterDTOState.sectionId -> {
+            val copy = _updateUser.value?.copy(sectionId = UUID.fromString(newValue))
+            _updateUser.value= copy
+        }
+        is UserRegisterDTOState.surname -> {
+            val copy = _updateUser.value?.copy(surname = newValue)
+            _updateUser.value= copy
+        }
+        is UserRegisterDTOState.userTypeId -> {
+            val copy = _updateUser.value?.copy(userTypeId = UUID.fromString(newValue))
+            _updateUser.value= copy
+        }
+    }
+
+}
+
 fun initializeEmptyCreateUse(){
     logger.info("Initializing empty CreateUse")
     _createUser.value = UserRegisterRequest(
         name ="", email = null, phoneNumber = "", surname = "",
         password = "" , secondaryPhoneNumber = null, id = UUID.randomUUID())
+}
+
+fun initializeUpdateUser(userId: String) {
+    viewModelScope.launch {
+
+        try {
+            if (isNetworkAvailable.value && isOnlineLoggedIn.value) {
+                println("initialize online")
+                val user = userApi.findById(userId.toUUID())
+                _updateUser.value = user
+                populateSections(user?.departmentId!!)
+            } else {
+                println("initialize offline $userId")
+                val user = userRepository.selectUserById(userId)
+                _updateUser.value = user
+                populateSections(user?.departmentId!!)
+            }
+
+        }catch (e: Exception) {
+            logger.error("Failed to load update user", e)
+        }
+
+
+    }
 }
 fun resetCreateUserState()
 {
@@ -149,7 +239,7 @@ init {
             _isSyncing.value = true
             try {
                 if (isNetworkAvailable && isOnlineLoggedIn) {
-                    syncManager.downloadUserTypesAndUsers()//deletes old to insert new
+                    syncManager.downloadUserTypesAndUsers()
                     syncManager.downLoadDepartmentsAndSections()
                 }
                 populateAUserLists()
@@ -265,23 +355,18 @@ private  suspend fun  pickSectionDataSource(isNetworkAvailable: Boolean = false,
                                             departmentId:UUID, isOnlineLoggedIn: Boolean){
     try {
         if(isNetworkAvailable && isOnlineLoggedIn){
-
             val sections = organizationApi.getSectionByDepartmentId(departmentId)
             _sections.value = sections?:emptyList()
-
         }
         else{
             val sections = organizationRepository.getSectionByDepartmentId(departmentId)
             _sections.value = sections?:emptyList()
-
         }
     }  catch (e: Exception){
         println("Error populating sections ${e.message}")
     }
   }
-
-
-    fun createUser(user: UserRegisterRequest=_createUser.value!!) {
+fun createUser(user: UserRegisterRequest=_createUser.value!!) {
        viewModelScope.launch {
            pickUserCreateUploadSource(isNetworkAvailable.value, user=user,isOnlineLoggedIn.value)
        }
@@ -293,7 +378,8 @@ private  suspend fun  pickSectionDataSource(isNetworkAvailable: Boolean = false,
             _createUserState.value = UiState.Loading
             when(val response =  userApi.createUser(user)){
                 is ApiResponse.Error -> {
-                    _createUserState.value = UiState.Error(response.message)
+                    _createUserState.value = UiState.Error("Failed to create User make sure email is unique")
+                    logger.info("UserView model failed to create User[Api] ${response.message}")
                 }
                 else -> {
                     _createUserState.value = UiState.Success
@@ -302,8 +388,16 @@ private  suspend fun  pickSectionDataSource(isNetworkAvailable: Boolean = false,
         }
         else{
             _createUserState.value = UiState.Loading
-            userRepository.insertAppUserToCacheForLaterUpload(user=user)
-            _createUserState.value = UiState.Success
+            try {
+                userRepository.insertAppUserToCacheForLaterUpload(user = user)
+                _createUserState.value = UiState.Success
+            } catch (e: Exception) {
+                _createUserState.value = UiState.Error(e.localizedMessage ?: "Failed to save user locally")
+            }
         }
     }
+    fun updateUser(){
+        return
+    }
 }
+

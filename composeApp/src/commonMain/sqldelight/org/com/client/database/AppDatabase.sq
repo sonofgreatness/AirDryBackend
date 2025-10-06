@@ -225,3 +225,73 @@ INSERT INTO section (
 selectSectionsByDepartmentId:
 SELECT id, displayname, department_id FROM section
 WHERE department_id = ? ;
+
+
+------------------------------
+-- Cache deletes
+-------------------------------
+
+-- Delete cached User
+deleteUnCachedUsers:
+DELETE FROM app_user  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
+
+
+-- Delete cached section
+deleteUnCachedSections:
+DELETE FROM section  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
+
+-- Delete cached department
+deleteUnCachedDepartments:
+DELETE FROM department  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
+
+---------------------------------------------
+-- Get cache inserts
+---------------------------------------------
+-- Get cached departments insert
+selectCachedForInsertDepartments:
+SELECT id, displayname FROM department  WHERE
+is_pending_insert = 1;
+
+-- Get cached sections insert
+selectCachedForInsertSections:
+SELECT id, displayname, department_id FROM section
+WHERE is_pending_insert = 1;
+
+-- Get cached user insert
+selectCachedForInsertUser:
+SELECT * FROM app_user WHERE is_pending_insert = 1;
+
+-----------------------------------------------------
+-- Get cache updates
+-----------------------------------------------------
+
+-- Get cached departments update
+selectCachedForUpdateDepartments:
+SELECT id, displayname FROM department  WHERE
+is_pending_update = 1;
+
+-- Get cached sections update
+selectCachedForUpdateSections:
+SELECT id, displayname, department_id FROM section
+WHERE is_pending_update = 1;
+
+-- Get cached user update
+selectCachedForUpdateUser:
+SELECT * FROM app_user WHERE is_pending_update = 1;
+
+
+-----------------
+-- Update User
+--------------------
+unCacheUserForInsert:
+UPDATE app_user
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheUserForUpdate:
+UPDATE app_user
+SET is_pending_update = 0
+WHERE id = ?;

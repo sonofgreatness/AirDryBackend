@@ -56,6 +56,15 @@ class OrganizationRepositoryImpl(
         }
     }
 
+
+
+   override suspend fun deleteUnCachedSections(){
+       queries.deleteUnCachedSections()
+   }
+    override suspend fun deleteUnCachedDepartments(){
+        queries.deleteUnCachedDepartments()
+    }
+
     override suspend fun getSectionByDepartmentId(departmentId: UUID): List<CreateSectDTO> {
         return queries.selectSectionsByDepartmentId(departmentId.toString())
             .executeAsList().map {

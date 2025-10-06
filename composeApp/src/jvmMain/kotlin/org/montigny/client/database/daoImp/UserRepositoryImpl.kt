@@ -19,7 +19,9 @@ import org.montigny.client.dto.User.NamedEntityResponse
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.util.Constants.Companion.FAILED_LOGIN
+import org.montigny.client.util.UtilityFunctions.Companion.toUUIDOrNull
 import org.montigny.client.util.stateClasses.ApiResponse
+import org.montigny.client.util.stateClasses.UserRegisterDTOState
 import org.slf4j.Logger
 import java.util.UUID
 import kotlin.jvm.Throws
@@ -78,7 +80,7 @@ private val offlineSessionManager: OfflineSessionManager,
                     department_id = user.departmentId?.toString(),
                     section_id = user.sectionId?.toString(),
                     password_hash =user.password,
-                    is_pending_update = 1L,
+                    is_pending_update = 0L,
                     is_pending_insert =  1L)
             }
         }
@@ -132,15 +134,21 @@ private val offlineSessionManager: OfflineSessionManager,
     }
 
     override suspend fun selectUserById(id: String): UserRegisterRequest? {
-        return null
+        val row = queries.selectUserById(id).executeAsOneOrNull() ?: throw Exception("User with id $id not found")
+
+        return UserRegisterRequest(
+            name = row.name, surname = row.surname,
+            phoneNumber = row.phone_number,
+            departmentId=row.department_id.toUUIDOrNull(),
+            sectionId=row.section_id.toUUIDOrNull(),
+            userTypeId = row.user_type_id.toUUIDOrNull(),
+            organizationId = row.organization_id?.toUUIDOrNull())
+
     }
 
     override suspend fun selectUserByEmail(email: String): UserRegisterRequest? {
         return null
     }
-
-
-
 
     override suspend fun insert(userType: User_type) {
 
@@ -153,9 +161,6 @@ private val offlineSessionManager: OfflineSessionManager,
         }
     }
 
-
-
-
     override suspend fun getAll(): List<User_type> =
         queries.selectAllUserTypes().executeAsList()
 
@@ -166,11 +171,7 @@ private val offlineSessionManager: OfflineSessionManager,
         queries.deleteUserTypeById(id)
     }
 
-
     override suspend fun deleteAllUserType() = queries.deleteAllUserType()
-
-
-
 
     override suspend fun authenticate(email: String, password: String): ApiResponse {
         val row = queries.selectUserByEmail(email).executeAsOneOrNull()
@@ -189,8 +190,6 @@ private val offlineSessionManager: OfflineSessionManager,
         }
     }
 
-
-
     override suspend fun offlineLogin(username: String, password: String): ApiResponse {
         val auth = authenticate(username, password)
         return when (auth) {
@@ -204,6 +203,49 @@ private val offlineSessionManager: OfflineSessionManager,
     override fun offlineLogout() {
         offlineSessionManager.logout()
     }
+
+    override suspend fun deleteUnCachedUsers() {
+        queries.deleteUnCachedUsers()
+    }
+
+    override suspend fun selectCachedForInsertUsers(): List<UserRegisterRequest> {
+      return queries.selectCachedForInsertUser().executeAsList().map{
+            UserRegisterRequest(
+                id = UUID.fromString(it.id),
+                name = it.name, email = it.email, surname = it.surname,
+                phoneNumber = it.phone_number, secondaryPhoneNumber = it.secondary_phone_number,
+                sectionId = it.section_id.toUUIDOrNull(),
+                departmentId = it.department_id.toUUIDOrNull(),
+                organizationId =it.organization_id.toUUIDOrNull(),
+                isActive = convertLongToBool(it.is_active),
+                isApproved = convertLongToBool(it.is_approved),
+                userTypeId = UUID.fromString(it.user_type_id),
+                password = it.password_hash.toString())
+        }
+
+    }
+
+    override suspend fun selectCachedForUpdateUsers(): List<UserRegisterRequest> {
+      return  queries.selectCachedForUpdateUser().executeAsList().map {
+            UserRegisterRequest(
+                id = UUID.fromString(it.id),
+                name = it.name, email = it.email, surname = it.surname,
+                phoneNumber = it.phone_number, secondaryPhoneNumber = it.secondary_phone_number,
+                sectionId = UUID.fromString(it.section_id),
+                departmentId = UUID.fromString(it.department_id),
+                organizationId = UUID.fromString(it.organization_id),
+                isActive = convertLongToBool(it.is_active),
+                isApproved = convertLongToBool(it.is_approved),
+                userTypeId = UUID.fromString(it.user_type_id),
+                password = it.password_hash.toString())
+
+        }
+
+    }
+
+    override suspend fun  unCacheUserForInsert(id : String)=  queries.unCacheUserForInsert(id)
+
+    override suspend  fun  unCacheUserForUpdate(id : String)= queries.unCacheUserForUpdate(id)
 
     private  fun convertBoolToLong(value: Boolean) = if (value) 1L else 0L
 

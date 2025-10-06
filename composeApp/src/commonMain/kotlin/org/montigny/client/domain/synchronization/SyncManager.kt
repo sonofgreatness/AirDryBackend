@@ -18,6 +18,7 @@ import org.montigny.client.util.ConnectivityObserver
 import org.montigny.client.util.Constants.Companion.FRESH_DATA_KEY
 import org.montigny.client.util.Constants.Companion.NOT_LOGGED_IN_ERROR
 import org.montigny.client.util.Constants.Companion.USER_FOUND_NOT_ERROR
+import org.montigny.client.util.UtilityFunctions.Companion.toStringCustom
 import java.time.Instant
 import java.util.UUID
 import kotlin.time.Duration.Companion.hours
@@ -48,6 +49,7 @@ class SyncManager(private val userApi : UserApi,
 
     /**-- USERS AND USER TYPES-----------------------------
     * Must check network before making delete choice
+     * [deletes un-cached records only]
     *1. Download user data from api
      *    deletes old data  inserts
      *    downloaded users
@@ -57,8 +59,25 @@ class SyncManager(private val userApi : UserApi,
      *    inserts downloaded data
     *---------------------------------------------------*/
     suspend fun downloadUserTypesAndUsers(){
+        uploadCachedUsers()
         downloadAndInsertUsers()
         downloadAndInsertUserTypes()
+    }
+    private  suspend fun uploadCachedUsers(){
+        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+
+            try {
+                val cachedUsers = userRepository.selectCachedForInsertUsers()
+                println("Uploading  cached users called")
+                cachedUsers.forEach {
+                    userApi.createUser(it)
+                    userRepository.unCacheUserForInsert(it.id.toStringCustom())
+                }
+            }catch (e:Exception){
+                println("Upload  cached users  failed ${e.localizedMessage}")
+                throw e
+            }
+        }
     }
 
    private suspend fun  downloadAndInsertUsers(){
@@ -67,7 +86,7 @@ class SyncManager(private val userApi : UserApi,
             val localUsers = userRepository.selectAllUsers()
            if(isNetworkAvailable.value) {// do more checks
                if (!localUsers.isNullOrEmpty())
-                   userRepository.deleteAllUsers()
+                   userRepository.deleteUnCachedUsers()
                remoteUsers.forEach {
                    userRepository.insertAppUser(it)
                }
@@ -109,6 +128,7 @@ class SyncManager(private val userApi : UserApi,
 
     /**---------DEPARTMENTS AND SECTIONS-------------------
      * Must check network before making delete choice
+     *     [deletes un-cached records only]
      *1. Download departments from api
      *    deletes old  departments data  inserts
      *    downloaded departments
@@ -131,8 +151,8 @@ class SyncManager(private val userApi : UserApi,
                  throw IllegalStateException(NOT_LOGGED_IN_ERROR)
             val user = userApi.findById(UUID.fromString(sessionManager.userId))?:
             throw IllegalStateException(USER_FOUND_NOT_ERROR)
-            println("department  User  id ==> ${sessionManager.userId}dept -${user.departmentId}  org - ${user.organizationId}")
-           downloaded.forEach {it ->
+            organizationRepository.deleteUnCachedDepartments()
+            downloaded.forEach {it ->
                organizationRepository.insertDepartment(CreateDptDTO(
                    id = it.id,
                    displayName = it.displayName,
@@ -143,19 +163,18 @@ class SyncManager(private val userApi : UserApi,
     }
 
    private suspend fun downloadAndInsertSections(){
-       println("Downloading sections called")
+
        var downloaded  = emptyList<CreateSectDTO>()
        try {
             downloaded = organizationApi.getAllSect()
        }catch (e:Exception){
            println("Download failed ${e.localizedMessage}")
        }
-       println("Downloading sections called  000")
        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
            if (sessionManager.userId == null)
                throw IllegalStateException(NOT_LOGGED_IN_ERROR)
+           organizationRepository.deleteUnCachedSections()
            downloaded.forEach {section->
-               println("Downloading sections called  111")
                organizationRepository.insertSection(section)
            }
        }

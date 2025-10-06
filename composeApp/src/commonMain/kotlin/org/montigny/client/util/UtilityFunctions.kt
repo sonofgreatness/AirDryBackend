@@ -19,8 +19,11 @@ class UtilityFunctions {
 
         fun UUID?.toStringCustom():String {
             if(this == null)
-                return "EMPTY_STRING"
+                return "null"
             return this.toString()
+        }
+        fun String.toUUID(): UUID {
+            return UUID.fromString(this)
         }
 
     }
