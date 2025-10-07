@@ -15,6 +15,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -23,12 +25,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 fun PasswordField(
     password: String,
     onPasswordChange: (String) -> Unit,
+    focusManager: FocusManager,
+    isLastField: Boolean = true, // tells us whether to move focus or finish
     onDone: () -> Unit = {},
-
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
-   val passwordError=  if (password.length<5)
-          "password must be  more than 4  characters"
+    val passwordError = if (password.length < 5)
+        "Password must be more than 4 characters"
     else
         null
 
@@ -37,8 +40,13 @@ fun PasswordField(
         onValueChange = onPasswordChange,
         label = { Text("Password") },
         singleLine = true,
-        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { onDone() }),
+        keyboardOptions = KeyboardOptions.Default.copy(
+            imeAction = if (isLastField) ImeAction.Done else ImeAction.Next
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next) },
+            onDone = { onDone() }
+        ),
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
             val image = if (passwordVisible) Icons.Filled.Visibility
@@ -53,10 +61,12 @@ fun PasswordField(
             }
         }
     )
+
     if (passwordError != null) {
         Text(
             passwordError,
             color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodySmall)
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }

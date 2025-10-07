@@ -33,6 +33,7 @@ import org.montigny.client.API_URL_ORG_SECT_DELETE_BY_ID
 import org.montigny.client.API_URL_ORG_SECT_REGISTER
 import org.montigny.client.API_URL_ORG_SECT_UPDATE
 import org.montigny.client.API_URL_ORG_UPDATE
+import org.montigny.client.API_URL_ORG_WITH_NESTED
 import org.montigny.client.dto.Common.ErrorResponse
 import org.montigny.client.dto.Common.IdResponse
 import org.montigny.client.dto.Common.SimpleResponse
@@ -43,6 +44,7 @@ import org.montigny.client.dto.Organization.GetOrgDTO
 import org.montigny.client.dto.User.UserTypesDTO
 import org.montigny.client.domain.api.route.auth.UserRole
 import org.montigny.client.domain.api.route.auth.authorize
+import org.montigny.client.dto.Organization.OrganizationResponse
 import org.montigny.client.service.OrganizationService
 import org.montigny.client.service.UserService
 import org.montigny.client.util.Constants.Companion.BEARER_AUTH_TAG
@@ -470,9 +472,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                 }
             }
         }
-
     }
-
     //=============CREATE SECTION================================
     route(API_URL_ORG_SECT_REGISTER){
         install(NotarizedRoute()){
@@ -521,15 +521,12 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                             println("ERROR parsing id: $idStr -> ${e.message}")
                             throw e
                         }
-
                         val parsedDeptId = try {
-
                             deptStr?.let { UUID.fromString(it) }
                         } catch (e: Exception) {
                             println("ERROR parsing departmentId: $deptStr -> ${e.message} size ==${deptStr?.length}")
                             throw e
                         }
-
                         val req = CreateSectDTO(
                             id = parsedId,
                             displayName = displayNameStr ?: "",
@@ -546,7 +543,6 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                     }
                 }
             }
-
         }
     }
 
@@ -744,9 +740,6 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
             }
         }
     }
-
-
-
     route(API_URL_GET_DEPARTMENT_SECTIONS){
         install(NotarizedRoute())
         {
@@ -791,7 +784,37 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
             }
         }
     }
+    // ----------------- GET ORGANIZATION WITH NESTED STRUCTURE -----------------
+    route(API_URL_ORG_WITH_NESTED) {
+        install(NotarizedRoute()) {
+            tags = setOf("Organization")
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            get = GetInfo.builder {
+                summary("Get Organizations with nested departments and sections")
+                description("Retrieves all organizations (and their departments and sections) visible to the current user.")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<OrganizationResponse>>()
+                    description("Returns list of organizations with nested structure.")
+                }
+            }
+        }
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER){
+        get {
+            try {
+                val currentUserDTO = UserUtils.getLoggedInUser(call)
+                val organizations:List<OrganizationResponse> = orgService.getOrganizationWithNestedDepartments(currentUserDTO)
+                call.respond(HttpStatusCode.OK, organizations)
 
+            } catch (e: Exception) {
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse("Unexpected server error: ${e.message}", 500)
+                )
+            }
+        }
+    }
+}
 }
 
 

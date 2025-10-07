@@ -3,7 +3,8 @@ package org.montigny.client.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import org.montigny.client.auth.SessionManager
-import org.montigny.client.ui.organizations.OrganizationsScreen
+import org.montigny.client.ui.organizations.OrganizationScreen
+import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
 import org.montigny.client.ui.reports.ReportsScreen
 import org.montigny.client.ui.settings.MainSettingsScreen
 import org.montigny.client.ui.settings.SettingsScreen
@@ -21,12 +22,13 @@ fun NavGraph(
     authViewModel: AuthViewModel,
     sessionManager: SessionManager,
     usersViewModel: UserViewModel,
+    organizationViewModel : OrganizationViewModel =OrganizationViewModel() ,
 ) {
     val currentDestination by navigator.currentDestination
 
     when (currentDestination) {
         Destination.Users -> UsersScreen(usersViewModel,navigator)
-        Destination.Organizations -> OrganizationsScreen()
+        Destination.Organizations -> OrganizationScreen(organizationViewModel,navigator)
         Destination.Work -> WorkScreen()
         Destination.Reports -> ReportsScreen()
         Destination.Settings -> SettingsScreen()
@@ -41,5 +43,6 @@ fun NavGraph(
                 navigator = navigator)
         }
         Destination.CreateAccount -> UserFormScreen(usersViewModel,navigator)
+        else -> {}
     }
 }

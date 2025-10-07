@@ -1,6 +1,8 @@
 package org.montigny.client.ui.users
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -8,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.Navigator
@@ -46,6 +49,10 @@ fun  EditUserFormScreen(
         derivedStateOf { sections.find { it.id == updateUser?.sectionId } }
     }
 
+
+    val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
+
     val hasValidationErrors = updateUser?.let {
         it.name.isNullOrBlank() ||
                 it.surname.isNullOrBlank() ||
@@ -65,7 +72,7 @@ fun  EditUserFormScreen(
         Column(
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Top,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().verticalScroll(scrollState)
         ) {
             // --- Page Header ---
             Text(
@@ -84,9 +91,10 @@ fun  EditUserFormScreen(
             if (isWideScreen) {
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        NameFields(updateUser, {newValues, state ->
-                            userViewModel.onUpdateUserChange(newValues, state)})
-                        ContactFields(updateUser) { newValues, state ->
+                        NameFields(updateUser, focusManager=focusManager) { newValues, state ->
+                            userViewModel.onUpdateUserChange(newValues, state)
+                        }
+                        ContactFields(updateUser,focusManager=focusManager) { newValues, state ->
                             userViewModel.onUpdateUserChange(newValues, state)
                         }
                     }
@@ -104,6 +112,7 @@ fun  EditUserFormScreen(
 
                         PasswordField(
                             password = updateUser?.password.orEmpty(),
+                            focusManager=focusManager,
                             onPasswordChange = {
                                 userViewModel.onUpdateUserChange(it, UserRegisterDTOState.password)
                             },
@@ -113,9 +122,9 @@ fun  EditUserFormScreen(
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    NameFields(updateUser,{newValues, state ->
+                    NameFields(updateUser,focusManager=focusManager,{newValues, state ->
                         userViewModel.onUpdateUserChange(newValues, state)})
-                    ContactFields(updateUser,{newValues, state ->
+                    ContactFields(updateUser,focusManager=focusManager, {newValues, state ->
                         userViewModel.onUpdateUserChange(newValues, state)})
                     DropdownFields(
                         selectedUserType, selectedDepartment, selectedSection,
@@ -130,6 +139,7 @@ fun  EditUserFormScreen(
                     }
                     PasswordField(
                         password = updateUser?.password.orEmpty(),
+                        focusManager=focusManager,
                         onPasswordChange = {
                             userViewModel.onUpdateUserChange(it, UserRegisterDTOState.password)
                         },

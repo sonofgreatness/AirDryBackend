@@ -11,7 +11,9 @@ import org.jetbrains.exposed.sql.update
 import org.montigny.client.dto.Organization.CreateDptDTO
 import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
+import org.montigny.client.dto.Organization.DepartmentResponse
 import org.montigny.client.dto.Organization.GetOrgDTO
+import org.montigny.client.dto.Organization.OrganizationResponse
 import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.persistence.AppUsers
 import org.montigny.client.persistence.Departments
@@ -209,19 +211,19 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
                     CreateSectDTO(
                         id = it[Sections.id].value,
                         displayName = it[Sections.displayname],
-                        departmentId =it[Sections.departmentId].value
+                        departmentId =it[departmentId].value
                     )
                 }
         } else {
             val orgId = currentUserDTO.organizationId
             (Sections innerJoin Departments innerJoin Organizations)
-                .slice(Sections.id, Sections.displayname, Sections.departmentId)
+                .slice(Sections.id, Sections.displayname, departmentId)
                 .select { Organizations.id eq orgId }
                 .map {
                     CreateSectDTO(
                         id = it[Sections.id].value,
                         displayName = it[Sections.displayname],
-                        departmentId =it[Sections.departmentId].value
+                        departmentId =it[departmentId].value
                     )
                 }
         }
@@ -241,10 +243,53 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
             CreateSectDTO(
                 id = it[Sections.id].value,
                 displayName = it[Sections.displayname],
-                departmentId =it[Sections.departmentId].value
+                departmentId =it[departmentId].value
             )
         }
     }
+
+    override fun getOrganizationWithNestedDepartments(currentUserDTO: CurrentUserDTO): List<OrganizationResponse>{
+    return transaction {
+        val organizationsQuery = if (isSuperUser(currentUserDTO)) {
+            Organizations.selectAll()
+        } else {
+            Organizations.select { Organizations.id eq currentUserDTO.organizationId }
+        }
+
+        organizationsQuery.map { orgRow ->
+            val orgId = orgRow[Organizations.id].value
+
+            val departments = Departments
+                .select { Departments.organizationId eq orgId }
+                .map { deptRow ->
+                    val deptId = deptRow[Departments.id].value
+                    // Load sections for this department
+                    val sections = Sections
+                        .select { departmentId eq deptId }
+                        .map { sectionRow ->
+                            CreateSectDTO(
+                                id = sectionRow[Sections.id].value,
+                                displayName = sectionRow[Sections.displayname],
+                                departmentId =deptId
+                            )
+                        }
+
+                    DepartmentResponse(
+                        id = deptId,
+                        displayName = deptRow[Departments.displayname],
+                        sections = sections
+                    )
+                }
+
+            OrganizationResponse(
+                id = orgId,
+                name = orgRow[Organizations.displayname],
+                logo = orgRow[Organizations.logo],
+                departments = departments
+            )
+        }
+    }
+}
 
     private fun checkIfBelongsToOrganization(
         currentUser: CurrentUserDTO,

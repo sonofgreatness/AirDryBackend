@@ -4,6 +4,7 @@ import org.montigny.client.dto.Organization.CreateDptDTO
 import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.Organization.GetOrgDTO
+import org.montigny.client.dto.Organization.OrganizationResponse
 import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.persistence.repository.OrganizationRepository
 import java.util.UUID
@@ -39,5 +40,5 @@ class OrganizationService(private val orgRepo: OrganizationRepository) {
     fun getAllDept(currentUserDTO: CurrentUserDTO):List<CreateOrgDTO> = orgRepo.getAllDept(currentUserDTO)
     fun getAllSect(currentUserDTO: CurrentUserDTO):List<CreateSectDTO> = orgRepo.getAllSect(currentUserDTO)
     fun getSectionByDepartmentId(currentUserDTO: CurrentUserDTO, dptId : UUID) : List<CreateSectDTO>? = orgRepo.getSectionByDepartmentId(currentUserDTO, dptId)
-
+    fun getOrganizationWithNestedDepartments(currentUserDTO: CurrentUserDTO):List<OrganizationResponse> = orgRepo.getOrganizationWithNestedDepartments(currentUserDTO)
 }

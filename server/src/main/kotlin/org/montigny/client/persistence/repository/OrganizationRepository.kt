@@ -4,6 +4,7 @@ import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateDptDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.Organization.GetOrgDTO
+import org.montigny.client.dto.Organization.OrganizationResponse
 import org.montigny.client.dto.User.CurrentUserDTO
 import java.util.UUID
 
@@ -27,7 +28,7 @@ interface OrganizationRepository {
     fun deleteSectById(currentUser: CurrentUserDTO,sectId: UUID): Int
 
     fun getSectionByDepartmentId(currentUserDTO: CurrentUserDTO, dptId : UUID): List<CreateSectDTO>?
-
+    fun getOrganizationWithNestedDepartments(currentUserDTO: CurrentUserDTO):List<OrganizationResponse>
     /*
     fun getOrgs(currentUserDTO: CurrentUserDTO)
     fun getDepts(currentUserDTO: CurrentUserDTO)

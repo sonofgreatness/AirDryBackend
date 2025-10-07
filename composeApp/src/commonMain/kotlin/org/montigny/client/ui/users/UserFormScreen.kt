@@ -1,11 +1,19 @@
 package org.montigny.client.ui.users
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import org.com.client.database.User_type
 import org.montigny.client.dto.Organization.CreateOrgDTO
@@ -36,6 +44,9 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
     val selectedDepartment = departments.find { it.id == createUser?.departmentId }
     val selectedSection = sections.find { it.id == createUser?.sectionId }
 
+    val scrollState = rememberScrollState()
+    val focusManager = LocalFocusManager.current
+
     LaunchedEffect(Unit) {
         userViewModel.initializeEmptyCreateUse()
     }
@@ -47,7 +58,7 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 it.email.isNullOrBlank() ||
                 it.phoneNumber.isNullOrBlank() || it.phoneNumber!!.length != 8 ||
                 (!it.secondaryPhoneNumber.isNullOrBlank() && it.secondaryPhoneNumber!!.length != 8)
-                 it.password.length < 5 
+                 it.password.length < 5
     } ?: true
 
     BoxWithConstraints(
@@ -60,7 +71,7 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
         Column(
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Top,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().verticalScroll(scrollState)
         ) {
             // --- Page Header ---
             Text(
@@ -79,9 +90,9 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
             if (isWideScreen) {
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        NameFields(createUser, {newValues, state ->
+                        NameFields(createUser, focusManager=focusManager , {newValues, state ->
                             userViewModel.onCreateUserChange(newValues, state)})
-                        ContactFields(createUser, {newValues, state ->
+                        ContactFields(createUser,focusManager=focusManager, {newValues, state ->
                             userViewModel.onCreateUserChange(newValues, state)})
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -99,7 +110,8 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
 
                         PasswordField(
                             password = createUser?.password.orEmpty(),
-                            onPasswordChange = {
+                            focusManager=focusManager,
+                                    onPasswordChange = {
                                 userViewModel.onCreateUserChange(it, UserRegisterDTOState.password)
                             },
                             onDone = { userViewModel.createUser() }
@@ -108,9 +120,9 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    NameFields(createUser, {newValues, state ->
+                    NameFields(createUser, focusManager=focusManager , {newValues, state ->
                         userViewModel.onCreateUserChange(newValues, state)})
-                    ContactFields(createUser, {newValues, state ->
+                    ContactFields(createUser,focusManager=focusManager, {newValues, state ->
                         userViewModel.onCreateUserChange(newValues, state)})
                     DropdownFields(
                         selectedUserType, selectedDepartment, selectedSection,
@@ -126,7 +138,8 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                             userViewModel.onCreateUserChange(newValues, state)})
                     PasswordField(
                         password = createUser?.password.orEmpty(),
-                        onPasswordChange = {
+                        focusManager=focusManager,
+                                onPasswordChange = {
                             userViewModel.onCreateUserChange(it, UserRegisterDTOState.password)
                         },
                         onDone = { userViewModel.createUser() }
@@ -153,7 +166,6 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                     }
                 }
             }
-
             Spacer(Modifier.height(16.dp))
 
             // --- Status Messages ---
@@ -177,6 +189,7 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
 // --- Helpers for cleaner layout ---
 @Composable
 fun NameFields(createUser: UserRegisterRequest?,
+               focusManager: FocusManager,
                onClick :(newValues:String,state: UserRegisterDTOState)
                ->Unit = {_, _->}) {
     val nameError = createUser?.name.isNullOrBlank()
@@ -187,7 +200,11 @@ fun NameFields(createUser: UserRegisterRequest?,
         onValueChange = { onClick(it, UserRegisterDTOState.name) },
         label = { Text("Name", style = MaterialTheme.typography.labelMedium) },
         modifier = Modifier.fillMaxWidth(),
-        isError = nameError
+        singleLine = true,
+        isError = nameError,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next)})
     )
     if (nameError) {
         Text("Name cannot be empty", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -196,9 +213,14 @@ fun NameFields(createUser: UserRegisterRequest?,
     OutlinedTextField(
         value = createUser?.surname.orEmpty(),
         onValueChange = { onClick(it, UserRegisterDTOState.surname) },
+        singleLine = true,
         label = { Text("Surname", style = MaterialTheme.typography.labelMedium) },
         modifier = Modifier.fillMaxWidth(),
-        isError = surnameError
+        isError = surnameError,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+        )
     )
     if (surnameError) {
         Text("Surname cannot be empty", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -207,6 +229,7 @@ fun NameFields(createUser: UserRegisterRequest?,
 
 @Composable
 fun ContactFields(createUser: UserRegisterRequest?,
+                  focusManager: FocusManager,
                   onClick :(newValues:String,state: UserRegisterDTOState)
                   ->Unit = {_, _->}) {
     val phoneError = when {
@@ -221,10 +244,15 @@ fun ContactFields(createUser: UserRegisterRequest?,
 
     OutlinedTextField(
         value = createUser?.phoneNumber.orEmpty(),
+        singleLine = true,
         onValueChange = { onClick(it, UserRegisterDTOState.phoneNumber) },
         label = { Text("Phone", style = MaterialTheme.typography.labelMedium) },
         modifier = Modifier.fillMaxWidth(),
-        isError = phoneError != null
+        isError = phoneError != null,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+        )
     )
     if (phoneError != null) {
         Text(phoneError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -232,10 +260,15 @@ fun ContactFields(createUser: UserRegisterRequest?,
 
     OutlinedTextField(
         value = createUser?.secondaryPhoneNumber.orEmpty(),
+        singleLine = true,
         onValueChange = { onClick(it, UserRegisterDTOState.secondaryPhoneNumber) },
         label = { Text("Secondary Phone", style = MaterialTheme.typography.labelMedium) },
         modifier = Modifier.fillMaxWidth(),
-        isError = secondaryPhoneError != null
+        isError = secondaryPhoneError != null,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+        )
     )
     if (secondaryPhoneError != null) {
         Text(secondaryPhoneError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -243,10 +276,15 @@ fun ContactFields(createUser: UserRegisterRequest?,
 
     OutlinedTextField(
         value = createUser?.email.orEmpty(),
+        singleLine = true,
         onValueChange = { onClick(it, UserRegisterDTOState.email) },
         label = { Text("Email", style = MaterialTheme.typography.labelMedium) },
         modifier = Modifier.fillMaxWidth(),
-        isError = emailError
+        isError = emailError,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+        )
     )
     if (emailError) {
         Text("Email cannot be empty", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
