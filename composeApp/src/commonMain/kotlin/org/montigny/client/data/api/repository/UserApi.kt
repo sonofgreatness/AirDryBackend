@@ -21,6 +21,7 @@ interface UserApi {
     suspend fun createUser(user: UserRegisterRequest) : ApiResponse
     suspend fun  getUsersUnPaged() : List<UserRegisterRequest>
     suspend fun  getServerHealth(): SimpleResponse
-
+    suspend fun  updateUser(user: UserRegisterRequest): ApiResponse
+    suspend fun   deleteUserId(userId: UUID): ApiResponse
 
 }

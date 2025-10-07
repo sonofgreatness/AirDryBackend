@@ -24,5 +24,14 @@ data class UserRegisterRequest(
     val isApproved: Boolean = false,
     @Serializable(with = UUIDSerializer::class)
     val id: UUID? = null,
-)
+){
+    fun toUpdateUserDTO(): UpdateUserDTO {
+        return UpdateUserDTO(
+            updated_name = name,updated_surname = surname,updated_phoneNumber = phoneNumber,
+            updated_secondaryPhoneNumber = secondaryPhoneNumber, updated_password = password,
+            updated_sectionId = sectionId, updated_userTypeId = userTypeId, updated_departmentId = departmentId,
+            updated_email = email, isApproved = isApproved, isActive = isActive
+        )
+    }
+}
 

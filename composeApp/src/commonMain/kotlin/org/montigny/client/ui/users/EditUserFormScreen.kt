@@ -33,13 +33,9 @@ fun  EditUserFormScreen(
     var expandedDepartment by remember { mutableStateOf(false) }
     var expandedSection by remember { mutableStateOf(false) }
 
-    // Currently selected values
     LaunchedEffect(userId) {
-        println("initialize update User for Id ==> $userId")
         userViewModel.initializeUpdateUser(userId)
     }
-
-// Reactive selected values that update when updateUser or the lists change
     val selectedUserType by remember(updateUser, userTypes) {
         derivedStateOf { userTypes.find { it.id == updateUser?.userTypeId?.toString() } }
     }
@@ -50,13 +46,13 @@ fun  EditUserFormScreen(
         derivedStateOf { sections.find { it.id == updateUser?.sectionId } }
     }
 
-    // Validation state
     val hasValidationErrors = updateUser?.let {
         it.name.isNullOrBlank() ||
                 it.surname.isNullOrBlank() ||
                 it.email.isNullOrBlank() ||
                 it.phoneNumber.isNullOrBlank() || it.phoneNumber!!.length != 8 ||
                 (!it.secondaryPhoneNumber.isNullOrBlank() && it.secondaryPhoneNumber!!.length != 8)
+                ||it.password.length < 5
     } ?: true
 
     BoxWithConstraints(
@@ -72,11 +68,11 @@ fun  EditUserFormScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             // --- Page Header ---
-            androidx.compose.material3.Text(
+            Text(
                 "Edit User",
                 style = MaterialTheme.typography.headlineMedium
             )
-            androidx.compose.material3.Text(
+            Text(
                 "Fill in details to edit the new user account.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -111,7 +107,7 @@ fun  EditUserFormScreen(
                             onPasswordChange = {
                                 userViewModel.onUpdateUserChange(it, UserRegisterDTOState.password)
                             },
-                            onDone = { println("done") }
+                            onDone = { userViewModel.updateUser() }
                         )
                     }
                 }
@@ -151,18 +147,18 @@ fun  EditUserFormScreen(
                     Text(if (uiState is UiState.Loading) "Editing..." else "Edit")
                 }
                 OutlinedButton(onClick = { navigator.navigateTo(Destination.Users) }) {
-                    Text("Cancel")
+                    Text("Back")
                 }
             }
             Spacer(Modifier.height(16.dp))
             // --- Status Messages ---
             when (uiState) {
-                is UiState.Error -> androidx.compose.material3.Text(
+                is UiState.Error -> Text(
                     (uiState as UiState.Error).message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error
                 )
-                is UiState.Success -> androidx.compose.material3.Text(
+                is UiState.Success -> Text(
                     "✅ User editted successfully!",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary

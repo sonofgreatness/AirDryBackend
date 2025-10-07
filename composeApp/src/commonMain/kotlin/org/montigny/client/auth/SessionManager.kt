@@ -61,7 +61,4 @@ class SessionManager(private val storage: AppStorage,
         }
     }
 
-
-
-
 }

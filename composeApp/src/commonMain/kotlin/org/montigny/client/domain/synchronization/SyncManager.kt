@@ -60,6 +60,7 @@ class SyncManager(private val userApi : UserApi,
     *---------------------------------------------------*/
     suspend fun downloadUserTypesAndUsers(){
         uploadCachedUsers()
+        pushCachedUserUpdates()
         downloadAndInsertUsers()
         downloadAndInsertUserTypes()
     }
@@ -68,13 +69,26 @@ class SyncManager(private val userApi : UserApi,
 
             try {
                 val cachedUsers = userRepository.selectCachedForInsertUsers()
-                println("Uploading  cached users called")
                 cachedUsers.forEach {
                     userApi.createUser(it)
                     userRepository.unCacheUserForInsert(it.id.toStringCustom())
                 }
             }catch (e:Exception){
                 println("Upload  cached users  failed ${e.localizedMessage}")
+                throw e
+            }
+        }
+    }
+    private suspend fun pushCachedUserUpdates(){
+        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+            try {
+                val cachedUsers = userRepository.selectCachedForUpdateUsers()
+                cachedUsers.forEach {
+                    userApi.updateUser(user =it)
+                    userRepository.unCacheUserForUpdate(it.id.toStringCustom())
+                }
+            }catch (e:Exception){
+                println("push update cached users  failed ${e.localizedMessage}")
                 throw e
             }
         }
@@ -99,9 +113,7 @@ class SyncManager(private val userApi : UserApi,
     }
 
     private  suspend  fun downloadAndInsertUserTypes() {
-
         val localUserTypes = userRepository.getAll()
-
         if (isNetworkAvailable.value && isOnlineLoggedInd.value) {//do more checks here (isDataStale)
             val remoteUserTypes: List<UserTypesDTO> = userApi.getUserTypes()
 
@@ -123,9 +135,6 @@ class SyncManager(private val userApi : UserApi,
             return// do nothing
         }
     }
-
-
-
     /**---------DEPARTMENTS AND SECTIONS-------------------
      * Must check network before making delete choice
      *     [deletes un-cached records only]
@@ -178,7 +187,7 @@ class SyncManager(private val userApi : UserApi,
                organizationRepository.insertSection(section)
            }
        }
-       }
+}
 
     private fun isDataStale(): Boolean{
         val savedTimestamp = Instant.ofEpochMilli(

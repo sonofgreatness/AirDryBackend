@@ -31,7 +31,6 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
              if (superUserTypeId == req.userTypeId)
                   throw IllegalArgumentException("Can no create super user, 1 already exists")
 
-
         val id = AppUsers.insertAndGetId {
             it[name] = req.name
             it[surname] = req.surname
@@ -236,9 +235,8 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             req.updated_sectionId?.let { sec -> it[sectionId] = sec }
             req.updated_email?.let { e -> it[email] = e }
             req.updated_password?.let {
-
                 p ->
-                if(p.length> 2)
+                if(p.length> 4)
                 { println("RESETTING PASSSWORD")
                     it[passwordHash] = passwordHasher.hash(p)}
             }

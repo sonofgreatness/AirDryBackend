@@ -295,3 +295,41 @@ unCacheUserForUpdate:
 UPDATE app_user
 SET is_pending_update = 0
 WHERE id = ?;
+
+-- Update  AppUser (full)
+updateUserIncludingPassword:
+UPDATE app_user
+SET
+    name = ?,
+    surname = ?,
+    phone_number = ?,
+    secondary_phone_number = ?,
+    is_approved = ?,
+    is_active = ?,
+    is_pending_update = 1,
+    user_type_id = ?,
+    organization_id = ?,
+    department_id = ?,
+    section_id = ?,
+    email = ?,
+    password_hash = ?
+WHERE id = ?;
+
+updateUserNoPassword:
+UPDATE app_user
+SET
+    name = ?,
+    surname = ?,
+    phone_number = ?,
+    secondary_phone_number = ?,
+    is_approved = ?,
+    is_active = ?,
+    is_pending_update = 1,
+    user_type_id = ?,
+    organization_id = ?,
+    department_id = ?,
+    section_id = ?,
+    email = ?
+WHERE id = ?;
+
+

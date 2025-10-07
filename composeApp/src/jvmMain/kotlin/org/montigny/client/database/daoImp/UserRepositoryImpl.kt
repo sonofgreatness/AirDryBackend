@@ -19,6 +19,8 @@ import org.montigny.client.dto.User.NamedEntityResponse
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.util.Constants.Companion.FAILED_LOGIN
+import org.montigny.client.util.UtilityFunctions.Companion.toStringCustom
+import org.montigny.client.util.UtilityFunctions.Companion.toStringOrNull
 import org.montigny.client.util.UtilityFunctions.Companion.toUUIDOrNull
 import org.montigny.client.util.stateClasses.ApiResponse
 import org.montigny.client.util.stateClasses.UserRegisterDTOState
@@ -139,10 +141,17 @@ private val offlineSessionManager: OfflineSessionManager,
         return UserRegisterRequest(
             name = row.name, surname = row.surname,
             phoneNumber = row.phone_number,
+            secondaryPhoneNumber = row.secondary_phone_number,
+            email = row.email,
+            id = row.id.toUUIDOrNull(),
             departmentId=row.department_id.toUUIDOrNull(),
             sectionId=row.section_id.toUUIDOrNull(),
             userTypeId = row.user_type_id.toUUIDOrNull(),
-            organizationId = row.organization_id?.toUUIDOrNull())
+            organizationId = row.organization_id?.toUUIDOrNull(),
+            isActive = convertLongToBool(row.is_active),
+            isApproved = convertLongToBool(row.is_approved),
+            password = row.password_hash.toString(),
+        )
 
     }
 
@@ -246,6 +255,41 @@ private val offlineSessionManager: OfflineSessionManager,
     override suspend fun  unCacheUserForInsert(id : String)=  queries.unCacheUserForInsert(id)
 
     override suspend  fun  unCacheUserForUpdate(id : String)= queries.unCacheUserForUpdate(id)
+
+
+   override suspend fun  updateUserIncludingPassword(user:UserRegisterRequest){
+       queries.updateUserIncludingPassword(
+           name = user.name, email = user.email,
+           id = user.id.toStringCustom(),
+           surname = user.surname,
+           phone_number = user.phoneNumber,
+           secondary_phone_number = user.secondaryPhoneNumber,
+           is_approved = convertBoolToLong(user.isApproved),
+           is_active = convertBoolToLong(user.isActive),
+           user_type_id = user.userTypeId.toStringOrNull(),
+           organization_id = user.organizationId.toStringOrNull(),
+           department_id = user.departmentId.toStringOrNull(),
+           section_id = user.sectionId.toStringOrNull(),
+           password_hash = user.password
+       )
+   }
+    override suspend fun  updateUserNoPassword(user:UserRegisterRequest){
+       queries.transaction{
+        queries.updateUserNoPassword(
+            name = user.name, email = user.email,
+            id = user.id.toStringCustom(),
+            surname = user.surname,
+            phone_number = user.phoneNumber,
+            secondary_phone_number = user.secondaryPhoneNumber,
+            is_approved = convertBoolToLong(user.isApproved),
+            is_active = convertBoolToLong(user.isActive),
+            user_type_id = user.userTypeId.toStringOrNull(),
+            organization_id = user.organizationId.toStringOrNull(),
+            department_id = user.departmentId.toStringOrNull(),
+            section_id = user.sectionId.toStringOrNull())
+       }
+    }
+
 
     private  fun convertBoolToLong(value: Boolean) = if (value) 1L else 0L
 

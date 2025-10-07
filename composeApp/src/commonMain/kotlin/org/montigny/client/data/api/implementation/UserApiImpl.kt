@@ -3,6 +3,7 @@ package org.montigny.client.data.api.implementation
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
 import io.ktor.util.logging.*
 import org.montigny.client.*
@@ -36,7 +37,6 @@ class UserApiImpl(private val client: HttpClient,
         sessionManager.logout()
     }
     override suspend fun getUserTypes() :List<UserTypesDTO>{
-        logger.info("User types token is ${sessionManager.jwtToken}")
         val response: List<UserTypesDTO> = client.get("$API_BASE_URL$API_URL_USERTYPES_GET_ALL") {
             contentType(ContentType.Application.Json)
         }.body()
@@ -67,7 +67,6 @@ class UserApiImpl(private val client: HttpClient,
             ApiResponse.Error(code = 500, message = "Failed to create user: ${e.message}")
         }
     }
-
     override  suspend fun  getUsersUnPaged() : List<UserRegisterRequest>{
         val response :List<UserRegisterRequest> = client.get("$API_BASE_URL$API_URL_USERS_UNPAGED"){
             contentType(ContentType.Application.Json)
@@ -83,7 +82,28 @@ class UserApiImpl(private val client: HttpClient,
 
       return response
     }
-
-
+    override suspend fun updateUser(user: UserRegisterRequest): ApiResponse{
+        try {
+            val response =client.put("$API_BASE_URL/users/${user.id}/update") {
+                contentType(ContentType.Application.Json)
+                setBody(user.toUpdateUserDTO())
+            }
+            return if(response.status == HttpStatusCode.OK)
+                ApiResponse.Success
+            else
+                ApiResponse.Error(code = response.status.value, message = "Failed to update user: ${response.bodyAsText()}")
+        }catch (e: Exception){
+            return ApiResponse.Error(code = 500, message = "Failed to update user: ${e.message}")
+        }
+    }
+    override  suspend fun   deleteUserId(userId: UUID): ApiResponse {
+    val response = client.delete("$API_BASE_URL/users/${userId}/delete") {
+            contentType(ContentType.Application.Json)
+    }
+    return if(response.status == HttpStatusCode.OK)
+            ApiResponse.Success
+        else
+            ApiResponse.Error(code = response.status.value, message = "Failed to delete user: ${response.bodyAsText()}")
+    }
 
 }

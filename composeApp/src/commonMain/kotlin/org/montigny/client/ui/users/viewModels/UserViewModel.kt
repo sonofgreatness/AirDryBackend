@@ -70,9 +70,15 @@ val updateUserState: StateFlow<UiState> = _updateUserState
 
 private val _isSyncing = MutableStateFlow(false)
 val isSyncing: StateFlow<Boolean> = _isSyncing
+private val _isDeleting = MutableStateFlow(false)
+val isDeleting: StateFlow<Boolean> = _isDeleting
 
 val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
 val isOnlineLoggedIn : StateFlow<Boolean> =  sessionManager.isLoggedInFlow
+
+private val _errorMessage = MutableStateFlow<String?>(null)
+val errorMessage: StateFlow<String?> = _errorMessage
+
 
 fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
 
@@ -200,12 +206,10 @@ fun initializeUpdateUser(userId: String) {
 
         try {
             if (isNetworkAvailable.value && isOnlineLoggedIn.value) {
-                println("initialize online")
                 val user = userApi.findById(userId.toUUID())
                 _updateUser.value = user
                 populateSections(user?.departmentId!!)
             } else {
-                println("initialize offline $userId")
                 val user = userRepository.selectUserById(userId)
                 _updateUser.value = user
                 populateSections(user?.departmentId!!)
@@ -222,6 +226,10 @@ fun resetCreateUserState()
 {
  _createUserState.value = UiState.Idle
 }
+fun resetUpdateUserState()
+{
+    _updateUserState.value = UiState.Idle
+}
 
 init {
     populateUserTypes()
@@ -230,11 +238,10 @@ init {
 
 }
 
-    fun synchronizeUserData(){
+fun synchronizeUserData(){
         synchronizeUserDataInternal(isNetworkAvailable.value, isOnlineLoggedIn.value)
     }
-
-     private fun synchronizeUserDataInternal(isNetworkAvailable: Boolean =false,isOnlineLoggedIn : Boolean) {
+private fun synchronizeUserDataInternal(isNetworkAvailable: Boolean =false,isOnlineLoggedIn : Boolean) {
         viewModelScope.launch {
             _isSyncing.value = true
             try {
@@ -251,9 +258,7 @@ init {
             }
         }
     }
-
-
-    fun populateAUserLists(){
+fun populateAUserLists(){
         populateUserTypes()
         populateUsers()
 }
@@ -271,16 +276,14 @@ private fun populateUsers(){
 private fun populateUserTypes() {
         viewModelScope.launch {
             try {
-                logger.info("Populating user types")
                pickDataSource(isNetworkAvailable.value, isOnlineLoggedIn.value)
-
             }catch (e: Exception) {
                 logger.error("failed to populate user types Error ${e.message}")
             }
         }
     }
-    @Throws(Exception::class)
-   private suspend fun pickDataSource(isNetworkAvailable: Boolean = false, isOnlineLoggedIn: Boolean) {
+@Throws(Exception::class)
+private suspend fun pickDataSource(isNetworkAvailable: Boolean = false, isOnlineLoggedIn: Boolean) {
           if(isNetworkAvailable && isOnlineLoggedIn){
              val userTypes: List<User_type> =  userApi.getUserTypes().map { User_type(
                   id = it.id.toString(),
@@ -309,14 +312,11 @@ private suspend fun pickUserDataSource(isNetworkAvailable: Boolean = false, isOn
           logger.error("failed to select users Error pickDataSource ${e.message}")
       }
     }
-
-
 fun populateDepartmentsAndSections(){
     populateDepartments()
 }
 private fun populateDepartments(){
-
-    viewModelScope.launch {
+ viewModelScope.launch {
         try {
             logger.info("Populating departments")
             pickDepartmentDataSource(isNetworkAvailable.value,isOnlineLoggedIn.value)
@@ -343,7 +343,6 @@ private suspend fun pickDepartmentDataSource(isNetworkAvailable: Boolean = false
 private  fun  populateSections(departmentId:UUID){
     viewModelScope.launch {
     try{
-        logger.info("Populating sections")
         pickSectionDataSource(isNetworkAvailable.value,departmentId, isOnlineLoggedIn.value)
     }
     catch (e: Exception){
@@ -372,7 +371,7 @@ fun createUser(user: UserRegisterRequest=_createUser.value!!) {
        }
 
     }
-    private  suspend  fun pickUserCreateUploadSource(isNetworkAvailable: Boolean = false,
+private  suspend  fun pickUserCreateUploadSource(isNetworkAvailable: Boolean = false,
                                                      user: UserRegisterRequest, isOnlineLoggedIn: Boolean) {
         if(isNetworkAvailable && isOnlineLoggedIn){
             _createUserState.value = UiState.Loading
@@ -396,8 +395,78 @@ fun createUser(user: UserRegisterRequest=_createUser.value!!) {
             }
         }
     }
-    fun updateUser(){
-        return
+fun updateUser(user: UserRegisterRequest=_updateUser.value!!){
+        viewModelScope.launch {
+            pickUserUpdateUploadSource(isNetworkAvailable.value, user=user,isOnlineLoggedIn.value)
+        } }
+private  suspend  fun pickUserUpdateUploadSource(isNetworkAvailable: Boolean = false,
+                                                     user: UserRegisterRequest, isOnlineLoggedIn: Boolean) {
+        if(isNetworkAvailable && isOnlineLoggedIn){
+            _updateUserState.value = UiState.Loading
+            val passwordCheck=checkIfPasswordIsValidUpdate(user.password)
+            val response = if(passwordCheck)
+                userApi.updateUser(user)
+            else
+                userApi.updateUser(user.copy(password =""))
+            when(response){
+                is ApiResponse.Error -> {
+                    _updateUserState.value = UiState.Error("Failed to update user , server error")
+                    logger.info("UserView model failed to update User[Api] ${response.message}")
+                }
+                else -> {
+                    _updateUserState.value = UiState.Success
+                }
+            }
+        }
+        else{
+            _updateUserState.value = UiState.Loading
+            try {
+                val passwordCheck=checkIfPasswordIsValidUpdate(user.password)
+                if(passwordCheck){
+                    userRepository.updateUserIncludingPassword(user)
+                }else{
+                    userRepository.updateUserNoPassword(user)
+                }
+
+                _updateUserState.value = UiState.Success
+            } catch (e: Exception) {
+                _updateUserState.value = UiState.Error(e.localizedMessage ?: "Failed to save user locally")
+            }
+        }
+    }
+    /*Check how many characters Hash algo creates
+    */
+private fun checkIfPasswordIsValidUpdate(password: String) :Boolean{
+        return (password.length in 4 until 30)
+}
+
+
+fun clearErrorMessage() {
+        _errorMessage.value = null
+}
+fun deleteUserById(userId: UUID) {
+        viewModelScope.launch {
+            try {
+                _isDeleting.value = true
+                val response = userApi.deleteUserId(userId)
+                when (response) {
+                    is ApiResponse.Error -> {
+                        val msg = if (response.message?.contains("violates foreign key constraint") == true) {
+                            "This user cannot be deleted because they are linked to an organization or another record."
+                        } else {
+                            response.message ?: "Failed to delete user."
+                        }
+                        _errorMessage.value = msg
+                    }
+                    else -> logger.info("User deleted successfully.")
+                }
+                synchronizeUserData()
+            } catch (e: Exception) {
+                _errorMessage.value = "Unexpected error: ${e.localizedMessage}"
+            } finally {
+                _isDeleting.value = false
+            }
+        }
     }
 }
 

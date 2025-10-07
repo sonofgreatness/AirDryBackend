@@ -9,6 +9,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,9 +23,14 @@ import androidx.compose.ui.text.input.VisualTransformation
 fun PasswordField(
     password: String,
     onPasswordChange: (String) -> Unit,
-    onDone: () -> Unit = {}
+    onDone: () -> Unit = {},
+
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
+   val passwordError=  if (password.length<5)
+          "password must be  more than 4  characters"
+    else
+        null
 
     OutlinedTextField(
         value = password,
@@ -47,4 +53,10 @@ fun PasswordField(
             }
         }
     )
+    if (passwordError != null) {
+        Text(
+            passwordError,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall)
+    }
 }

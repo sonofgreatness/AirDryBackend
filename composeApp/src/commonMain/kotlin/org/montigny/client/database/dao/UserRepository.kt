@@ -32,7 +32,8 @@ interface UserRepository {
     suspend fun  selectCachedForUpdateUsers() : List<UserRegisterRequest>
     suspend fun  unCacheUserForInsert(id : String)
     suspend fun  unCacheUserForUpdate(id : String)
-
+    suspend fun  updateUserIncludingPassword(user:UserRegisterRequest)
+    suspend fun  updateUserNoPassword(user:UserRegisterRequest)
 
 
 
