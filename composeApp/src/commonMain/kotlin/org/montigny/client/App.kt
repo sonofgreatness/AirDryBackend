@@ -27,6 +27,7 @@ import org.montigny.client.navigation.Navigator
 import org.montigny.client.ui.Theme.Danger
 import org.montigny.client.ui.Theme.Neutral
 import org.montigny.client.ui.Theme.TimberTheme
+import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
 import org.montigny.client.ui.settings.SettingsNavItem
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
@@ -36,25 +37,20 @@ import org.slf4j.Logger
 @Composable
 fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
         usersViewModel: UserViewModel, offlineSessionManager: OfflineSessionManager,
-        connectivityObserver: ConnectivityObserver) {
+        connectivityObserver: ConnectivityObserver,
+        organizationViewModel: OrganizationViewModel) {
     val isOffLineLoggedIn by offlineSessionManager.isLoggedInFlow.collectAsState(initial = false)
     val isOnlineLoggedIn by sessionManager.isLoggedInFlow.collectAsState(initial = false)
     val isNetworkAvailable by connectivityObserver.isServerReachable.collectAsState(initial = false)
 
     TimberTheme {
-        val logger: Logger = koinInject()
-        logger.info("Desktop app started ")
-
         val navigator = remember { Navigator() }
-
         Row(modifier = Modifier.fillMaxSize()) {
             NavigationRail(
                 modifier = Modifier.fillMaxHeight(),
                 containerColor = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 Spacer(Modifier.height(16.dp))
-
-                // USERS
                 NavigationRailItem(
                     selected = navigator.currentDestination.value == Destination.Users,
                     onClick = { navigator.navigateTo(Destination.Users) },
@@ -68,8 +64,6 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                     },
                     label = { Text("Users", style = MaterialTheme.typography.labelSmall) }
                 )
-
-                // ORGANIZATIONS
                 NavigationRailItem(
                     selected = navigator.currentDestination.value == Destination.Organizations,
                     onClick = { navigator.navigateTo(Destination.Organizations) },
@@ -83,8 +77,6 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                     },
                     label = { Text("Orgs", style = MaterialTheme.typography.labelSmall) }
                 )
-
-                // WORK
                 NavigationRailItem(
                     selected = navigator.currentDestination.value == Destination.Work,
                     onClick = { navigator.navigateTo(Destination.Work) },
@@ -98,8 +90,6 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                     },
                     label = { Text("Work", style = MaterialTheme.typography.labelSmall) }
                 )
-
-                // REPORTS
                 NavigationRailItem(
                     selected = navigator.currentDestination.value == Destination.Reports,
                     onClick = { navigator.navigateTo(Destination.Reports) },
@@ -113,8 +103,6 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                     },
                     label = { Text("Reports", style = MaterialTheme.typography.labelSmall) }
                 )
-
-
                 ConnectivityStatusItem(
                     isNetworkAvailable,
                     isOnlineLoggedIn,
@@ -122,17 +110,16 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                     {navigator.navigateTo(Destination.Login)}
                 )
                 Spacer(Modifier.weight(1f))
-
                 // SETTINGS AT BOTTOM
                 SettingsNavItem(sessionManager = sessionManager, navigator = navigator, offlineSessionManager = offlineSessionManager)
             }
-
             // ------- MAIN CONTENT AREA -------
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background
             ) {
-                NavGraph(navigator, authViewModel, sessionManager, usersViewModel)
+                NavGraph(navigator, authViewModel, sessionManager,
+                    usersViewModel,organizationViewModel)
             }
         }
     }

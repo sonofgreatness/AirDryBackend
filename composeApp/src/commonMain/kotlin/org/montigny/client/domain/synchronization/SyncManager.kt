@@ -12,6 +12,7 @@ import org.montigny.client.database.dao.OrganizationRepository
 import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.dto.Organization.CreateDptDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
+import org.montigny.client.dto.Organization.GetOrgDTO
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserTypesDTO
 import org.montigny.client.util.ConnectivityObserver
@@ -45,19 +46,6 @@ class SyncManager(private val userApi : UserApi,
 
     val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
      val isOnlineLoggedInd: StateFlow<Boolean> = sessionManager.isLoggedInFlow
-
-
-    /**-- USERS AND USER TYPES-----------------------------
-    * Must check network before making delete choice
-     * [deletes un-cached records only]
-    *1. Download user data from api
-     *    deletes old data  inserts
-     *    downloaded users
-     *
-     * 2. Download  user_types from api
-     *    deletes old user_types ,
-     *    inserts downloaded data
-    *---------------------------------------------------*/
     suspend fun downloadUserTypesAndUsers(){
         uploadCachedUsers()
         pushCachedUserUpdates()
@@ -111,8 +99,7 @@ class SyncManager(private val userApi : UserApi,
             println("Download failed ${e.localizedMessage}")
         }
     }
-
-    private  suspend  fun downloadAndInsertUserTypes() {
+   private  suspend  fun downloadAndInsertUserTypes() {
         val localUserTypes = userRepository.getAll()
         if (isNetworkAvailable.value && isOnlineLoggedInd.value) {//do more checks here (isDataStale)
             val remoteUserTypes: List<UserTypesDTO> = userApi.getUserTypes()
@@ -135,25 +122,11 @@ class SyncManager(private val userApi : UserApi,
             return// do nothing
         }
     }
-    /**---------DEPARTMENTS AND SECTIONS-------------------
-     * Must check network before making delete choice
-     *     [deletes un-cached records only]
-     *1. Download departments from api
-     *    deletes old  departments data  inserts
-     *    downloaded departments
-     *
-     * 2. Download  sections from api
-     *    deletes old sections ,
-     *    inserts downloaded data
-     *
-     *---------------------------------------------------*/
-
-     suspend fun  downLoadDepartmentsAndSections() {
+   suspend fun  downLoadDepartmentsAndSections() {
          downloadAndInsertDepartments()
         downloadAndInsertSections()
      }
-
-    private suspend fun  downloadAndInsertDepartments() {
+   private suspend fun  downloadAndInsertDepartments() {
         val downloaded = organizationApi.getAllDept()
         if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
             if (sessionManager.userId == null)
@@ -188,7 +161,19 @@ class SyncManager(private val userApi : UserApi,
            }
        }
 }
-
+   suspend fun downloadAndInsertOrganizations() {
+       println("inserting organizations")
+        if (isNetworkAvailable.value && isOnlineLoggedInd.value) {
+            val nestedOrg = organizationApi.getOrganizationWithNestedDepartments()
+            nestedOrg[0].let {
+                organizationRepository.insertOrganization(
+                    GetOrgDTO(
+                        id = it.id,
+                        displayName = it.name, logo = it.logo))
+            }
+        }
+       println("inserting organizations complete ")
+    }
     private fun isDataStale(): Boolean{
         val savedTimestamp = Instant.ofEpochMilli(
             settings.getLong(FRESH_DATA_KEY, defaultValue = 0L)

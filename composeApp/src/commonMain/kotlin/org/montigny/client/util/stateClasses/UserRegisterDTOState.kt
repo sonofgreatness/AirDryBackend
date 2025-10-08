@@ -14,6 +14,4 @@ sealed  class UserRegisterDTOState {
     data class isActive(val value: Boolean):UserRegisterDTOState()
     data class  isApproved(val value: Boolean):UserRegisterDTOState()
 
-    
-    
 }

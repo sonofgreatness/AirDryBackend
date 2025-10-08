@@ -332,4 +332,27 @@ SET
     email = ?
 WHERE id = ?;
 
+-- Get full organization structure (organization -> departments -> sections)
+selectOrganizationHierarchyByUserId:
+SELECT
+    o.id AS org_id,
+    o.displayname AS org_name,
+    o.logo AS org_logo,
+    d.id AS dept_id,
+    d.displayname AS dept_name,
+    s.id AS section_id,
+    s.displayname AS section_name
+FROM organization o
+LEFT JOIN department d ON d.organization_id = o.id
+LEFT JOIN section s ON s.department_id = d.id
+WHERE o.id = (
+    SELECT organization_id FROM app_user WHERE id = ?
+)
+ORDER BY o.displayname, d.displayname, s.displayname;
 
+
+insertOrganization:
+INSERT INTO organization (
+    id,
+    is_pending_insert,is_pending_update,
+    displayname,logo) VALUES (?,?,?,?,?);

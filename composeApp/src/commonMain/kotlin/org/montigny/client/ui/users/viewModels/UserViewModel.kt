@@ -135,8 +135,6 @@ fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
         }
     }
 }
-
-
 fun onUpdateUserChange(newValue: String, state: UserRegisterDTOState) {
     when (state) {
         is UserRegisterDTOState.departmentId-> {
@@ -196,11 +194,11 @@ fun onUpdateUserChange(newValue: String, state: UserRegisterDTOState) {
 
 fun initializeEmptyCreateUse(){
     logger.info("Initializing empty CreateUse")
+    _createUserState.value = UiState.Idle
     _createUser.value = UserRegisterRequest(
         name ="", email = null, phoneNumber = "", surname = "",
         password = "" , secondaryPhoneNumber = null, id = UUID.randomUUID())
 }
-
 fun initializeUpdateUser(userId: String) {
     viewModelScope.launch {
 
@@ -224,6 +222,7 @@ fun initializeUpdateUser(userId: String) {
 }
 fun resetCreateUserState()
 {
+    logger.info("resetting createUser")
  _createUserState.value = UiState.Idle
 }
 fun resetUpdateUserState()
@@ -398,7 +397,9 @@ private  suspend  fun pickUserCreateUploadSource(isNetworkAvailable: Boolean = f
 fun updateUser(user: UserRegisterRequest=_updateUser.value!!){
         viewModelScope.launch {
             pickUserUpdateUploadSource(isNetworkAvailable.value, user=user,isOnlineLoggedIn.value)
-        } }
+            resetCreateUserState()
+        }
+}
 private  suspend  fun pickUserUpdateUploadSource(isNetworkAvailable: Boolean = false,
                                                      user: UserRegisterRequest, isOnlineLoggedIn: Boolean) {
         if(isNetworkAvailable && isOnlineLoggedIn){
@@ -439,8 +440,6 @@ private  suspend  fun pickUserUpdateUploadSource(isNetworkAvailable: Boolean = f
 private fun checkIfPasswordIsValidUpdate(password: String) :Boolean{
         return (password.length in 4 until 30)
 }
-
-
 fun clearErrorMessage() {
         _errorMessage.value = null
 }

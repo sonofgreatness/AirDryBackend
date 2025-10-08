@@ -5,6 +5,10 @@ import org.montigny.client.database.dao.OrganizationRepository
 import org.montigny.client.dto.Organization.CreateDptDTO
 import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
+import org.montigny.client.dto.Organization.DepartmentResponse
+import org.montigny.client.dto.Organization.GetOrgDTO
+import org.montigny.client.dto.Organization.OrganizationResponse
+import org.montigny.client.util.UtilityFunctions.Companion.convertBoolToLong
 import org.montigny.client.util.UtilityFunctions.Companion.toUUIDOrNull
 import org.slf4j.Logger
 import java.util.UUID
@@ -15,7 +19,7 @@ class OrganizationRepositoryImpl(
 ): OrganizationRepository
 {
 
-    private val queries = db.appDatabaseQueries
+  private val queries = db.appDatabaseQueries
   override  suspend fun getAllDepartments(): List<CreateOrgDTO>{
       return queries.getAllDeparts().executeAsList().map {
 
@@ -25,8 +29,7 @@ class OrganizationRepositoryImpl(
           )
       }
   }
-
-    override suspend fun getAllSections(): List<CreateSectDTO>{
+  override suspend fun getAllSections(): List<CreateSectDTO>{
         return queries.selectAllSections().executeAsList().map{
             CreateSectDTO(
                 id = it.id.toUUIDOrNull(),
@@ -55,25 +58,59 @@ class OrganizationRepositoryImpl(
                 is_pending_update = 0L,)
         }
     }
-
-
-
    override suspend fun deleteUnCachedSections(){
        queries.deleteUnCachedSections()
    }
     override suspend fun deleteUnCachedDepartments(){
         queries.deleteUnCachedDepartments()
     }
-
     override suspend fun getSectionByDepartmentId(departmentId: UUID): List<CreateSectDTO> {
         return queries.selectSectionsByDepartmentId(departmentId.toString())
             .executeAsList().map {
             CreateSectDTO(
                 id = it.id.toUUIDOrNull(),
                 displayName = it.displayname,
-                departmentId = it.department_id.toUUIDOrNull(),)
+                departmentId = it.department_id.toUUIDOrNull(),) }}
+
+    override suspend fun selectOrganizationHierarchyByUserId(id: UUID): List<OrganizationResponse> {
+        val rows = queries.selectOrganizationHierarchyByUserId(id.toString()).executeAsList()
+        if (rows.isEmpty()) return emptyList()
+        val orgMap = rows.groupBy { it.org_id }
+        return orgMap.map { (orgId, orgRows) ->
+            val deptMap = orgRows
+                .filter { it.dept_id != null }
+                .groupBy { it.dept_id }
+
+            val departments = deptMap.map { (deptId, deptRows) ->
+                val sections = deptRows
+                    .filter { it.section_id != null }
+                    .map { sectionRow ->
+                        CreateSectDTO(
+                            id = sectionRow.section_id?.toUUIDOrNull(),
+                            displayName = sectionRow.section_name ?: "",
+                            departmentId = deptId?.toUUIDOrNull()
+                        )
+                    }
+                DepartmentResponse(
+                    id = deptId?.toUUIDOrNull(),
+                    displayName = deptRows.firstOrNull()?.dept_name ?: "",
+                    sections = sections
+                )
             }
+            OrganizationResponse(
+                id = orgId?.toUUIDOrNull(),
+                name = orgRows.firstOrNull()?.org_name ?: "",
+                logo = orgRows.firstOrNull()?.org_logo,
+                departments = departments
+            )
+        }
     }
-
-
+    override suspend fun insertOrganization(organization: GetOrgDTO, isCacheInsert:Boolean) {
+        queries.transaction{
+            queries.insertOrganization(
+                id = organization.id.toString(), displayname = organization.displayName.toString(),
+                logo = organization.logo, is_pending_insert = convertBoolToLong(isCacheInsert),
+                is_pending_update = 0L)
+        }
+    }
 }

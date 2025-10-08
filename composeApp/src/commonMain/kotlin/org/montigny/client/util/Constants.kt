@@ -7,6 +7,6 @@ class Constants {
     const val CONNECTIVITY_DELAY_TIME =5000L
         const val NOT_LOGGED_IN_ERROR= "User is not logged in"
         const val USER_FOUND_NOT_ERROR = "User not found"
-
+        const val NULL_PLACEHOLDER = "null"
     }
 }

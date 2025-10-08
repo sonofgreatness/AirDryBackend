@@ -1,32 +1,21 @@
 package org.montigny.client.database.daoImp
 
-import io.ktor.client.call.body
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
 import org.com.client.database.User_type
-import org.montigny.client.API_URL_USER_LOGIN
-import org.montigny.client.App
 import org.montigny.client.auth.OfflineSessionManager
-import org.montigny.client.auth.SessionManager
 import org.montigny.client.database.AppDatabase
 import org.montigny.client.database.PasswordHasher
 import org.montigny.client.database.dao.UserRepository
-import org.montigny.client.dto.Auth.AuthRequest
-import org.montigny.client.dto.Auth.AuthResponse
 import org.montigny.client.dto.User.NamedEntityResponse
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
-import org.montigny.client.util.Constants.Companion.FAILED_LOGIN
+import org.montigny.client.util.UtilityFunctions.Companion.convertBoolToLong
+import org.montigny.client.util.UtilityFunctions.Companion.convertLongToBool
 import org.montigny.client.util.UtilityFunctions.Companion.toStringCustom
 import org.montigny.client.util.UtilityFunctions.Companion.toStringOrNull
 import org.montigny.client.util.UtilityFunctions.Companion.toUUIDOrNull
 import org.montigny.client.util.stateClasses.ApiResponse
-import org.montigny.client.util.stateClasses.UserRegisterDTOState
 import org.slf4j.Logger
-import java.util.UUID
-import kotlin.jvm.Throws
+import java.util.*
 
 class UserRepositoryImpl(private val db: AppDatabase,
                          private val passwordHasher: PasswordHasher,
@@ -288,17 +277,5 @@ private val offlineSessionManager: OfflineSessionManager,
             department_id = user.departmentId.toStringOrNull(),
             section_id = user.sectionId.toStringOrNull())
        }
-    }
-
-
-    private  fun convertBoolToLong(value: Boolean) = if (value) 1L else 0L
-
-    @Throws(IllegalArgumentException::class)
-    private  fun convertLongToBool(value: Long) : Boolean{
-        if (value == 1L)
-            return true
-        if(value ==0L)
-            return false
-        throw IllegalArgumentException("expecting 0  or 1 but got $value")
     }
 }

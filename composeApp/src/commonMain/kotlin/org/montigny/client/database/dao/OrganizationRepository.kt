@@ -1,9 +1,12 @@
 package org.montigny.client.database.dao
 
 
+import org.com.client.database.Organization
 import org.montigny.client.dto.Organization.CreateDptDTO
 import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
+import org.montigny.client.dto.Organization.GetOrgDTO
+import org.montigny.client.dto.Organization.OrganizationResponse
 import java.util.UUID
 
 interface OrganizationRepository {
@@ -15,5 +18,7 @@ interface OrganizationRepository {
     suspend fun getSectionByDepartmentId(departmentId: UUID): List<CreateSectDTO>?
     suspend fun deleteUnCachedSections()
     suspend fun deleteUnCachedDepartments()
+    suspend fun  selectOrganizationHierarchyByUserId(id : UUID): List<OrganizationResponse>
+    suspend fun insertOrganization(organization: GetOrgDTO,isCacheInsert:Boolean = false)
 
 }

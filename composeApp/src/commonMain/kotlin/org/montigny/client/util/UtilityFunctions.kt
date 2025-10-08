@@ -6,10 +6,11 @@ class UtilityFunctions {
 
 
     companion object {
-        fun String?.toUUIDOrNull(): UUID? =
-            this?.let {
-                runCatching { UUID.fromString(it) }.getOrNull()
-            }
+        fun String?.toUUIDOrNull(): UUID? = try {
+            this?.let { UUID.fromString(it) }
+        } catch (e: IllegalArgumentException) {
+            null
+        }
 
         fun UUID?.toStringOrNull():String? {
             if(this == null)
@@ -24,6 +25,17 @@ class UtilityFunctions {
         }
         fun String.toUUID(): UUID {
             return UUID.fromString(this)
+        }
+
+        fun convertBoolToLong(value: Boolean) = if (value) 1L else 0L
+
+        @Throws(IllegalArgumentException::class)
+        fun convertLongToBool(value: Long) : Boolean{
+            if (value == 1L)
+                return true
+            if(value ==0L)
+                return false
+            throw IllegalArgumentException("expecting 0  or 1 but got $value")
         }
 
     }
