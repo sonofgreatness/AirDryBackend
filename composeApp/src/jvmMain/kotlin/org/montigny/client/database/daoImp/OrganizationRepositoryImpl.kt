@@ -113,4 +113,32 @@ class OrganizationRepositoryImpl(
                 is_pending_update = 0L)
         }
     }
+    override suspend fun  selectCachedForInsertOrganization() : List<GetOrgDTO> =
+        queries.selectCachedForInsertOrganizationInsert().executeAsList().map {
+            GetOrgDTO(
+                id = it.id.toUUIDOrNull(),
+                displayName = it.displayname,
+                logo = it.logo,
+            )
+        }
+    override suspend fun  unCacheForInsertOrganization(id :String){
+        queries.transaction{queries.unCacheUserForInsert(id)}
+    }
+    override suspend fun deleteUncachedOrganizations()=queries.transaction{queries.deleteUnCachedOrganization()}
+    override  suspend  fun  updateOrganization(organization: GetOrgDTO){
+       queries.transaction{
+           queries.updateOrganization(
+               id = organization.id.toString(),
+               displayname = organization.displayName.toString(),
+               logo = organization.logo)
+       }
+    }
+    override suspend fun getOrgById(orgId: UUID): GetOrgDTO{
+               return  queries.selectOrganizationById(orgId.toString()).executeAsOne().let {
+                   GetOrgDTO(id = it.id.toUUIDOrNull(),
+                       displayName = it.displayname,
+                       logo = it.logo)
+               }
+    }
+
 }

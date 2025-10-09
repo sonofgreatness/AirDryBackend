@@ -44,7 +44,11 @@ fun NavGraph(
                 navigator = navigator)
         }
         Destination.CreateAccount -> UserFormScreen(usersViewModel,navigator)
-        Destination.CreateOrganization -> CreateOrganizationScreen(organizationViewModel,navigator)
-        else -> {}
+        Destination.CreateOrganization -> CreateOrganizationScreen(null,organizationViewModel,navigator)
+        is Destination.EditOrganization -> {
+            CreateOrganizationScreen(orgId = (currentDestination as Destination.EditOrganization).orgId,
+                organizationViewModel,
+                navigator,true)
+        }
     }
 }

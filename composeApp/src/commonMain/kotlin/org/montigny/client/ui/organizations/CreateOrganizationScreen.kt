@@ -37,18 +37,32 @@ import javax.swing.filechooser.FileNameExtensionFilter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateOrganizationScreen(
+    orgId : String? =null,
     organizationViewModel: OrganizationViewModel,
-    navigator: Navigator
+    navigator: Navigator,
+    isUpdateOrganization: Boolean = false
 ) {
-    val createdOrg by organizationViewModel.createdOrganization.collectAsState()
-    val isSyncing by organizationViewModel.isSyncing.collectAsState()
+    val createdOrg by if(!isUpdateOrganization)
+        organizationViewModel.createdOrganization.collectAsState()
+    else
+        organizationViewModel.updateOrganization.collectAsState()
+
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
     val nameError = createdOrg.displayName.isNullOrBlank()
-    val uiState by organizationViewModel.createOrganizationState.collectAsState()
-    val errorMessage by organizationViewModel.errorMessage.collectAsState()
 
+    val uiState by if(!isUpdateOrganization)
+        organizationViewModel.createOrganizationState.collectAsState()
+    else
+        organizationViewModel.updateOrganizationState.collectAsState()
+
+    LaunchedEffect(orgId) {
+        if(orgId == null && isUpdateOrganization)
+            throw Exception("null Organization ID  supplied")
+        if (isUpdateOrganization && orgId != null)
+             organizationViewModel.initializeUpdateOrg(orgId)
+    }
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -64,20 +78,29 @@ fun CreateOrganizationScreen(
             verticalArrangement = Arrangement.Top
         ) {
             // --- Header ---
+            if(!isUpdateOrganization)
+            {
             Text("Organization Profile", style = MaterialTheme.typography.headlineMedium)
             Text(
                 "Define your organization identity. Upload a logo and provide details below.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
+            }else {
+                Text("Edit Organization Profile", style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    "Define your organization identity. Upload a logo and provide details below.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Spacer(Modifier.height(24.dp))
 
             // --- Logo Section (Top priority) ---
             LogoUploadCard(
                 logoBytes = createdOrg.logo,
                 onSelectLogo = { fileBytes, fileName ->
-                    organizationViewModel.onCreateOrgChangeListener(fileName, OrgDTOState.Logo(fileBytes))
+                    organizationViewModel.onCreateOrgChangeListener(fileName, OrgDTOState.Logo(fileBytes),isUpdateOrganization)
                 }
             )
 
@@ -88,7 +111,7 @@ fun CreateOrganizationScreen(
                 displayName = createdOrg.displayName.orEmpty(),
                 focusManager = focusManager,
                 onValueChange = { newValue, state ->
-                    organizationViewModel.onCreateOrgChangeListener(newValue, state)
+                    organizationViewModel.onCreateOrgChangeListener(newValue, state,isUpdateOrganization)
                 },
                 nameError = nameError
             )
@@ -100,16 +123,22 @@ fun CreateOrganizationScreen(
                 Button(
                     onClick = {
                         coroutineScope.launch {
+                            if(!isUpdateOrganization)
                             organizationViewModel.createOrganization()
+                            else
+                                organizationViewModel.updateOrganization()
                         }
                     },
                     enabled = !nameError &&  uiState !is UiState.Loading && uiState !is UiState.Success
                 ) {
+                    if(!isUpdateOrganization)
                     Text(if (uiState is UiState.Loading) "Creating..." else "Create")
+                    else
+                        Text(if (uiState is UiState.Loading) "Editing..." else "Edit")
                 }
 
                 OutlinedButton(onClick = { navigator.navigateTo(Destination.Organizations) }) {
-                    Text("Cancel")
+                    Text("Done")
                 }
             }
 
@@ -123,7 +152,8 @@ fun CreateOrganizationScreen(
                     color = MaterialTheme.colorScheme.error
                 )
                 is UiState.Success -> Text(
-                    "✅ User created successfully!",
+                    if (!isUpdateOrganization)"✅ Organization created successfully!"
+                    else "✅ Organization updated successfully!",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary
                 )

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.com.client.database.Organization
 import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.OrganizationApi
@@ -19,6 +20,7 @@ import org.montigny.client.dto.Organization.GetOrgDTO
 import org.montigny.client.dto.Organization.OrganizationResponse
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.util.ConnectivityObserver
+import org.montigny.client.util.UtilityFunctions.Companion.toUUID
 import org.montigny.client.util.UtilityFunctions.Companion.toUUIDOrNull
 import org.montigny.client.util.stateClasses.OrgDTOState
 import org.montigny.client.util.stateClasses.UiState
@@ -38,10 +40,15 @@ class OrganizationViewModel
     val  organizations: StateFlow<List<OrganizationResponse>> = _organizations
     private  val _createdOrganization = MutableStateFlow(GetOrgDTO(null))
     val  createdOrganization: StateFlow<GetOrgDTO> = _createdOrganization
+    private val  _updateOrganization = MutableStateFlow(GetOrgDTO(null))
+    val  updateOrganization: StateFlow<GetOrgDTO> = _updateOrganization
 
     private val _createOrganizationState = MutableStateFlow<UiState> (UiState.Idle)
     val createOrganizationState: StateFlow<UiState> = _createOrganizationState
 
+
+    private val _updateOrganizationState = MutableStateFlow<UiState> (UiState.Idle)
+    val updateOrganizationState: StateFlow<UiState> = _updateOrganizationState
 
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing
@@ -51,11 +58,25 @@ class OrganizationViewModel
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-
     val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
     val isOnlineLoggedIn : StateFlow<Boolean> =  sessionManager.isLoggedInFlow
 
 
+    fun initializeUpdateOrg(orgId: String) {
+        viewModelScope.launch {
+              println("intialize org $orgId")
+            try {
+                if (isNetworkAvailable.value && isOnlineLoggedIn.value) {
+                    val organization = organizationApi.getOrgById(orgId.toUUID())
+                    _updateOrganization.value = organization
+                } else {
+                    val organization = organizationRepository.getOrgById(orgId.toUUID())
+                    _updateOrganization.value = organization
+                }
+            }catch (e: Exception) {
+                logger.error("Failed to load update user", e)
+            } }
+    }
     fun  synchronizeOrganizations(){
         viewModelScope.launch {
             try {
@@ -99,13 +120,19 @@ class OrganizationViewModel
             }
         }
     }
-    fun onCreateOrgChangeListener(newValue :String,state: OrgDTOState){
+    fun onCreateOrgChangeListener(newValue :String,state: OrgDTOState, isUpdateOrganization : Boolean){
          when(state){
              is OrgDTOState.DisplayName -> {
+                 if(!isUpdateOrganization)
                  _createdOrganization.value = _createdOrganization.value.copy(displayName = newValue)
+                 else
+                     _updateOrganization.value = _updateOrganization.value.copy(displayName = newValue)
              }
              is OrgDTOState.Logo -> {
+                 if(!isUpdateOrganization)
                  _createdOrganization.value = _createdOrganization.value.copy(logo = state.placeholderLogo)
+                else
+                    _updateOrganization.value = _updateOrganization.value.copy(logo = state.placeholderLogo)
              }
          }
     }
@@ -132,6 +159,30 @@ class OrganizationViewModel
         }
     }
     }
+    fun updateOrganization(){
+        viewModelScope.launch {
+            println("updateOrganization")
+            try {
+                _updateOrganizationState.value = UiState.Loading
+            if(isNetworkAvailable.value && isOnlineLoggedIn.value){
+                println("updateOrganization online")
+                organizationApi.updateOrg(_updateOrganization.value.genererateCreateOrgDto(),
+                    _updateOrganization.value.logo)
+                _updateOrganizationState.value = UiState.Success
+            }
+            else{
+                println("updateOrganization online")
+               organizationRepository.updateOrganization(_updateOrganization.value)
+                _updateOrganizationState.value = UiState.Success
+            }
+
+        }catch (e:Exception){
+            logger.error("failed to update organization ${e.message}")
+                _updateOrganizationState.value = UiState.Success
+        }
+        }
+    }
+
     fun deleteOrganization(orgToDelete: UUID) {
 
     }

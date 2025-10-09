@@ -192,7 +192,11 @@ LEFT JOIN organization o ON u.organization_id = o.id
 LEFT JOIN department d ON u.department_id = d.id
 LEFT JOIN section s ON u.section_id = s.id;
 
+
+
+------------------------------
 -- Department Queries
+-------------------------------
 getAllDeparts:
 SELECT id, displayname FROM department;
 
@@ -206,8 +210,9 @@ INSERT INTO department (
 ) VALUES (?, ?, ?, ?, ?);
 
 
-
+---------------------------------------
 -- Section Queries
+---------------------------------------
 selectAllSections:
 SELECT id, displayname, department_id FROM section;
 
@@ -227,26 +232,39 @@ SELECT id, displayname, department_id FROM section
 WHERE department_id = ? ;
 
 
+------------------------------------
+-- Organization queries
+------------------------------------
+selectOrganizationById:
+SELECT * FROM  organization
+WHERE id = ?;
+
+
+
 ------------------------------
--- Cache deletes
+-- Cache deletes (START OF CACHE FUNCTIONS)
 -------------------------------
 
--- Delete cached User
+-- Delete uncached User
 deleteUnCachedUsers:
 DELETE FROM app_user  WHERE  is_pending_insert = 0
 AND is_pending_update =0;
 
 
--- Delete cached section
+-- Delete uncached section
 deleteUnCachedSections:
 DELETE FROM section  WHERE  is_pending_insert = 0
 AND is_pending_update =0;
 
--- Delete cached department
+-- Delete uncached department
 deleteUnCachedDepartments:
 DELETE FROM department  WHERE  is_pending_insert = 0
 AND is_pending_update =0;
+-- Delete uncached  organization
 
+deleteUnCachedOrganization:
+DELETE FROM organization  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
 ---------------------------------------------
 -- Get cache inserts
 ---------------------------------------------
@@ -264,6 +282,9 @@ WHERE is_pending_insert = 1;
 selectCachedForInsertUser:
 SELECT * FROM app_user WHERE is_pending_insert = 1;
 
+-- Get cached  organization insert
+selectCachedForInsertOrganizationInsert:
+SELECT * FROM organization WHERE is_pending_insert = 1;
 -----------------------------------------------------
 -- Get cache updates
 -----------------------------------------------------
@@ -282,9 +303,12 @@ WHERE is_pending_update = 1;
 selectCachedForUpdateUser:
 SELECT * FROM app_user WHERE is_pending_update = 1;
 
+-- Get cached organization update
+selectCachedForUpdateOrganization:
+SELECT * FROM organization WHERE is_pending_update = 1;
 
 -----------------
--- Update User
+-- Update Caches
 --------------------
 unCacheUserForInsert:
 UPDATE app_user
@@ -293,6 +317,16 @@ WHERE id = ?;
 
 unCacheUserForUpdate:
 UPDATE app_user
+SET is_pending_update = 0
+WHERE id = ?;
+
+unCacheOrganizationForInsert:
+UPDATE organization
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheOrganizationForUpdate:
+UPDATE organization
 SET is_pending_update = 0
 WHERE id = ?;
 
@@ -332,6 +366,18 @@ SET
     email = ?
 WHERE id = ?;
 
+-- Update Organization
+updateOrganization:
+UPDATE organization
+SET
+logo = ?,
+displayname = ?,
+is_pending_update = 1
+WHERE id = ?;
+-----------------------------------------
+--  END OF CACHE FUNCTIONS
+----------------------------------------
+
 -- Get full organization structure (organization -> departments -> sections)
 selectOrganizationHierarchyByUserId:
 SELECT
@@ -356,3 +402,4 @@ INSERT INTO organization (
     id,
     is_pending_insert,is_pending_update,
     displayname,logo) VALUES (?,?,?,?,?);
+

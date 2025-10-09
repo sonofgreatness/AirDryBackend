@@ -20,5 +20,9 @@ interface OrganizationRepository {
     suspend fun deleteUnCachedDepartments()
     suspend fun  selectOrganizationHierarchyByUserId(id : UUID): List<OrganizationResponse>
     suspend fun insertOrganization(organization: GetOrgDTO,isCacheInsert:Boolean = false)
-
+    suspend fun  selectCachedForInsertOrganization() : List<GetOrgDTO>
+    suspend fun  unCacheForInsertOrganization(id :String)
+    suspend fun deleteUncachedOrganizations()
+    suspend fun  updateOrganization(organization: GetOrgDTO)
+    suspend fun getOrgById(orgId: UUID): GetOrgDTO
 }

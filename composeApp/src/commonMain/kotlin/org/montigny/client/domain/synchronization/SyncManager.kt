@@ -11,6 +11,7 @@ import org.montigny.client.database.AppDatabase
 import org.montigny.client.database.dao.OrganizationRepository
 import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.dto.Organization.CreateDptDTO
+import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.Organization.GetOrgDTO
 import org.montigny.client.dto.User.UserRegisterRequest
@@ -160,12 +161,27 @@ class SyncManager(private val userApi : UserApi,
                organizationRepository.insertSection(section)
            }
        }
-}
-   suspend fun downloadAndInsertOrganizations() {
+   }
+
+     suspend  fun downloadAndInsertOrganizations(){
+         uploadcachedOrganizations()
+         if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+          deleteUnCachedOrganizations()
+         downloadAndInsertOrganizationsInternal()
+         }
+    }
+    private suspend fun  deleteUnCachedOrganizations(){
+        try{
+            organizationRepository.deleteUncachedOrganizations()
+        }catch(e:Exception){
+            println("Delete un cached organizations failed ${e.localizedMessage}")
+        }
+    }
+   private  suspend fun downloadAndInsertOrganizationsInternal() {
        println("inserting organizations")
         if (isNetworkAvailable.value && isOnlineLoggedInd.value) {
             val nestedOrg = organizationApi.getOrganizationWithNestedDepartments()
-            nestedOrg[0].let {
+            nestedOrg.forEach {
                 organizationRepository.insertOrganization(
                     GetOrgDTO(
                         id = it.id,
@@ -173,6 +189,21 @@ class SyncManager(private val userApi : UserApi,
             }
         }
        println("inserting organizations complete ")
+    }
+    private suspend fun uploadcachedOrganizations(){
+    if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+     try {
+          val cachedOrgs = organizationRepository.selectCachedForInsertOrganization()
+         cachedOrgs.forEach {
+             val req = it.genererateCreateOrgDto()
+             val logo = it .logo
+             organizationApi.createOrg(req,logo)
+             organizationRepository.unCacheForInsertOrganization(it.id.toString())
+         }
+           }catch (e:Exception){
+               println("Upload  organizations failed ${e.localizedMessage}")
+           }
+       }
     }
     private fun isDataStale(): Boolean{
         val savedTimestamp = Instant.ofEpochMilli(

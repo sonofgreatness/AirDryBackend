@@ -30,4 +30,10 @@ data class GetOrgDTO(
         result = 31 * result + (logo?.contentHashCode() ?: 0)
         return result
     }
+    fun genererateCreateOrgDto() : CreateOrgDTO {
+        return CreateOrgDTO(
+            id = this.id,
+            displayName = this.displayName!!,
+        )
+    }
 }

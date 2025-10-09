@@ -15,8 +15,10 @@ import io.ktor.http.isSuccess
 import io.ktor.util.logging.*
 import org.montigny.client.API_BASE_URL
 import org.montigny.client.API_URL_ORG_DEPT_ALL
+import org.montigny.client.API_URL_ORG_GET_BY_ID
 import org.montigny.client.API_URL_ORG_REGISTER
 import org.montigny.client.API_URL_ORG_SECT_ALL
+import org.montigny.client.API_URL_ORG_UPDATE
 import org.montigny.client.API_URL_ORG_WITH_NESTED
 import org.montigny.client.data.api.repository.OrganizationApi
 import org.montigny.client.dto.Organization.CreateOrgDTO
@@ -88,10 +90,43 @@ class OrganizationApiImpl(private val client: HttpClient,
         }
     }
     override suspend fun getOrgById(orgId: UUID): GetOrgDTO {
-        TODO("Not yet implemented")
+        API_URL_ORG_GET_BY_ID
+         val response = client.get("$API_BASE_URL/org/${orgId}/get"){
+             contentType(ContentType.Application.Json)
+         }.body<GetOrgDTO>()
+        return response
     }
 
     override suspend fun updateOrg(req: CreateOrgDTO, logo: ByteArray?): ApiResponse {
-        TODO("Not yet implemented")
+        return try {
+            val resp = client.submitFormWithBinaryData(
+                url = "$API_BASE_URL$API_URL_ORG_UPDATE",
+                formData = formData {
+                    append("displayName", req.displayName)
+                    req.id?.let { append("id", it.toString()) }
+
+                    logo?.let {
+                        append(
+                            key = "logo",
+                            value = it,
+                            headers = Headers.build {
+                                append(HttpHeaders.ContentType, "image/png")
+                                append(HttpHeaders.ContentDisposition, "filename=\"logo.png\"")
+                            }) } })
+            if (resp.status.isSuccess()) {
+                ApiResponse.Success
+            } else {
+                ApiResponse.Error(
+                    resp.status.value,
+                    "Failed to update org: ${resp.bodyAsText()}"
+                )
+            }
+        } catch (e: Exception) {
+            logger.error("updateOrg() error: ${e.localizedMessage}", e)
+            ApiResponse.Error(
+                HttpStatusCode.InternalServerError.value,
+                "Failed to Update org: ${e.message}"
+            )
+        }
     }
 }

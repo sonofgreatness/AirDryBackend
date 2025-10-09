@@ -16,4 +16,5 @@ interface OrganizationApi {
     suspend fun createOrg(req: CreateOrgDTO,logo: ByteArray?): ApiResponse
     suspend fun getOrgById(orgId: UUID): GetOrgDTO
     suspend fun updateOrg(req: CreateOrgDTO,logo: ByteArray?):ApiResponse
+
 }
