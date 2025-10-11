@@ -1,4 +1,5 @@
 package org.montigny.client.ui.organizations
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import org.montigny.client.dto.Organization.OrganizationResponse
 import org.montigny.client.navigation.Destination
@@ -33,7 +35,8 @@ fun OrganizationScreen(viewModel: OrganizationViewModel, navigator: Navigator) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
-
+    val isNetworkAvailable  by  viewModel.isNetworkAvailable.collectAsState()
+    val isOnlineLoggedIn by  viewModel.isOnlineLoggedIn.collectAsState()
     var orgToDelete by remember { mutableStateOf<UUID?>(null) }
 
     Scaffold(
@@ -62,9 +65,8 @@ fun OrganizationScreen(viewModel: OrganizationViewModel, navigator: Navigator) {
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     val totalOrgs = organizations.size
-                    val totalDepartments = organizations.sumOf { it.departments.size }
-                    val totalSections = organizations.sumOf { it.departments.sumOf { d -> d.sections.size } }
-
+                    val totalDepartments = organizations.sumOf {it.departments.size }
+                    val totalSections = organizations.sumOf {it.departments.sumOf { d -> d.sections.size }}
                     DashboardCard("Organizations", totalOrgs, Icons.Outlined.Apartment)
                     DashboardCard("Departments", totalDepartments, Icons.Outlined.Groups)
                     DashboardCard("Sections", totalSections, Icons.Outlined.Layers)
@@ -86,7 +88,11 @@ fun OrganizationScreen(viewModel: OrganizationViewModel, navigator: Navigator) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
-                        onClick = { viewModel.synchronizeOrganizations() },
+                        onClick = {
+                            if(isNetworkAvailable && !isOnlineLoggedIn){
+                                navigator.navigateTo(Destination.Login, Destination.Organizations)
+                            }
+                            viewModel.synchronizeOrganizations()},
                         enabled = !isSyncing
                     ) {
                         if (isSyncing) {
@@ -103,7 +109,6 @@ fun OrganizationScreen(viewModel: OrganizationViewModel, navigator: Navigator) {
                             Text("Sync")
                         }
                     }
-
                     Button(onClick = { navigator.navigateTo(Destination.CreateOrganization) }) {
                         Icon(Icons.Default.Add, contentDescription = "Create Org")
                         Spacer(Modifier.width(4.dp))
@@ -140,8 +145,9 @@ fun OrganizationScreen(viewModel: OrganizationViewModel, navigator: Navigator) {
                                 organization = org,
                                 onEdit = { navigator.navigateTo(Destination.EditOrganization(org.id.toString())) },
                                 onDelete = { orgToDelete = org.id },
-                                isDeleting = isDeleting
-                            )
+                                isDeleting = isDeleting,
+                                navigator = navigator,
+                                organizationViewModel = viewModel)
                         }
                     }
                 }
@@ -186,7 +192,9 @@ fun OrganizationRow(
     organization: OrganizationResponse,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    isDeleting: Boolean
+    isDeleting: Boolean,
+    navigator: Navigator,
+    organizationViewModel: OrganizationViewModel
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -204,6 +212,19 @@ fun OrganizationRow(
                 OrganizationLogo(organization.logo)
             }
 
+            Row{
+                Text("View departments",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp)
+                        .clickable(onClick = {
+                            val userId  =  organizationViewModel.getUserId()
+                            if(userId == null)
+                            navigator.navigateTo(Destination.Login, Destination.Organizations)
+                                else
+                            navigator.navigateTo(Destination.ViewOrgWithDepartmentsAndSections(userId = userId))
+                        })
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedButton(onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = "Edit")
@@ -225,12 +246,9 @@ fun OrganizationRow(
                     } else {
                         Icon(Icons.Default.Delete, contentDescription = "Delete")
                         Spacer(Modifier.width(4.dp))
-                        Text("Delete")
-                    }
+                        Text("Delete") }
                 }
             }
         }
     }
 }
-
-

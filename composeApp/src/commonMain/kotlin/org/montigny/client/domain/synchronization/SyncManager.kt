@@ -7,11 +7,9 @@ import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.OrganizationApi
 import org.montigny.client.data.api.repository.UserApi
-import org.montigny.client.database.AppDatabase
 import org.montigny.client.database.dao.OrganizationRepository
 import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.dto.Organization.CreateDptDTO
-import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.Organization.GetOrgDTO
 import org.montigny.client.dto.User.UserRegisterRequest
@@ -40,18 +38,24 @@ class SyncManager(private val userApi : UserApi,
                  private val settings: Settings,
                  private val  sessionManager: SessionManager,
     private val offlineSessionManager: OfflineSessionManager
-
-
 )
 {
-
     val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
      val isOnlineLoggedInd: StateFlow<Boolean> = sessionManager.isLoggedInFlow
     suspend fun downloadUserTypesAndUsers(){
+        organizationRepository.deleteUnCachedDepartments()
+        organizationRepository.deleteUnCachedSections()
+
         uploadCachedUsers()
+        uploadCachedDepartmentInserts()
+        uploadCachedSectionInserts()
+
         pushCachedUserUpdates()
-        downloadAndInsertUsers()
-        downloadAndInsertUserTypes()
+        pushUpdatedDepartments()
+        pushUpdatedSections()
+
+        downloadAndInsertUsers()//delete uncached values
+        downloadAndInsertUserTypes()//....
     }
     private  suspend fun uploadCachedUsers(){
         if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
@@ -164,33 +168,17 @@ class SyncManager(private val userApi : UserApi,
    }
 
      suspend  fun downloadAndInsertOrganizations(){
-         uploadcachedOrganizations()
+
          if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+          deleteUnCachedOrganizations()
+          pushCachedOrganizationUpdates()
+          uploadCachedForInsertOrganizations()
           deleteUnCachedOrganizations()
          downloadAndInsertOrganizationsInternal()
          }
     }
-    private suspend fun  deleteUnCachedOrganizations(){
-        try{
-            organizationRepository.deleteUncachedOrganizations()
-        }catch(e:Exception){
-            println("Delete un cached organizations failed ${e.localizedMessage}")
-        }
-    }
-   private  suspend fun downloadAndInsertOrganizationsInternal() {
-       println("inserting organizations")
-        if (isNetworkAvailable.value && isOnlineLoggedInd.value) {
-            val nestedOrg = organizationApi.getOrganizationWithNestedDepartments()
-            nestedOrg.forEach {
-                organizationRepository.insertOrganization(
-                    GetOrgDTO(
-                        id = it.id,
-                        displayName = it.name, logo = it.logo))
-            }
-        }
-       println("inserting organizations complete ")
-    }
-    private suspend fun uploadcachedOrganizations(){
+
+    private suspend fun uploadCachedForInsertOrganizations(){
     if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
      try {
           val cachedOrgs = organizationRepository.selectCachedForInsertOrganization()
@@ -204,6 +192,92 @@ class SyncManager(private val userApi : UserApi,
                println("Upload  organizations failed ${e.localizedMessage}")
            }
        }
+    }
+    private  suspend fun pushCachedOrganizationUpdates(){
+        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+            try {
+                val cachedOrgs = organizationRepository.selectCachedForUpdateOrganization()
+                cachedOrgs.forEach {
+                    val req = it.genererateCreateOrgDto()
+                    val logo = it .logo
+                    organizationApi.updateOrg(req,logo)
+                    organizationRepository.unCacheForUpdateOrganization(it.id.toString())
+                }
+            }catch (e:Exception){
+                println("Upload  organizations failed ${e.localizedMessage}")
+            }
+        }
+    }
+
+    private  suspend fun downloadAndInsertOrganizationsInternal() {
+        println("inserting organizations")
+        if (isNetworkAvailable.value && isOnlineLoggedInd.value) {
+            val nestedOrg = organizationApi.getOrganizationWithNestedDepartments()
+            nestedOrg.forEach {
+                organizationRepository.insertOrganization(
+                    GetOrgDTO(
+                        id = it.id,
+                        displayName = it.name, logo = it.logo))
+            }
+        }
+        println("inserting organizations complete ")
+    }
+    private suspend fun  deleteUnCachedOrganizations(){
+        try{
+            organizationRepository.deleteUncachedOrganizations()
+        }catch(e:Exception){
+            println("Delete un cached organizations failed ${e.localizedMessage}")
+        }
+    }
+    private  suspend fun  uploadCachedDepartmentInserts(){
+        try {
+           val  cachedDepartments = organizationRepository.selectCachedForInsertDepartment()
+            cachedDepartments.forEach {
+                organizationApi.createDepartment(it)
+                organizationRepository.unCacheForInsertDepartment(it.id.toString())
+            }
+        }
+        catch (e :Exception){
+            println("Upload  departments failed ${e.localizedMessage}")
+        }
+    }
+    private  suspend fun pushUpdatedDepartments (){
+        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+            try {
+                val departments =  organizationRepository.selectCachedForUpdateDepartment()
+                departments.forEach {
+                    organizationApi.updateDepartment(it)
+                    organizationRepository.unCacheForUpdateDepartment(it.id.toString())
+                }
+            }catch (e:Exception){
+                println("push department updates failed ${e.localizedMessage}")
+            }
+        }
+
+    }
+    private suspend fun  uploadCachedSectionInserts(){
+        try {
+            val  cachedSections  =  organizationRepository.selectCachedForInsertSection()
+            cachedSections.forEach {
+                organizationApi.createSection(it)
+                organizationRepository.unCacheForInsertSection(it.id.toString())
+            }
+        }catch (e:Exception){
+            println("Upload  sections failed ${e.localizedMessage}")
+        }
+    }
+    private  suspend fun pushUpdatedSections(){
+        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+            try {
+                val cachedUpdates  = organizationRepository.selectCachedForUpdateSect()
+                cachedUpdates.forEach {
+                    organizationApi.updateSection(it)
+                    organizationRepository.unCacheForUpdateSection(it.id.toString())
+                }
+            }catch (e:Exception){
+                println("Push updated sections failed ${e.localizedMessage}")
+            }
+        }
     }
     private fun isDataStale(): Boolean{
         val savedTimestamp = Instant.ofEpochMilli(

@@ -14,7 +14,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.MoodBad
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +37,7 @@ import org.montigny.client.navigation.Navigator
 import org.montigny.client.ui.Theme.Danger
 import org.montigny.client.ui.Theme.Neutral
 import org.montigny.client.ui.Theme.TextMuted
+import org.montigny.client.ui.organizations.DashboardCard
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.util.UtilityFunctions.Companion.toStringCustom
 import java.util.UUID
@@ -82,12 +85,11 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 val approvedUsers = users.count { it.isApproved }
                 val notApproved = users.count { !it.isApproved }
 
-                DashboardCard("Total Users", totalUsers)
-                DashboardCard("Approved Users", approvedUsers)
-                DashboardCard("Not Approved", notApproved)
+                DashboardCard("Total Users", totalUsers,Icons.Outlined.Group)
+                DashboardCard("Approved Users", approvedUsers,Icons.Outlined.Done)
+                DashboardCard("Not Approved", notApproved,Icons.Outlined.MoodBad)
             }
         }
-
         // ------- ACTION REGION -------
         Surface(
             tonalElevation = 4.dp,
@@ -105,7 +107,7 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 Button(
                     onClick = {
                         if(isNetworkAvailable && !isOnlineLoggedIn){
-                            navigator.navigateTo(Destination.Login)
+                            navigator.navigateTo(Destination.Login, Destination.Users)
                         }
                         userViewModel.synchronizeUserData()
                     },
@@ -120,7 +122,8 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Syncing")
                     } else {
-                        Icon(Icons.Default.Refresh, contentDescription = "Sync Users")
+                        Icon(Icons.Default.Refresh, contentDescription = "Sync Users",
+                            tint = MaterialTheme.colorScheme.onPrimary)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Sync")
                     }
@@ -128,7 +131,8 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 Button(
                     onClick = { navigator.navigateTo(Destination.CreateAccount) }
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Create User")
+                    Icon(Icons.Default.Add, contentDescription = "Create User",
+                            tint = MaterialTheme.colorScheme.onPrimary)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Create")
                 }
@@ -215,59 +219,7 @@ if (!errorMessage.isNullOrEmpty()) {
 }
 }
 
-@Composable
-fun DashboardCard(
-    title: String,
-    count: Int,
-    modifier: Modifier = Modifier,
-    icon: @Composable () -> Unit = {
-        Icon(
-            imageVector = Icons.Outlined.Group, // default user-group icon
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(32.dp)
-        )
-    }
-) {
-    Card(
-        modifier = modifier
-            .padding(12.dp)
-            .size(160.dp),
-        shape = CircleShape,
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        border = BorderStroke(
-            width = 4.dp,
-            color = MaterialTheme.colorScheme.primary
-        ),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            icon()
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = count.toString(),
-                style = MaterialTheme.typography.displaySmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-    }
-}
+
 
 @Composable
 fun UserRow(
@@ -317,7 +269,8 @@ fun UserRow(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        Icon(Icons.Default.Delete, contentDescription = "Delete"
+                        ,tint = MaterialTheme.colorScheme.onPrimary)
                         Spacer(Modifier.width(4.dp))
                         Text("Delete")
                     }

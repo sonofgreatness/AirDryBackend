@@ -12,6 +12,7 @@ import org.montigny.client.data.api.implementation.provideHttpClient
 import org.montigny.client.data.api.repository.OrganizationApi
 import org.montigny.client.data.api.repository.UserApi
 import org.montigny.client.domain.synchronization.SyncManager
+import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
@@ -50,4 +51,8 @@ single <Settings>{Settings() }
     single<OrganizationViewModel> { OrganizationViewModel(get(), get(), get()
     ,get(), get(),
         get(), get()) }
+single <OrganizationDepartmentsAndSectionsViewModel>{
+    OrganizationDepartmentsAndSectionsViewModel(get(), get(),
+        get(), get(), get(), get(), get())
+}
 }

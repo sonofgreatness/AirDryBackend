@@ -1,5 +1,6 @@
 package org.montigny.client.data.api.repository
 
+import org.montigny.client.dto.Organization.CreateDptDTO
 import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.Organization.GetOrgDTO
@@ -16,5 +17,9 @@ interface OrganizationApi {
     suspend fun createOrg(req: CreateOrgDTO,logo: ByteArray?): ApiResponse
     suspend fun getOrgById(orgId: UUID): GetOrgDTO
     suspend fun updateOrg(req: CreateOrgDTO,logo: ByteArray?):ApiResponse
-
+    suspend fun  createSect(req: CreateSectDTO): ApiResponse
+    suspend fun  createDepartment(req: CreateDptDTO) : ApiResponse
+    suspend fun  updateDepartment(req:CreateDptDTO): ApiResponse
+    suspend fun  createSection(req: CreateSectDTO): ApiResponse
+    suspend fun  updateSection(req: CreateSectDTO): ApiResponse
 }

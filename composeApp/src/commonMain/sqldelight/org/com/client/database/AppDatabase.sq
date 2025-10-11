@@ -270,7 +270,7 @@ AND is_pending_update =0;
 ---------------------------------------------
 -- Get cached departments insert
 selectCachedForInsertDepartments:
-SELECT id, displayname FROM department  WHERE
+SELECT id, displayname,organization_id FROM department  WHERE
 is_pending_insert = 1;
 
 -- Get cached sections insert
@@ -285,13 +285,15 @@ SELECT * FROM app_user WHERE is_pending_insert = 1;
 -- Get cached  organization insert
 selectCachedForInsertOrganizationInsert:
 SELECT * FROM organization WHERE is_pending_insert = 1;
+
+
 -----------------------------------------------------
 -- Get cache updates
 -----------------------------------------------------
 
 -- Get cached departments update
 selectCachedForUpdateDepartments:
-SELECT id, displayname FROM department  WHERE
+SELECT id, displayname, organization_id FROM department  WHERE
 is_pending_update = 1;
 
 -- Get cached sections update
@@ -313,6 +315,27 @@ SELECT * FROM organization WHERE is_pending_update = 1;
 unCacheUserForInsert:
 UPDATE app_user
 SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheDepartmentForInsert:
+UPDATE department
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheSectionForInsert:
+UPDATE section
+SET is_pending_insert = 0
+WHERE id = ?;
+
+
+unCacheDepartmentForUpdate:
+UPDATE department
+SET is_pending_update = 0
+WHERE id = ?;
+
+unCacheSectionForUpdate:
+UPDATE section
+SET is_pending_update = 0
 WHERE id = ?;
 
 unCacheUserForUpdate:
@@ -374,6 +397,21 @@ logo = ?,
 displayname = ?,
 is_pending_update = 1
 WHERE id = ?;
+
+--  Update Department
+updateDepartment:
+UPDATE department
+SET  displayname  =? ,
+is_pending_update =1
+WHERE id = ?;
+
+-- Update Section
+updateSection:
+UPDATE section
+SET  displayname = ?,
+is_pending_update = 1
+WHERE id  = ?;
+
 -----------------------------------------
 --  END OF CACHE FUNCTIONS
 ----------------------------------------

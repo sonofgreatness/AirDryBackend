@@ -27,6 +27,7 @@ import org.montigny.client.navigation.Navigator
 import org.montigny.client.ui.Theme.Danger
 import org.montigny.client.ui.Theme.Neutral
 import org.montigny.client.ui.Theme.TimberTheme
+import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
 import org.montigny.client.ui.settings.SettingsNavItem
 import org.montigny.client.ui.users.viewModels.AuthViewModel
@@ -38,7 +39,8 @@ import org.slf4j.Logger
 fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
         usersViewModel: UserViewModel, offlineSessionManager: OfflineSessionManager,
         connectivityObserver: ConnectivityObserver,
-        organizationViewModel: OrganizationViewModel) {
+        organizationViewModel: OrganizationViewModel,
+        organizationViewModelWithDpt: OrganizationDepartmentsAndSectionsViewModel) {
     val isOffLineLoggedIn by offlineSessionManager.isLoggedInFlow.collectAsState(initial = false)
     val isOnlineLoggedIn by sessionManager.isLoggedInFlow.collectAsState(initial = false)
     val isNetworkAvailable by connectivityObserver.isServerReachable.collectAsState(initial = false)
@@ -119,7 +121,7 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                 color = MaterialTheme.colorScheme.background
             ) {
                 NavGraph(navigator, authViewModel, sessionManager,
-                    usersViewModel,organizationViewModel)
+                    usersViewModel,organizationViewModel, organizationViewModelWithDpt)
             }
         }
     }

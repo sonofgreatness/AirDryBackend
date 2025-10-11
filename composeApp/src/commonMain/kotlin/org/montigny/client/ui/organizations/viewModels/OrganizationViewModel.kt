@@ -60,7 +60,7 @@ class OrganizationViewModel
 
     val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
     val isOnlineLoggedIn : StateFlow<Boolean> =  sessionManager.isLoggedInFlow
-
+    val isOfflineLoggedIn : StateFlow<Boolean> =offlineSessionManager.isLoggedInFlow
 
     fun initializeUpdateOrg(orgId: String) {
         viewModelScope.launch {
@@ -188,4 +188,15 @@ class OrganizationViewModel
     }
     fun clearErrorMessage(){}
 
+    fun getUserId(): String ?{
+        if (isNetworkAvailable.value && isOnlineLoggedIn.value){
+            println("gettingUserId online ${sessionManager.userId}")
+            return  sessionManager.userId
+        }
+        if (!isNetworkAvailable.value && isOfflineLoggedIn.value)
+        {
+            println("gettingUserId offline ${offlineSessionManager.userId}")
+            return offlineSessionManager.userId
+        }
+        return  null}
 }

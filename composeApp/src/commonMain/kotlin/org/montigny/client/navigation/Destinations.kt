@@ -12,5 +12,5 @@ sealed class Destination(val route: String) {
     object  CreateAccount: Destination("create_user")
     object CreateOrganization: Destination("create_organization")
     data class EditOrganization(val orgId: String) : Destination("edit_organization/$orgId")
-
+    data class  ViewOrgWithDepartmentsAndSections(val userId : String) : Destination("view_org_with_departments_and_sections")
 }

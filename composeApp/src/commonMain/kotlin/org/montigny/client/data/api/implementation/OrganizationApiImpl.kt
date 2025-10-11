@@ -15,12 +15,17 @@ import io.ktor.http.isSuccess
 import io.ktor.util.logging.*
 import org.montigny.client.API_BASE_URL
 import org.montigny.client.API_URL_ORG_DEPT_ALL
+import org.montigny.client.API_URL_ORG_DEPT_REGISTER
+import org.montigny.client.API_URL_ORG_DEPT_UPDATE
 import org.montigny.client.API_URL_ORG_GET_BY_ID
 import org.montigny.client.API_URL_ORG_REGISTER
 import org.montigny.client.API_URL_ORG_SECT_ALL
+import org.montigny.client.API_URL_ORG_SECT_REGISTER
+import org.montigny.client.API_URL_ORG_SECT_UPDATE
 import org.montigny.client.API_URL_ORG_UPDATE
 import org.montigny.client.API_URL_ORG_WITH_NESTED
 import org.montigny.client.data.api.repository.OrganizationApi
+import org.montigny.client.dto.Organization.CreateDptDTO
 import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.Organization.GetOrgDTO
@@ -129,4 +134,88 @@ class OrganizationApiImpl(private val client: HttpClient,
             )
         }
     }
+    override    suspend fun  createSect(req: CreateSectDTO): ApiResponse{
+
+        try{
+            val response = client.post("$API_BASE_URL$API_URL_ORG_SECT_REGISTER"){
+                contentType(ContentType.Application.Json)
+                setBody(req)
+            }
+            return if (response.status.isSuccess())
+                ApiResponse.Success
+            else
+                ApiResponse.Error(HttpStatusCode.InternalServerError.value,
+                    "Failed to create section: ${response.bodyAsText()}")
+        }catch (e:Exception){
+
+            logger.error("create section error: ${e.localizedMessage}", e)
+            return ApiResponse.Error(HttpStatusCode.InternalServerError.value, "Failed to create department: ${e.message}")
+        }
+    }
+   override suspend fun  createDepartment(req: CreateDptDTO) : ApiResponse {
+       try{
+           val response = client.post("$API_BASE_URL$API_URL_ORG_DEPT_REGISTER"){
+               contentType(ContentType.Application.Json)
+               setBody(req)
+           }
+           return if (response.status.isSuccess())
+               ApiResponse.Success
+           else
+               ApiResponse.Error(HttpStatusCode.InternalServerError.value, "Failed to create department: ${response.bodyAsText()}")
+       }catch (e:Exception){
+
+           logger.error("create Department error: ${e.localizedMessage}", e)
+           return ApiResponse.Error(HttpStatusCode.InternalServerError.value, "Failed to create department: ${e.message}")
+       }
+   }
+  override  suspend  fun  updateDepartment(req:CreateDptDTO): ApiResponse{
+      try {
+
+          val response = client.post("$API_BASE_URL$API_URL_ORG_DEPT_UPDATE"){
+              contentType(ContentType.Application.Json)
+              setBody(req)
+          }
+          return if (response.status.isSuccess())
+              ApiResponse.Success
+          else
+              ApiResponse.Error(HttpStatusCode.InternalServerError.value, "Failed to update department: ${response.bodyAsText()}")
+      }catch (e:Exception){
+          logger.error("updateDepartment() error: ${e.localizedMessage}", e)
+          return ApiResponse.Error(HttpStatusCode.InternalServerError.value, "Failed to update department: ${e.message}")
+      }
+  }
+
+   override  suspend fun  createSection(req: CreateSectDTO): ApiResponse{
+       try{
+           val response = client.post("$API_BASE_URL$API_URL_ORG_SECT_REGISTER"){
+               contentType(ContentType.Application.Json)
+               setBody(req)
+           }
+           return if (response.status.isSuccess())
+               ApiResponse.Success
+           else
+               ApiResponse.Error(HttpStatusCode.InternalServerError.value, "Failed to create section: ${response.bodyAsText()}")
+       }catch (e:Exception){
+           logger.error("create Section error: ${e.localizedMessage}", e)
+           return ApiResponse.Error(HttpStatusCode.InternalServerError.value,
+               "Failed to create section: ${e.message}")
+       }
+   }
+   override suspend fun  updateSection(req: CreateSectDTO): ApiResponse{
+       try{
+           val response = client.post("$API_BASE_URL$API_URL_ORG_SECT_UPDATE"){
+               contentType(ContentType.Application.Json)
+               setBody(req)
+           }
+           return if (response.status.isSuccess())
+               ApiResponse.Success
+           else
+               ApiResponse.Error(HttpStatusCode.InternalServerError.value,
+                   "Failed to update section: ${response.bodyAsText()}")
+       }catch (e:Exception){
+           logger.error("update section error: ${e.localizedMessage}", e)
+           return ApiResponse.Error(HttpStatusCode.InternalServerError.value,
+               "Failed to update section: ${e.message}")
+       }
+   }
 }

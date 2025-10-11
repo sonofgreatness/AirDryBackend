@@ -5,6 +5,8 @@ import androidx.compose.runtime.getValue
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.ui.organizations.CreateOrganizationScreen
 import org.montigny.client.ui.organizations.OrganizationScreen
+import org.montigny.client.ui.organizations.ViewOrgWithDepartmentsAndSectionsScreen
+import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
 import org.montigny.client.ui.reports.ReportsScreen
 import org.montigny.client.ui.settings.MainSettingsScreen
@@ -23,10 +25,11 @@ fun NavGraph(
     authViewModel: AuthViewModel,
     sessionManager: SessionManager,
     usersViewModel: UserViewModel,
-    organizationViewModel : OrganizationViewModel ,
+    organizationViewModel : OrganizationViewModel,
+    organizationViewModelWithDpt : OrganizationDepartmentsAndSectionsViewModel
 ) {
     val currentDestination by navigator.currentDestination
-
+     val nextDestination by navigator.nextDestination
     when (currentDestination) {
         Destination.Users -> UsersScreen(usersViewModel,navigator)
         Destination.Organizations -> OrganizationScreen(organizationViewModel,navigator)
@@ -34,7 +37,11 @@ fun NavGraph(
         Destination.Reports -> ReportsScreen()
         Destination.Settings -> SettingsScreen()
         Destination.Login -> LoginScreen(authViewModel, sessionManager) {
-            navigator.navigateTo(Destination.Settings)
+
+            if (nextDestination != null )
+                navigator.navigateTo(nextDestination!!)
+            else
+                navigator.navigateTo(Destination.Settings)
         }
         Destination.MainSettings -> MainSettingsScreen()
         is Destination.EditUser -> {
@@ -50,5 +57,10 @@ fun NavGraph(
                 organizationViewModel,
                 navigator,true)
         }
+        is Destination.ViewOrgWithDepartmentsAndSections ->{
+            ViewOrgWithDepartmentsAndSectionsScreen(
+                userId = (currentDestination as Destination.ViewOrgWithDepartmentsAndSections).userId,
+                navigator = navigator,
+                organizationViewModel = organizationViewModelWithDpt) }
     }
 }

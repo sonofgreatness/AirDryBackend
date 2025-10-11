@@ -8,6 +8,7 @@ import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.di.appModule
 import org.montigny.client.di.databaseModule
+import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
@@ -27,8 +28,9 @@ fun main() = application {
     val offlineSessionManager: OfflineSessionManager = koinInject()
     val connectivityObserver: ConnectivityObserver = koinInject ()
     val  organizationViewModel: OrganizationViewModel = koinInject ()
+    val organizationDepartmentsAndSectionsViewModel: OrganizationDepartmentsAndSectionsViewModel = koinInject()
     App(sessionManager,authViewModel,usersViewModel,
         offlineSessionManager, connectivityObserver,
-        organizationViewModel)
+        organizationViewModel, organizationDepartmentsAndSectionsViewModel)
     }
 }
