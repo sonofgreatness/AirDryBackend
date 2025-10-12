@@ -3,8 +3,13 @@ package org.montigny.client.auth
 import com.auth0.jwt.JWT
 import com.auth0.jwt.exceptions.JWTDecodeException
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.slf4j.Logger
 import java.util.*
 
@@ -66,6 +71,19 @@ class SessionManager(
     init {
         // initialize _isLoggedIn from stored token safely
         _isLoggedIn.value = decodeJwtToken(settings.getStringOrNull("jwt_token"))
+        // OPTIONAL: monitor expiry every 5 minutes
+        CoroutineScope(Dispatchers.Default).launch {
+            while (isActive) {
+                println("session manager Logged in ")
+                val token = settings.getStringOrNull("jwt_token")
+                val valid = decodeJwtToken(token)
+                if (_isLoggedIn.value != valid) {
+                    _isLoggedIn.value = valid
+                }
+                println("session manager Logged in __${_isLoggedIn.value}")
+                delay(1 * 60 * 1000L) // every 5 minutes
+            }
+        }
     }
 }
 

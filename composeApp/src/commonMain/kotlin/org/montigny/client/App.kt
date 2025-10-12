@@ -51,6 +51,7 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
     val isOnlineLoggedIn by sessionManager.isLoggedInFlow.collectAsState(initial = false)
     val isNetworkAvailable by connectivityObserver.isServerReachable.collectAsState(initial = false)
     val  isDarkThemeEnabled by themeManager.isDarkThemeEnabled.collectAsState(initial = false)
+
     TimberTheme(darkTheme = isDarkThemeEnabled) {
         val navigator = remember { Navigator() }
         Row(modifier = Modifier.fillMaxSize()) {
