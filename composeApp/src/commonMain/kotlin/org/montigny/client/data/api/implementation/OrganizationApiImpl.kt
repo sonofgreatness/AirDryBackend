@@ -15,11 +15,13 @@ import io.ktor.http.isSuccess
 import io.ktor.util.logging.*
 import org.montigny.client.API_BASE_URL
 import org.montigny.client.API_URL_ORG_DEPT_ALL
+import org.montigny.client.API_URL_ORG_DEPT_DELETE_BY_ID
 import org.montigny.client.API_URL_ORG_DEPT_REGISTER
 import org.montigny.client.API_URL_ORG_DEPT_UPDATE
 import org.montigny.client.API_URL_ORG_GET_BY_ID
 import org.montigny.client.API_URL_ORG_REGISTER
 import org.montigny.client.API_URL_ORG_SECT_ALL
+import org.montigny.client.API_URL_ORG_SECT_DELETE_BY_ID
 import org.montigny.client.API_URL_ORG_SECT_REGISTER
 import org.montigny.client.API_URL_ORG_SECT_UPDATE
 import org.montigny.client.API_URL_ORG_UPDATE
@@ -218,4 +220,25 @@ class OrganizationApiImpl(private val client: HttpClient,
                "Failed to update section: ${e.message}")
        }
    }
+  override suspend fun  deleteSection(id : UUID):ApiResponse{
+      val resp = client.delete("$API_BASE_URL/org/department/section/${id}/delete"){
+          contentType(ContentType.Application.Json)
+      }
+      return if (resp.status.isSuccess())
+          ApiResponse.Success
+      else
+          ApiResponse.Error(HttpStatusCode.InternalServerError.value,
+              "Failed to delete section: ${resp.bodyAsText()}")
+  }
+  override  suspend fun  deleteDepartment(id : UUID):ApiResponse{
+      API_URL_ORG_DEPT_DELETE_BY_ID
+      val resp = client.delete("$API_BASE_URL/org/department/delete/${id}"){
+          contentType(ContentType.Application.Json)
+      }
+      return if (resp.status.isSuccess())
+          ApiResponse.Success
+      else
+          ApiResponse.Error(HttpStatusCode.InternalServerError.value,
+              "Failed to delete department: ${resp.bodyAsText()}")
+  }
 }

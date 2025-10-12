@@ -15,6 +15,14 @@ val sqldelightVersion = libs.versions.sqldelight.get()
 kotlin {
     jvm()
 
+    sourceSets.all {
+        languageSettings {
+            languageVersion = "2.2"
+            apiVersion = "2.2"
+            progressiveMode = true
+        }
+    }
+
     @OptIn(ExperimentalWasmDsl::class)
     /*wasmJs {
         outputModuleName.set("composeApp")

@@ -39,13 +39,23 @@ class OrganizationDepartmentsAndSectionsViewModel(
     private  val _creatDepartmentState = MutableStateFlow<UiState>(UiState.Idle)
     val  creatDepartmentState: StateFlow<UiState> = _creatDepartmentState
 
+    private val _errorMessageForDepartment = MutableStateFlow<String?>(null)
+    val errorMessageForDepartment: StateFlow<String?> = _errorMessageForDepartment
+
+    private val _errorMessageForSection  = MutableStateFlow<String?>(null)
+    val errorMessageForSection: StateFlow<String?> = _errorMessageForSection
+
+    private  val _isDeletingDepartment  = MutableStateFlow(false)
+    val  isDeletingDepartment: StateFlow<Boolean> = _isDeletingDepartment
+
+    private  val _isDeletingSection  = MutableStateFlow(false)
+    val  isDeletingSection: StateFlow<Boolean> = _isDeletingSection
 
     val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
     val isOnlineLoggedIn : StateFlow<Boolean> =  sessionManager.isLoggedInFlow
 
     fun initializeLoadOrganization(userId:String) {
         viewModelScope.launch {
-            println("intialize org  for user $userId")
             try {
                 if (isNetworkAvailable.value && isOnlineLoggedIn.value) {
                     val organization = organizationApi.getOrganizationWithNestedDepartments()
@@ -57,6 +67,21 @@ class OrganizationDepartmentsAndSectionsViewModel(
             }catch (e: Exception) {
                 logger.error("Failed to load update user", e)
             } }
+    }
+    fun  synchronizeOrganizations(){
+        viewModelScope.launch {
+            try {
+                synchronizeOrganizationsInternal(isNetworkAvailable.value, isOnlineLoggedIn.value)
+            }
+            catch (e: Exception) {
+                logger.error("failed to synchronize organizations", e)
+            }
+        }
+    }
+    private suspend fun  synchronizeOrganizationsInternal(isNetworkAvailable:Boolean, isOnlineLoggedIn:Boolean){
+        if(isNetworkAvailable && isOnlineLoggedIn){
+            syncManager.downloadAndInsertOrganizations()
+        }
     }
     fun createDepartment(departmentName:String) {
         viewModelScope.launch {
@@ -174,5 +199,64 @@ class OrganizationDepartmentsAndSectionsViewModel(
             }
 
         }
+    }
+    fun deleteSection(sectionId: UUID){
+        viewModelScope.launch {
+            try {
+                if(isNetworkAvailable.value && isOnlineLoggedIn.value) {
+                 _isDeletingSection.value = true
+                   when(val resp = organizationApi.deleteSection(sectionId))
+                   {
+                       is ApiResponse.Error -> {
+                           val msg = if (resp.message?.contains("violates foreign key constraint") == true) {
+                               "This user cannot be deleted because they are linked to an organization or another record."
+                           } else {
+                               resp.message ?: "Failed to delete user."
+                           }
+                           _errorMessageForSection.value = msg
+                       }
+                       else-> logger.info("Section  deleted successfully.")
+                   }
+                }
+                synchronizeOrganizations()
+            }catch (e: Exception){
+                logger.error("Failed to delete section ${e.message}")
+            }finally {
+                _isDeletingSection.value = false
+            }
+        }
+    }
+    fun deleteDepartment(departmentId: UUID){
+        viewModelScope.launch {
+            try {
+                if(isNetworkAvailable.value && isOnlineLoggedIn.value) {
+                    _isDeletingDepartment.value = true
+                    when(val resp = organizationApi.deleteDepartment(departmentId))
+                    {
+                        is ApiResponse.Error -> {
+                            val msg = if (resp.message?.contains("violates foreign key constraint") == true) {
+                                "This user cannot be deleted because they are linked to an organization or another record."
+                            } else {
+                                resp.message ?: "Failed to delete user."
+                            }
+                            logger.error("Failed to delete department ${resp.message}")
+                            _errorMessageForDepartment.value = msg
+                        }
+                        else-> logger.info("Department  deleted successfully.")
+                    }
+                }
+                synchronizeOrganizations()
+            }catch (e: Exception){
+                logger.error("Failed to delete department ${e.message}")
+            }finally {
+                _isDeletingDepartment.value = false
+            }
+        }
+    }
+    fun clearDepartmentErrorMessage(){
+        _errorMessageForDepartment.value = null
+    }
+    fun clearSectionErrorMessage(){
+        _errorMessageForSection.value = null
     }
 }

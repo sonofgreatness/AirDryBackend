@@ -54,10 +54,6 @@ class AuthViewModel(
         _uiState.value = UiState.Idle
     }
 
-
-
-
-
     fun login()
     {
         loginInternal(isNetworkAvailable.value)

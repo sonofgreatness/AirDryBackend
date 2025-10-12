@@ -46,7 +46,6 @@ class OrganizationViewModel
     private val _createOrganizationState = MutableStateFlow<UiState> (UiState.Idle)
     val createOrganizationState: StateFlow<UiState> = _createOrganizationState
 
-
     private val _updateOrganizationState = MutableStateFlow<UiState> (UiState.Idle)
     val updateOrganizationState: StateFlow<UiState> = _updateOrganizationState
 
@@ -62,9 +61,9 @@ class OrganizationViewModel
     val isOnlineLoggedIn : StateFlow<Boolean> =  sessionManager.isLoggedInFlow
     val isOfflineLoggedIn : StateFlow<Boolean> =offlineSessionManager.isLoggedInFlow
 
+
     fun initializeUpdateOrg(orgId: String) {
         viewModelScope.launch {
-              println("intialize org $orgId")
             try {
                 if (isNetworkAvailable.value && isOnlineLoggedIn.value) {
                     val organization = organizationApi.getOrgById(orgId.toUUID())
@@ -80,10 +79,14 @@ class OrganizationViewModel
     fun  synchronizeOrganizations(){
         viewModelScope.launch {
             try {
+                _isSyncing.value = true
                 synchronizeOrganizationsInternal(isNetworkAvailable.value, isOnlineLoggedIn.value)
             }
             catch (e: Exception) {
                 logger.error("failed to synchronize organizations", e)
+            }
+            finally {
+                _isSyncing.value = false
             }
         }
     }

@@ -1,6 +1,5 @@
 package org.montigny.client.ui.users.viewModels
 
-import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -16,9 +15,7 @@ import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.util.ConnectivityObserver
-import org.montigny.client.util.UtilityFunctions.Companion.toStringCustom
 import org.montigny.client.util.UtilityFunctions.Companion.toUUID
-import org.montigny.client.util.UtilityFunctions.Companion.toUUIDOrNull
 import org.montigny.client.util.ViewModel
 import org.montigny.client.util.stateClasses.ApiResponse
 import org.montigny.client.util.stateClasses.UiState
@@ -245,7 +242,7 @@ private fun synchronizeUserDataInternal(isNetworkAvailable: Boolean =false,isOnl
             _isSyncing.value = true
             try {
                 if (isNetworkAvailable && isOnlineLoggedIn) {
-                    syncManager.downloadUserTypesAndUsers()
+                    syncManager.synchronizeAllAppData()
                     syncManager.downLoadDepartmentsAndSections()
                 }
                 populateAUserLists()

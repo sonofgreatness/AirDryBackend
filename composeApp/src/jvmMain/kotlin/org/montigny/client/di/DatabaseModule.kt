@@ -13,6 +13,7 @@ import org.montigny.client.database.daoImp.UserRepositoryImpl
 val databaseModule = module {
     single<PasswordHasher> { BCryptPasswordHasher() }
     single<AppDatabase> { DatabaseFactory.database }
-    single <UserRepository>{UserRepositoryImpl(get(),get(), get(), get()) }
+    single <UserRepository>{UserRepositoryImpl(get(),get(), get(),get(),
+        get())}
     single<OrganizationRepository>{ OrganizationRepositoryImpl(get(), get()) }
 }

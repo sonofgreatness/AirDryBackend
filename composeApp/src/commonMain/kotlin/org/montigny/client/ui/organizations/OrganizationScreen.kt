@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Layers
@@ -16,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
@@ -197,35 +199,82 @@ fun OrganizationRow(
     organizationViewModel: OrganizationViewModel
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(Modifier.weight(1f)) {
-                Text(organization.name, style = MaterialTheme.typography.titleMedium)
-                Text("Departments: ${organization.departments.size}", color = TextMuted)
-                Text("Sections: ${organization.departments.sumOf { it.sections.size }}", color = TextMuted)
+            // Left Column: Organization Info
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    organization.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    "Departments: ${organization.departments.size}",
+                    color = TextMuted,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    "Sections: ${organization.departments.sumOf { it.sections.size }}",
+                    color = TextMuted,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(Modifier.height(6.dp))
                 OrganizationLogo(organization.logo)
             }
 
-            Row{
-                Text("View departments",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(start = 12.dp, end = 12.dp)
-                        .clickable(onClick = {
-                            val userId  =  organizationViewModel.getUserId()
-                            if(userId == null)
+            // Middle Column: View Departments Button
+            Box(
+                modifier = Modifier
+                    .weight(0.8f)
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                ElevatedButton(
+                    onClick = {
+                        val userId = organizationViewModel.getUserId()
+                        if (userId == null) {
                             navigator.navigateTo(Destination.Login, Destination.Organizations)
-                                else
-                            navigator.navigateTo(Destination.ViewOrgWithDepartmentsAndSections(userId = userId))
-                        })
-                )
+                        } else {
+                            navigator.navigateTo(
+                                Destination.ViewOrgWithDepartmentsAndSections(userId = userId)
+                            )
+                        }
+                    },
+                    elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 2.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Visibility,
+                        contentDescription = "View departments",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text("View Departments")
+                }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+
+            // Right Column: Action Buttons
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 OutlinedButton(onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = "Edit")
                     Spacer(Modifier.width(4.dp))
@@ -246,9 +295,11 @@ fun OrganizationRow(
                     } else {
                         Icon(Icons.Default.Delete, contentDescription = "Delete")
                         Spacer(Modifier.width(4.dp))
-                        Text("Delete") }
+                        Text("Delete")
+                    }
                 }
             }
         }
     }
+
 }

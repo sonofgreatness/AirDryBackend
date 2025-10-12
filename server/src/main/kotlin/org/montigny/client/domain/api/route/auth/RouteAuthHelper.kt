@@ -6,6 +6,8 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.montigny.client.ADMIN_DISPLAY_NAME
+import org.montigny.client.SUPER_USER_DISPLAY_NAME
 import org.montigny.client.service.UserService
 
 fun Route.authorize(
@@ -37,10 +39,10 @@ fun Route.authorize(
     }
 
 enum class UserRole(val displayName: String) {
-    ADMIN("admin"),
+    ADMIN(ADMIN_DISPLAY_NAME),
     CAPTURER("capturer"),
     CASUAL_WORKER("casual"),
-    SUPER_USER("super_user");
+    SUPER_USER(SUPER_USER_DISPLAY_NAME);
 
     companion object {
         fun fromString(value: String): UserRole? =

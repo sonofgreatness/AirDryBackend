@@ -22,4 +22,6 @@ interface OrganizationApi {
     suspend fun  updateDepartment(req:CreateDptDTO): ApiResponse
     suspend fun  createSection(req: CreateSectDTO): ApiResponse
     suspend fun  updateSection(req: CreateSectDTO): ApiResponse
+    suspend fun  deleteSection(id : UUID):ApiResponse
+    suspend fun  deleteDepartment(id : UUID):ApiResponse
 }

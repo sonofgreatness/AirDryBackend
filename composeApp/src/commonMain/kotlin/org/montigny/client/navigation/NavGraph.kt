@@ -3,6 +3,8 @@ package org.montigny.client.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import org.montigny.client.auth.SessionManager
+import org.montigny.client.domain.synchronization.SyncSettingsRepository
+import org.montigny.client.ui.Theme.ThemeManager
 import org.montigny.client.ui.organizations.CreateOrganizationScreen
 import org.montigny.client.ui.organizations.OrganizationScreen
 import org.montigny.client.ui.organizations.ViewOrgWithDepartmentsAndSectionsScreen
@@ -26,7 +28,9 @@ fun NavGraph(
     sessionManager: SessionManager,
     usersViewModel: UserViewModel,
     organizationViewModel : OrganizationViewModel,
-    organizationViewModelWithDpt : OrganizationDepartmentsAndSectionsViewModel
+    organizationViewModelWithDpt : OrganizationDepartmentsAndSectionsViewModel,
+    syncSettingsRepository: SyncSettingsRepository,
+    themeManager: ThemeManager,
 ) {
     val currentDestination by navigator.currentDestination
      val nextDestination by navigator.nextDestination
@@ -43,7 +47,12 @@ fun NavGraph(
             else
                 navigator.navigateTo(Destination.Settings)
         }
-        Destination.MainSettings -> MainSettingsScreen()
+        Destination.MainSettings -> MainSettingsScreen(
+            darkThemeEnabled = themeManager.isDarkThemeEnabled.value,
+            onToggleTheme = { themeManager.setDarkTheme(it) },
+            initialSyncIntervalHours = syncSettingsRepository.getSyncIntervalHours().toInt(),
+            onSyncIntervalChange = { syncSettingsRepository.setSyncIntervalHours(it.toLong()) },
+        )
         is Destination.EditUser -> {
             EditUserFormScreen(
                 userId = (currentDestination as Destination.EditUser).userId,

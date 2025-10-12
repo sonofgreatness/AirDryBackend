@@ -7,6 +7,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
 import io.ktor.util.logging.*
 import org.montigny.client.*
+import org.montigny.client.auth.SessionExpiryRepository
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.UserApi
 import org.montigny.client.dto.Auth.AuthRequest
@@ -19,20 +20,26 @@ import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.dto.User.UserTypesDTO
 import org.montigny.client.util.stateClasses.ApiResponse
 import java.util.*
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 
 class UserApiImpl(private val client: HttpClient,
                   private val sessionManager: SessionManager,
-                  private val logger: Logger): UserApi {
+                  private val logger: Logger,
+    private  val sessionExpiryRepository: SessionExpiryRepository): UserApi {
 
+    @OptIn(ExperimentalTime::class)
     override suspend fun login(username: String, password: String): Boolean {
         val response: AuthResponse = client.post("$API_BASE_URL$API_URL_USER_LOGIN") {
             contentType(ContentType.Application.Json)
             setBody(AuthRequest(username, password))
         }.body()
         sessionManager.jwtToken= response.token
+        sessionExpiryRepository.setLastLoginTimestamp(Clock.System.now().toEpochMilliseconds())
         return true
     }
+
    override fun logout() {
         sessionManager.logout()
     }

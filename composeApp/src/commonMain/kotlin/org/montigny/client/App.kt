@@ -21,11 +21,13 @@ import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
+import org.montigny.client.domain.synchronization.SyncSettingsRepository
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.NavGraph
 import org.montigny.client.navigation.Navigator
 import org.montigny.client.ui.Theme.Danger
 import org.montigny.client.ui.Theme.Neutral
+import org.montigny.client.ui.Theme.ThemeManager
 import org.montigny.client.ui.Theme.TimberTheme
 import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
@@ -40,12 +42,16 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
         usersViewModel: UserViewModel, offlineSessionManager: OfflineSessionManager,
         connectivityObserver: ConnectivityObserver,
         organizationViewModel: OrganizationViewModel,
-        organizationViewModelWithDpt: OrganizationDepartmentsAndSectionsViewModel) {
+        organizationViewModelWithDpt: OrganizationDepartmentsAndSectionsViewModel,
+        syncSettingsRepository: SyncSettingsRepository,
+        themeManager: ThemeManager
+) {
+
     val isOffLineLoggedIn by offlineSessionManager.isLoggedInFlow.collectAsState(initial = false)
     val isOnlineLoggedIn by sessionManager.isLoggedInFlow.collectAsState(initial = false)
     val isNetworkAvailable by connectivityObserver.isServerReachable.collectAsState(initial = false)
-
-    TimberTheme {
+    val  isDarkThemeEnabled by themeManager.isDarkThemeEnabled.collectAsState(initial = false)
+    TimberTheme(darkTheme = isDarkThemeEnabled) {
         val navigator = remember { Navigator() }
         Row(modifier = Modifier.fillMaxSize()) {
             NavigationRail(
@@ -121,17 +127,12 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                 color = MaterialTheme.colorScheme.background
             ) {
                 NavGraph(navigator, authViewModel, sessionManager,
-                    usersViewModel,organizationViewModel, organizationViewModelWithDpt)
+                    usersViewModel,organizationViewModel, organizationViewModelWithDpt,
+                    syncSettingsRepository,themeManager)
             }
         }
     }
 }
-
-
-
-
-
-
 @Composable
 fun ConnectivityStatusItem(
     isNetworkAvailable: Boolean,

@@ -1,13 +1,17 @@
 package org.montigny.client.database.daoImp
 
 import org.com.client.database.User_type
+import org.montigny.client.ADMIN_DISPLAY_NAME
+import org.montigny.client.SUPER_USER_DISPLAY_NAME
 import org.montigny.client.auth.OfflineSessionManager
+import org.montigny.client.auth.SessionExpiryRepository
 import org.montigny.client.database.AppDatabase
 import org.montigny.client.database.PasswordHasher
 import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.dto.User.NamedEntityResponse
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
+import org.montigny.client.dto.User.UserTypesDTO
 import org.montigny.client.util.UtilityFunctions.Companion.convertBoolToLong
 import org.montigny.client.util.UtilityFunctions.Companion.convertLongToBool
 import org.montigny.client.util.UtilityFunctions.Companion.toStringCustom
@@ -16,11 +20,14 @@ import org.montigny.client.util.UtilityFunctions.Companion.toUUIDOrNull
 import org.montigny.client.util.stateClasses.ApiResponse
 import org.slf4j.Logger
 import java.util.*
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 class UserRepositoryImpl(private val db: AppDatabase,
                          private val passwordHasher: PasswordHasher,
 private val offlineSessionManager: OfflineSessionManager,
-                         private val logger : Logger): UserRepository {
+                         private val logger : Logger,
+                         private  val sessionExpiryRepository: SessionExpiryRepository): UserRepository {
 
     private val queries = db.appDatabaseQueries
     override suspend fun deleteAllUsers() {
@@ -178,6 +185,13 @@ private val offlineSessionManager: OfflineSessionManager,
         val storedHash = row.password_hash
             ?: return ApiResponse.Error(403, "No password hash stored for $email")
 
+        val adminUserType = queries.selectAdminUserType().executeAsOne()
+
+        if (row.user_type_id == null)
+            return ApiResponse.Error(403, "User type not found")
+        if(row.user_type_id != adminUserType.id)
+            return ApiResponse.Error(405, "User type not permitted")
+
         logger.info("🔍 Offline auth: email=$email storedHash=$storedHash")
 
         return if (passwordHasher.verify(password, storedHash)) {
@@ -188,14 +202,16 @@ private val offlineSessionManager: OfflineSessionManager,
         }
     }
 
+    @OptIn(ExperimentalTime::class)
     override suspend fun offlineLogin(username: String, password: String): ApiResponse {
         val auth = authenticate(username, password)
         return when (auth) {
             is ApiResponse.Created -> {
+                sessionExpiryRepository.setLastLoginTimestamp(Clock.System.now().toEpochMilliseconds())
                 offlineSessionManager.login(auth.id)
                 auth
             }
-            else -> auth // propagate the ApiResponse.Error with details
+            else -> auth
         }
     }
     override fun offlineLogout() {

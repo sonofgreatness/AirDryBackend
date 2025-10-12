@@ -103,6 +103,11 @@ selectUserTypeById:
 SELECT * FROM user_type
 WHERE id = ?;
 
+-- Get admin user_type
+selectAdminUserType:
+SELECT * FROM  user_type
+WHERE displayname LIKE '%admin%';
+
 -- Delete user_type by id
 deleteUserTypeById:
 DELETE FROM user_type

@@ -42,21 +42,39 @@ class SyncManager(private val userApi : UserApi,
 {
     val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
      val isOnlineLoggedInd: StateFlow<Boolean> = sessionManager.isLoggedInFlow
-    suspend fun downloadUserTypesAndUsers(){
-        organizationRepository.deleteUnCachedDepartments()
-        organizationRepository.deleteUnCachedSections()
+    suspend fun synchronizeAllAppData(){
+        deleteUncachedRecords()
+        uploadCachedInserts()
+        pushCachedUpdates()
+        downloadAndInsertAllRecords()
+    }
 
-        uploadCachedUsers()
-        uploadCachedDepartmentInserts()
-        uploadCachedSectionInserts()
+    private suspend fun downloadAndInsertAllRecords() {
+        downloadAndInsertUsers()
+        downloadAndInsertUserTypes()
+        downloadAndInsertOrganizationsInternal()
+    }
 
+    private suspend fun pushCachedUpdates() {
         pushCachedUserUpdates()
         pushUpdatedDepartments()
         pushUpdatedSections()
-
-        downloadAndInsertUsers()//delete uncached values
-        downloadAndInsertUserTypes()//....
+        pushCachedOrganizationUpdates()
     }
+
+    private suspend fun uploadCachedInserts() {
+        uploadCachedUsers()
+        uploadCachedDepartmentInserts()
+        uploadCachedSectionInserts()
+    }
+
+    private suspend fun deleteUncachedRecords() {
+        organizationRepository.deleteUnCachedDepartments()
+        organizationRepository.deleteUnCachedSections()
+        userRepository.deleteUnCachedUsers()
+        deleteUnCachedOrganizations()
+    }
+
     private  suspend fun uploadCachedUsers(){
         if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
 

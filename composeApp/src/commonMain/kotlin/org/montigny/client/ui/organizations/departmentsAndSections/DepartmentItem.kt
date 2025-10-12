@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -26,13 +27,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.Organization.DepartmentResponse
+import org.montigny.client.ui.Theme.Danger
 
 @Composable
 fun DepartmentItem(
     department: DepartmentResponse,
     onEditDepartment: (DepartmentResponse) -> Unit,
     onAddSection: (DepartmentResponse) -> Unit,
-    onEditSection: (CreateSectDTO) -> Unit
+    onEditSection: (CreateSectDTO) -> Unit,
+    onDeleteSection:(CreateSectDTO) -> Unit,
+    onDeleteDepartment: (DepartmentResponse) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -54,6 +58,12 @@ fun DepartmentItem(
                 Row {
                     IconButton(onClick = { onEditDepartment(department) }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit Department")
+                    }
+                    IconButton(onClick = { onDeleteDepartment(department) }) {
+                        Icon(Icons.Default.Delete,
+                            contentDescription = "Delete Department",
+                            tint = Danger
+                        )
                     }
                     IconButton(onClick = { expanded = !expanded }) {
                         Icon(
@@ -82,6 +92,11 @@ fun DepartmentItem(
                             )
                             IconButton(onClick = { onEditSection(section) }) {
                                 Icon(Icons.Default.Edit, contentDescription = "Edit Section")
+                            }
+                            IconButton(onClick = { onDeleteSection(section) }) {
+                                Icon(Icons.Default.Delete,
+                                    contentDescription = "Delete Section",
+                                   tint = Danger)
                             }
                         }
                     }

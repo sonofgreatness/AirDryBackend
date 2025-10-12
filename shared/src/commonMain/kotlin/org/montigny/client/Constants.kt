@@ -2,7 +2,8 @@ package org.montigny.client
 
 
 const val SERVER_PORT = 9090
-
+const val ADMIN_DISPLAY_NAME = "admin"
+const val SUPER_USER_DISPLAY_NAME = "super_user"
 const val API_URL_USER_REGISTER= "/users/register"
 const val API_URL_ADMIN_REGISTER= "/users/admin_register"
 const val API_URL_USER_UPDATE = "/users/{id}/update"
