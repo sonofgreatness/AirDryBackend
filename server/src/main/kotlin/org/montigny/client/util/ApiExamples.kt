@@ -3,6 +3,8 @@ package org.montigny.client.util
 import org.montigny.client.dto.Auth.AuthRequest
 import org.montigny.client.dto.User.UpdateUserDTO
 import org.montigny.client.dto.User.UserRegisterRequest
+import org.montigny.client.dto.Work.CreateStackCodeDTO
+import org.montigny.client.dto.Work.CreateStackDTO
 import java.util.UUID
 
 class ApiExamples {
@@ -43,5 +45,16 @@ class ApiExamples {
             updated_departmentId = null,
 
             )
+        val  exampleCreateStackDTO  = CreateStackDTO(
+            length = 2.5f,
+            height = 1.2f,
+            thickness = 0.5f,
+            numberOfPieces = 2,
+            displayName = "Stack A",
+            stackCodeId = UUID.randomUUID()
+
+        )
+        val exampleCreateStackCodeDTO = CreateStackCodeDTO(displayCode = "SC-001",
+            displayName = "Stack Code 1")
     }
 }

@@ -29,8 +29,4 @@ interface OrganizationRepository {
 
     fun getSectionByDepartmentId(currentUserDTO: CurrentUserDTO, dptId : UUID): List<CreateSectDTO>?
     fun getOrganizationWithNestedDepartments(currentUserDTO: CurrentUserDTO):List<OrganizationResponse>
-    /*
-    fun getOrgs(currentUserDTO: CurrentUserDTO)
-    fun getDepts(currentUserDTO: CurrentUserDTO)
-    fun getSects(currentUserDTO: CurrentUserDTO)*/
 }

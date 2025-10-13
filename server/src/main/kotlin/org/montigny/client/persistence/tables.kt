@@ -1,6 +1,7 @@
 package org.montigny.client.persistence
 
 import org.jetbrains.exposed.dao.id.UUIDTable
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.montigny.client.persistence.converters.timestamptz
 
 open class BaseTable(name: String) : UUIDTable(name) {
@@ -37,5 +38,42 @@ object AppUsers : BaseTable("app_user") {
     val sectionId = reference("section_id", Sections).nullable()
     val email = varchar("email", 255).nullable().index(isUnique = true)
     val passwordHash = varchar("password_hash", 255).nullable()
+}
+
+
+object StackCodes : BaseTable("stack_code") {
+    val displayCode = varchar("display_code", 64).uniqueIndex()
+    val displayName = varchar("display_name", 128)
+}
+
+object Stacks : BaseTable("stack") {
+    val length = float("length")
+    val height = float("height")
+    val thickness = float("thickness")
+    val numberOfPieces = integer("number_of_pieces").default(1)
+    val displayName = varchar("display_name", 128)
+
+    val stackCodeId = reference("stack_code_id", StackCodes, onDelete = ReferenceOption.CASCADE).uniqueIndex()
+    val volume = double("volume") // Generated in DB
+}
+
+object WorkDone : BaseTable("work_done") {
+    val workDate = timestamptz("work_date")
+}
+
+object WorkDoneUsers : BaseTable("work_done_user") {
+    val workDoneId = reference("work_done_id", WorkDone, onDelete = ReferenceOption.CASCADE)
+    val appUserId = reference("app_user_id", AppUsers, onDelete = ReferenceOption.CASCADE)
+    init {
+        index(isUnique = true, columns = arrayOf(workDoneId, appUserId))
+    }
+}
+
+object WorkDoneStacks : BaseTable("work_done_stack") {
+    val workDoneId = reference("work_done_id", WorkDone, onDelete = ReferenceOption.CASCADE)
+    val stackId = reference("stack_id", Stacks, onDelete = ReferenceOption.CASCADE)
+    init {
+        index(isUnique = true, columns = arrayOf(workDoneId, stackId))
+    }
 }
 

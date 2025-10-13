@@ -9,6 +9,8 @@ class Constants {
         const val DEPARTMENTS_VALIDATION_ERROR ="Invalid department"
         const val ORGANIZATION_MISMATCH_VALIDATION_ERROR ="Organization Mismatch"
         const val SECTION_VALIDATION_ERROR = "Invalid section"
+        const val STACK_NOT_FOUND = "Stack not found"
+        const val STACK_CODE_NOT_FOUND = "Stack code not found"
         const val USER_TYPE_VALIDATION_ERROR = "Invalid user type"
         const  val  BEARER_AUTH_TAG = "BearerAuth"
         const val  UPDATE_USER_DESCRIPTION = "Update user details"

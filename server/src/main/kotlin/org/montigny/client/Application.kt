@@ -32,7 +32,9 @@ import org.montigny.client.di.appModule
 import org.montigny.client.dto.Common.AnySerializer
 import org.montigny.client.domain.api.route.orgRoutes
 import org.montigny.client.domain.api.route.userRoutes
+import org.montigny.client.domain.api.route.workRoutes
 import org.montigny.client.service.OrganizationService
+import org.montigny.client.service.StackService
 import org.montigny.client.service.UserService
 import java.io.File
 import java.net.URI
@@ -43,19 +45,12 @@ fun main() {
 }
 
 fun Application.module() {
-
-    println("Loaded Config Keys: ${environment.config.toMap().keys}")
-
     val configStream = object {}.javaClass.classLoader.getResourceAsStream("application.conf")
         ?: throw IllegalStateException("Cannot find application.conf in resources")
     val config = HoconApplicationConfig(ConfigFactory.parseReader(configStream.reader()))
     println("Loaded Config Keys: ${config.toMap().keys}") // debug
-
     DatabaseFactory.init(config.config("ktor"))
-
     val appConfig = config
-
-
     install(Koin) {
         modules(
             module {
@@ -64,7 +59,6 @@ fun Application.module() {
             appModule
         )
     }
-
     install(CORS) {
         allowHost("localhost:5173", schemes = listOf("http"))
         allowHeader(HttpHeaders.ContentType)
@@ -80,31 +74,22 @@ fun Application.module() {
         allowMethod(HttpMethod.Delete)
         allowHeader("timezoneoffset")
         allowCredentials = true
-
-
         //remove before deploy
         anyHost()
     }
-
     intercept(ApplicationCallPipeline.Features) {
         if (call.request.httpMethod == HttpMethod.Options) {
             call.respond(HttpStatusCode.OK)
             finish() // stops the pipeline
         }
     }
-
     // Content Negotiation
     install(ContentNegotiation) { json(
-
         Json {
             serializersModule = SerializersModule {
                 contextual(Any::class, AnySerializer)
-
             }
         })
-
-
-
     }
     install(NotarizedApplication()) {
         spec =
@@ -134,6 +119,7 @@ fun Application.module() {
     val jwtProvider: JwtProvider by inject()
     val userService: UserService by inject()
     val organizationService: OrganizationService by inject()
+    val stackService: StackService by inject()
 
     install(Authentication) {
         jwtProvider.configureKtorAuth(this)
@@ -155,6 +141,7 @@ fun Application.module() {
         }
         userRoutes(userService)
         orgRoutes(organizationService,userService)
+        workRoutes(stackService, userService)
         }
     }
 
