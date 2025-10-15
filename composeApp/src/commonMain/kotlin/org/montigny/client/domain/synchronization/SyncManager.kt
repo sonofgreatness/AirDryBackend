@@ -6,8 +6,10 @@ import org.com.client.database.User_type
 import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.OrganizationApi
+import org.montigny.client.data.api.repository.StackApi
 import org.montigny.client.data.api.repository.UserApi
 import org.montigny.client.database.dao.OrganizationRepository
+import org.montigny.client.database.dao.StackRepository
 import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.dto.Organization.CreateDptDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
@@ -34,11 +36,12 @@ class SyncManager(private val userApi : UserApi,
                   private val userRepository: UserRepository,
                   private val organizationRepository: OrganizationRepository,
                   private val organizationApi: OrganizationApi,
-                 private val  connectivityObserver: ConnectivityObserver,
-                 private val settings: Settings,
-                 private val  sessionManager: SessionManager,
-    private val offlineSessionManager: OfflineSessionManager
-)
+                  private val  connectivityObserver: ConnectivityObserver,
+                  private val settings: Settings,
+                  private val  sessionManager: SessionManager,
+                  private val offlineSessionManager: OfflineSessionManager,
+                  private val stackRepository: StackRepository,
+                  private val stackApi: StackApi)
 {
     val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
      val isOnlineLoggedInd: StateFlow<Boolean> = sessionManager.isLoggedInFlow
@@ -53,6 +56,8 @@ class SyncManager(private val userApi : UserApi,
         downloadAndInsertUsers()
         downloadAndInsertUserTypes()
         downloadAndInsertOrganizationsInternal()
+        downloadAndInsertStacks()
+        downloadAndInsertStackCodes()
     }
 
     private suspend fun pushCachedUpdates() {
@@ -60,33 +65,33 @@ class SyncManager(private val userApi : UserApi,
         pushUpdatedDepartments()
         pushUpdatedSections()
         pushCachedOrganizationUpdates()
+        pushUpdatedStackCodes()
+        pushUpdatedStacks()
     }
-
-    private suspend fun uploadCachedInserts() {
-        uploadCachedUsers()
-        uploadCachedDepartmentInserts()
-        uploadCachedSectionInserts()
-    }
-
-    private suspend fun deleteUncachedRecords() {
-        organizationRepository.deleteUnCachedDepartments()
-        organizationRepository.deleteUnCachedSections()
-        userRepository.deleteUnCachedUsers()
-        deleteUnCachedOrganizations()
-    }
-
-    private  suspend fun uploadCachedUsers(){
+    private  suspend fun pushUpdatedDepartments (){
         if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
-
             try {
-                val cachedUsers = userRepository.selectCachedForInsertUsers()
-                cachedUsers.forEach {
-                    userApi.createUser(it)
-                    userRepository.unCacheUserForInsert(it.id.toStringCustom())
+                val departments =  organizationRepository.selectCachedForUpdateDepartment()
+                departments.forEach {
+                    organizationApi.updateDepartment(it)
+                    organizationRepository.unCacheForUpdateDepartment(it.id.toString())
                 }
             }catch (e:Exception){
-                println("Upload  cached users  failed ${e.localizedMessage}")
-                throw e
+                println("push department updates failed ${e.localizedMessage}")
+            }
+        }
+
+    }
+    private  suspend fun pushUpdatedSections(){
+        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+            try {
+                val cachedUpdates  = organizationRepository.selectCachedForUpdateSect()
+                cachedUpdates.forEach {
+                    organizationApi.updateSection(it)
+                    organizationRepository.unCacheForUpdateSection(it.id.toString())
+                }
+            }catch (e:Exception){
+                println("Push updated sections failed ${e.localizedMessage}")
             }
         }
     }
@@ -103,6 +108,126 @@ class SyncManager(private val userApi : UserApi,
                 throw e
             }
         }
+    }
+    private suspend fun pushUpdatedStackCodes(){
+        try {
+            if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+                val stackCodes = stackRepository.getStackCodesCachedForUpdate()
+                stackCodes.forEach {
+                    stackApi.updateStackCode(it)
+                    stackRepository.unCacheStackCodeUpdate(it.id!!)
+                }
+            }
+        }catch (e:Exception){
+            println("push update stack codes failed ${e.localizedMessage}")
+        }
+    }
+    private suspend fun pushUpdatedStacks(){
+      try {
+          if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+              val  stacks = stackRepository.getStacksCachedForUpdate()
+              stacks.forEach {
+                  stackApi.updateStack(it)
+                  stackRepository.unCacheStackUpdate(it.id!!)
+              }
+          }
+      }catch (e:Exception){
+          println("push update stacks failed ${e.localizedMessage}")
+      }
+    }
+    private suspend fun uploadCachedInserts() {
+        uploadCachedUsers()
+        uploadCachedDepartmentInserts()
+        uploadCachedSectionInserts()
+        uploadCachedStackCodesInserts()
+        uploadCachedStackInserts()
+    }
+
+    private suspend fun uploadCachedForInsertOrganizations(){
+        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+            try {
+                val cachedOrgs = organizationRepository.selectCachedForInsertOrganization()
+                cachedOrgs.forEach {
+                    val req = it.genererateCreateOrgDto()
+                    val logo = it .logo
+                    organizationApi.createOrg(req,logo)
+                    organizationRepository.unCacheForInsertOrganization(it.id.toString())
+                }
+            }catch (e:Exception){
+                println("Upload  organizations failed ${e.localizedMessage}")
+            }
+        }
+    }
+    private suspend fun  uploadCachedSectionInserts(){
+        try {
+            val  cachedSections  =  organizationRepository.selectCachedForInsertSection()
+            cachedSections.forEach {
+                organizationApi.createSection(it)
+                organizationRepository.unCacheForInsertSection(it.id.toString())
+            }
+        }catch (e:Exception){
+            println("Upload  sections failed ${e.localizedMessage}")
+        }
+    }
+    private  suspend fun  uploadCachedDepartmentInserts(){
+        try {
+            val  cachedDepartments = organizationRepository.selectCachedForInsertDepartment()
+            cachedDepartments.forEach {
+                organizationApi.createDepartment(it)
+                organizationRepository.unCacheForInsertDepartment(it.id.toString())
+            }
+        }
+        catch (e :Exception){
+            println("Upload  departments failed ${e.localizedMessage}")
+        }
+    }
+    private suspend fun uploadCachedStackInserts(){
+        try {
+            val cachedStacks = stackRepository.getStacksCachedForInsert()
+            cachedStacks.forEach {
+                stackApi.createStack(it)
+                stackRepository.unCacheStackInsert(it.id!!)
+            }
+        }
+        catch (e:Exception){
+            println("Upload  stacks failed ${e.localizedMessage}")
+        }
+    }
+    private suspend  fun uploadCachedStackCodesInserts(){
+        try {
+            val cachedStackCodes = stackRepository.getStackCodesCachedForInsert()
+            cachedStackCodes.forEach {
+                stackApi.createStackCode(it)
+                stackRepository.unCacheStackCodeInsert(it.id!!)
+            }
+        }
+        catch (e:Exception){
+            println("Upload  stack codes failed ${e.localizedMessage}")
+        }
+    }
+    private  suspend fun uploadCachedUsers(){
+        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+
+            try {
+                val cachedUsers = userRepository.selectCachedForInsertUsers()
+                cachedUsers.forEach {
+                    userApi.createUser(it)
+                    userRepository.unCacheUserForInsert(it.id.toStringCustom())
+                }
+            }catch (e:Exception){
+                println("Upload  cached users  failed ${e.localizedMessage}")
+                throw e
+            }
+        }
+    }
+
+    private suspend fun deleteUncachedRecords() {
+        organizationRepository.deleteUnCachedDepartments()
+        organizationRepository.deleteUnCachedSections()
+        userRepository.deleteUnCachedUsers()
+        deleteUnCachedOrganizations()
+        stackRepository.deleteUnCachedStackCodes()
+        stackRepository.deleteUnCachedStackCodes()
     }
 
    private suspend fun  downloadAndInsertUsers(){
@@ -166,7 +291,6 @@ class SyncManager(private val userApi : UserApi,
            }
         }
     }
-
    private suspend fun downloadAndInsertSections(){
 
        var downloaded  = emptyList<CreateSectDTO>()
@@ -184,9 +308,7 @@ class SyncManager(private val userApi : UserApi,
            }
        }
    }
-
-     suspend  fun downloadAndInsertOrganizations(){
-
+   suspend  fun downloadAndInsertOrganizations(){
          if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
           deleteUnCachedOrganizations()
           pushCachedOrganizationUpdates()
@@ -195,23 +317,7 @@ class SyncManager(private val userApi : UserApi,
          downloadAndInsertOrganizationsInternal()
          }
     }
-
-    private suspend fun uploadCachedForInsertOrganizations(){
-    if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
-     try {
-          val cachedOrgs = organizationRepository.selectCachedForInsertOrganization()
-         cachedOrgs.forEach {
-             val req = it.genererateCreateOrgDto()
-             val logo = it .logo
-             organizationApi.createOrg(req,logo)
-             organizationRepository.unCacheForInsertOrganization(it.id.toString())
-         }
-           }catch (e:Exception){
-               println("Upload  organizations failed ${e.localizedMessage}")
-           }
-       }
-    }
-    private  suspend fun pushCachedOrganizationUpdates(){
+   private  suspend fun pushCachedOrganizationUpdates(){
         if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
             try {
                 val cachedOrgs = organizationRepository.selectCachedForUpdateOrganization()
@@ -227,7 +333,7 @@ class SyncManager(private val userApi : UserApi,
         }
     }
 
-    private  suspend fun downloadAndInsertOrganizationsInternal() {
+   private  suspend fun downloadAndInsertOrganizationsInternal() {
         println("inserting organizations")
         if (isNetworkAvailable.value && isOnlineLoggedInd.value) {
             val nestedOrg = organizationApi.getOrganizationWithNestedDepartments()
@@ -240,64 +346,39 @@ class SyncManager(private val userApi : UserApi,
         }
         println("inserting organizations complete ")
     }
-    private suspend fun  deleteUnCachedOrganizations(){
+   private suspend fun  deleteUnCachedOrganizations(){
         try{
             organizationRepository.deleteUncachedOrganizations()
         }catch(e:Exception){
             println("Delete un cached organizations failed ${e.localizedMessage}")
         }
     }
-    private  suspend fun  uploadCachedDepartmentInserts(){
-        try {
-           val  cachedDepartments = organizationRepository.selectCachedForInsertDepartment()
-            cachedDepartments.forEach {
-                organizationApi.createDepartment(it)
-                organizationRepository.unCacheForInsertDepartment(it.id.toString())
-            }
-        }
-        catch (e :Exception){
-            println("Upload  departments failed ${e.localizedMessage}")
-        }
-    }
-    private  suspend fun pushUpdatedDepartments (){
+   private suspend fun downloadAndInsertStacks(){
+       if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
+           try {
+              val stacks =  stackApi.getAllStacks()
+               stacks.forEach {
+                   stackRepository.createStack(it.generateCreateStackDTO())
+               }
+           }catch (e:Exception){
+               println("Download stacks failed ${e.localizedMessage}")
+           }
+       }
+   }
+   private suspend fun downloadAndInsertStackCodes(){
         if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
             try {
-                val departments =  organizationRepository.selectCachedForUpdateDepartment()
-                departments.forEach {
-                    organizationApi.updateDepartment(it)
-                    organizationRepository.unCacheForUpdateDepartment(it.id.toString())
+                val stackCodes =  stackApi.getAllStackCodes()
+                stackCodes.forEach {
+                    stackRepository.createStackCode(it)
                 }
             }catch (e:Exception){
-                println("push department updates failed ${e.localizedMessage}")
+                println("Download stacks failed ${e.localizedMessage}")
             }
         }
+    }
 
-    }
-    private suspend fun  uploadCachedSectionInserts(){
-        try {
-            val  cachedSections  =  organizationRepository.selectCachedForInsertSection()
-            cachedSections.forEach {
-                organizationApi.createSection(it)
-                organizationRepository.unCacheForInsertSection(it.id.toString())
-            }
-        }catch (e:Exception){
-            println("Upload  sections failed ${e.localizedMessage}")
-        }
-    }
-    private  suspend fun pushUpdatedSections(){
-        if(isNetworkAvailable.value && isOnlineLoggedInd.value) {
-            try {
-                val cachedUpdates  = organizationRepository.selectCachedForUpdateSect()
-                cachedUpdates.forEach {
-                    organizationApi.updateSection(it)
-                    organizationRepository.unCacheForUpdateSection(it.id.toString())
-                }
-            }catch (e:Exception){
-                println("Push updated sections failed ${e.localizedMessage}")
-            }
-        }
-    }
-    private fun isDataStale(): Boolean{
+   private fun isDataStale(): Boolean{
         val savedTimestamp = Instant.ofEpochMilli(
             settings.getLong(FRESH_DATA_KEY, defaultValue = 0L)
         ).toEpochMilli()

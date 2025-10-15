@@ -108,5 +108,12 @@ fun SettingsNavItem(
                 navigator.navigateTo(Destination.MainSettings)
             }
         )
+        DropdownMenuItem(
+            text = { Text("Manage Stacks") },
+            onClick = {
+                expanded = false
+                navigator.navigateTo(Destination.ManageStacksScreen)
+            }
+        )
     }
 }

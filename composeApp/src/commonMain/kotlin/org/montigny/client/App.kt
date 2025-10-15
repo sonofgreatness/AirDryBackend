@@ -32,6 +32,7 @@ import org.montigny.client.ui.Theme.TimberTheme
 import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
 import org.montigny.client.ui.settings.SettingsNavItem
+import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.util.ConnectivityObserver
@@ -44,7 +45,8 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
         organizationViewModel: OrganizationViewModel,
         organizationViewModelWithDpt: OrganizationDepartmentsAndSectionsViewModel,
         syncSettingsRepository: SyncSettingsRepository,
-        themeManager: ThemeManager
+        themeManager: ThemeManager,
+        stacksViewModel: StacksViewModel,
 ) {
 
     val isOffLineLoggedIn by offlineSessionManager.isLoggedInFlow.collectAsState(initial = false)
@@ -129,7 +131,7 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
             ) {
                 NavGraph(navigator, authViewModel, sessionManager,
                     usersViewModel,organizationViewModel, organizationViewModelWithDpt,
-                    syncSettingsRepository,themeManager)
+                    syncSettingsRepository,themeManager, stacksViewModel)
             }
         }
     }

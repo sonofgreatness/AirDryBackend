@@ -70,7 +70,6 @@ fun Route.workRoutes(stackService: StackService, userService: UserService) {
                     }
                 }
             }
-
             authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER,UserRole.CAPTURER) {
                 post {
                     try {

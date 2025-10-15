@@ -98,6 +98,8 @@ class StackRepositoryImpl() : StackRepository {
           height = stackRow[Stacks.height],
           thickness = stackRow[Stacks.thickness],
           displayName = stackRow[Stacks.displayName],
+          numberOfPieces = stackRow[Stacks.numberOfPieces],
+          volume = stackRow[Stacks.volume],
           stackCode = StackEntityResponse(
               id = stackRow[StackCodes.id].value,
               displayCode = stackRow[StackCodes.displayCode],
@@ -134,6 +136,8 @@ class StackRepositoryImpl() : StackRepository {
               height = it[Stacks.height],
               thickness = it[Stacks.thickness],
               displayName = it[Stacks.displayName],
+              numberOfPieces = it[Stacks.numberOfPieces],
+              volume = it[Stacks.volume],
               stackCode = StackEntityResponse(
                   id = it[StackCodes.id].value,
                   displayCode = it[StackCodes.displayCode],

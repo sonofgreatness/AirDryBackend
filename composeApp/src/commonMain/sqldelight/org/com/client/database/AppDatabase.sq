@@ -85,6 +85,98 @@ CREATE TABLE app_user (
     FOREIGN KEY(section_id) REFERENCES section(id)
 );
 
+
+
+
+-------------------------------------------------
+-- TABLE: stack_code
+-------------------------------------------------
+CREATE TABLE stack_code (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+    is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    display_code        TEXT NOT NULL UNIQUE,
+    display_name        TEXT NOT NULL
+);
+
+-------------------------------------------------
+-- TABLE: stack
+-------------------------------------------------
+CREATE TABLE stack (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    display_name        TEXT NOT NULL,
+    length              REAL NOT NULL,
+    is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+    is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    height              REAL NOT NULL,
+    thickness           REAL NOT NULL,
+    number_of_pieces    INTEGER NOT NULL DEFAULT 1,
+    stack_code_id       TEXT NOT NULL UNIQUE,
+    volume              REAL NOT NULL,
+    FOREIGN KEY(stack_code_id) REFERENCES stack_code(id) ON DELETE CASCADE
+);
+
+-------------------------------------------------
+-- TABLE: work_done
+-------------------------------------------------
+CREATE TABLE work_done (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+    is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    work_date           TEXT NOT NULL
+);
+
+-------------------------------------------------
+-- TABLE: work_done_user
+-------------------------------------------------
+CREATE TABLE work_done_user (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    work_done_id        TEXT NOT NULL,
+    app_user_id         TEXT NOT NULL,
+   is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+   is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY(work_done_id) REFERENCES work_done(id) ON DELETE CASCADE,
+    FOREIGN KEY(app_user_id) REFERENCES app_user(id) ON DELETE CASCADE,
+    UNIQUE(work_done_id, app_user_id)
+);
+
+-------------------------------------------------
+-- TABLE: work_done_stack
+-------------------------------------------------
+CREATE TABLE work_done_stack (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    work_done_id        TEXT NOT NULL,
+    stack_id            TEXT NOT NULL,
+    is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+    is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY(work_done_id) REFERENCES work_done(id) ON DELETE CASCADE,
+    FOREIGN KEY(stack_id) REFERENCES stack(id) ON DELETE CASCADE,
+    UNIQUE(work_done_id, stack_id)
+);
+
+
+
+
 ----------------------------------------------------------------------
 -- UserType Queries
 ----------------------------------------------------------------------
@@ -245,6 +337,57 @@ SELECT * FROM  organization
 WHERE id = ?;
 
 
+-------------------------------------------------
+-- Stack Queries
+--------------------------------------------------
+-- Insert Stack Code
+insertStackCode:
+INSERT INTO stack_code(id, display_code, display_name, is_pending_insert,is_pending_update)
+VALUES (?, ?, ?, ?, ?);
+
+selectAllStackCodes:
+SELECT * FROM stack_code;
+
+-- Insert Stack
+insertStack:
+INSERT INTO stack(id,
+ display_name,
+  length, height, thickness,
+  number_of_pieces, stack_code_id, volume,
+  is_pending_insert,is_pending_update)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAllStacks:
+SELECT
+    s.id,
+    s.display_name,
+    s.length,
+    s.height,
+    s.thickness,
+    s.number_of_pieces,
+    s.volume,
+    sc.id AS stack_code_id,
+    sc.display_code AS stack_code,
+    sc.display_name AS stack_code_name
+FROM stack s
+LEFT JOIN stack_code sc ON s.stack_code_id = sc.id;
+
+selectStackById:
+SELECT
+    s.id,
+    s.display_name,
+    s.length,
+    s.height,
+    s.thickness,
+    s.number_of_pieces,
+    s.volume,
+    sc.id AS stack_code_id,
+    sc.display_code AS stack_code,
+    sc.display_name AS stack_code_name
+FROM stack s
+LEFT JOIN stack_code sc ON s.stack_code_id = sc.id
+WHERE s.id  = ?;
+
 
 ------------------------------
 -- Cache deletes (START OF CACHE FUNCTIONS)
@@ -270,6 +413,14 @@ AND is_pending_update =0;
 deleteUnCachedOrganization:
 DELETE FROM organization  WHERE  is_pending_insert = 0
 AND is_pending_update =0;
+
+deleteUnCachedStack:
+DELETE FROM stack  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
+
+deleteUnCachedStackCode:
+DELETE FROM stack_code  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
 ---------------------------------------------
 -- Get cache inserts
 ---------------------------------------------
@@ -291,7 +442,14 @@ SELECT * FROM app_user WHERE is_pending_insert = 1;
 selectCachedForInsertOrganizationInsert:
 SELECT * FROM organization WHERE is_pending_insert = 1;
 
-
+-- Get cached stack_code  insert
+selectCachedForInsertStackCode:
+SELECT *  FROM stack_code WHERE
+is_pending_insert = 1;
+-- Get cached stack insert
+selectCachedForInsertStack:
+SELECT *  FROM stack WHERE
+is_pending_insert = 1;
 -----------------------------------------------------
 -- Get cache updates
 -----------------------------------------------------
@@ -314,9 +472,16 @@ SELECT * FROM app_user WHERE is_pending_update = 1;
 selectCachedForUpdateOrganization:
 SELECT * FROM organization WHERE is_pending_update = 1;
 
------------------
+--Get cached stacks update
+selectCachedForUpdateStack:
+SELECT * FROM stack WHERE is_pending_update = 1;
+
+selectCachedForUpdateStackCode:
+SELECT * FROM stack_code WHERE is_pending_update = 1;
+
+-------------------------------------------------------------
 -- Update Caches
---------------------
+--------------------------------------------------------------
 unCacheUserForInsert:
 UPDATE app_user
 SET is_pending_insert = 0
@@ -331,7 +496,6 @@ unCacheSectionForInsert:
 UPDATE section
 SET is_pending_insert = 0
 WHERE id = ?;
-
 
 unCacheDepartmentForUpdate:
 UPDATE department
@@ -357,6 +521,26 @@ unCacheOrganizationForUpdate:
 UPDATE organization
 SET is_pending_update = 0
 WHERE id = ?;
+
+unCacheStackForInsert:
+UPDATE stack
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheStackCodeForInsert:
+UPDATE stack_code
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheStackForUpdate:
+UPDATE stack
+SET is_pending_update  = 0
+WHERE id =?;
+
+unCacheStackCodeForUpdate:
+UPDATE stack_code
+SET is_pending_update  = 0
+WHERE id =?;
 
 -- Update  AppUser (full)
 updateUserIncludingPassword:
@@ -416,6 +600,28 @@ UPDATE section
 SET  displayname = ?,
 is_pending_update = 1
 WHERE id  = ?;
+
+
+-- Update  Stack
+updateStack:
+UPDATE stack
+SET
+display_name = ?,
+length = ?,
+height =?,
+thickness =?,
+number_of_pieces=?,
+stack_code_id =?,
+is_pending_update =1
+WHERE id  =?;
+
+updateStackCode:
+UPDATE  stack_code
+SET
+display_code=?,
+display_name=?,
+is_pending_update =1
+WHERE id =?;
 
 -----------------------------------------
 --  END OF CACHE FUNCTIONS

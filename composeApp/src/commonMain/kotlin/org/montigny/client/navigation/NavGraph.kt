@@ -2,6 +2,7 @@ package org.montigny.client.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.domain.synchronization.SyncSettingsRepository
 import org.montigny.client.ui.Theme.ThemeManager
@@ -13,6 +14,10 @@ import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
 import org.montigny.client.ui.reports.ReportsScreen
 import org.montigny.client.ui.settings.MainSettingsScreen
 import org.montigny.client.ui.settings.SettingsScreen
+import org.montigny.client.ui.settings.stacks.CreateStackScreen
+import org.montigny.client.ui.settings.stacks.ManageStacksScreen
+import org.montigny.client.ui.settings.stacks.ViewStackCodesScreen
+import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.EditUserFormScreen
 import org.montigny.client.ui.users.LoginScreen
 import org.montigny.client.ui.users.UserFormScreen
@@ -31,6 +36,7 @@ fun NavGraph(
     organizationViewModelWithDpt : OrganizationDepartmentsAndSectionsViewModel,
     syncSettingsRepository: SyncSettingsRepository,
     themeManager: ThemeManager,
+    stacksViewModel: StacksViewModel
 ) {
     val currentDestination by navigator.currentDestination
      val nextDestination by navigator.nextDestination
@@ -38,6 +44,7 @@ fun NavGraph(
         Destination.Users -> UsersScreen(usersViewModel,navigator)
         Destination.Organizations -> OrganizationScreen(organizationViewModel,navigator)
         Destination.Work -> WorkScreen()
+        Destination.ManageStacksScreen-> ManageStacksScreen(stacksViewModel, navigator)
         Destination.Reports -> ReportsScreen()
         Destination.Settings -> SettingsScreen()
         Destination.Login -> LoginScreen(authViewModel, sessionManager) {
@@ -71,5 +78,16 @@ fun NavGraph(
                 userId = (currentDestination as Destination.ViewOrgWithDepartmentsAndSections).userId,
                 navigator = navigator,
                 organizationViewModel = organizationViewModelWithDpt) }
-    }
+        Destination.CreateStack ->CreateStackScreen(
+            viewModel =stacksViewModel,
+            navigator = navigator)
+        Destination.ViewStackCodes -> ViewStackCodesScreen(stacksViewModel,navigator)
+        is Destination.EditStack -> CreateStackScreen(
+            stackId =(currentDestination as Destination.EditStack).stackId ,
+            viewModel =stacksViewModel,
+            navigator = navigator,
+            isUpdate = true)
+
+    }//End of when
+
 }

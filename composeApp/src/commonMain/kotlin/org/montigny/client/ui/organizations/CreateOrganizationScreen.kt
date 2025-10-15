@@ -279,7 +279,6 @@ fun LogoUploadCard(
         }
     }
 }
-
 /**
  * Opens a native file picker dialog (blocking call on desktop)
  */

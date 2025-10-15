@@ -13,4 +13,9 @@ sealed class Destination(val route: String) {
     object CreateOrganization: Destination("create_organization")
     data class EditOrganization(val orgId: String) : Destination("edit_organization/$orgId")
     data class  ViewOrgWithDepartmentsAndSections(val userId : String) : Destination("view_org_with_departments_and_sections")
+    object ManageStacksScreen: Destination("manage_stacks_screen")
+    object CreateStack: Destination("create_stack")
+    object ViewStackCodes:Destination("view_stack_codes")
+    data class  EditStack(val  stackId : String):Destination("edit_stack")
+
 }

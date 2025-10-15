@@ -10,9 +10,11 @@ import org.montigny.client.auth.SessionExpiryWorker
 import org.montigny.client.data.AppStorage
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.implementation.OrganizationApiImpl
+import org.montigny.client.data.api.implementation.StackApiImpl
 import org.montigny.client.data.api.implementation.UserApiImpl
 import org.montigny.client.data.api.implementation.provideHttpClient
 import org.montigny.client.data.api.repository.OrganizationApi
+import org.montigny.client.data.api.repository.StackApi
 import org.montigny.client.data.api.repository.UserApi
 import org.montigny.client.domain.synchronization.BackgroundSyncWorker
 import org.montigny.client.domain.synchronization.SyncManager
@@ -20,13 +22,12 @@ import org.montigny.client.domain.synchronization.SyncSettingsRepository
 import org.montigny.client.ui.Theme.ThemeManager
 import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
+import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.util.ConnectivityObserver
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
-
 
 val appModule = module {
     single <Settings>{Settings() }
@@ -43,7 +44,8 @@ val appModule = module {
 
     single<SyncManager>{SyncManager(get(), get(), get(),
         get(), get(), get(),
-        get(), get(),
+        get(), get(),get()
+        ,get()
         ) }
     single {AuthViewModel(get(),get(),
         get(),
@@ -71,4 +73,8 @@ single<SessionExpiryWorker>{SessionExpiryWorker(get(), get(),get())}
 single {BackgroundSyncWorker(get(), get()) }
 single<AppWorkerManager> { AppWorkerManager(get(), get()) }
 single <ThemeManager>{ThemeManager()}
+
+single<StackApi>{ StackApiImpl(get(), get())}
+single<StacksViewModel>{StacksViewModel(get(), get(), get(),
+    get(),get())}
 }
