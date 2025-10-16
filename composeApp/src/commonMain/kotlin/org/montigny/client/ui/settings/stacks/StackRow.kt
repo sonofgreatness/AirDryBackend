@@ -34,11 +34,11 @@ fun StackRow(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(stack.displayName, style = MaterialTheme.typography.bodyMedium)
-                Text("${stack.length ?: "-"}", style = MaterialTheme.typography.bodyMedium)
-                Text("${stack.height ?: "-"}", style = MaterialTheme.typography.bodyMedium)
-                Text("${stack.thickness ?: "-"}", style = MaterialTheme.typography.bodyMedium)
-                Text("${stack.numberOfPieces ?: "-"}", style = MaterialTheme.typography.bodyMedium)
-                Text("${stack.volume ?: "-"}", style = MaterialTheme.typography.bodyMedium)
+                Text(stack.length?.let { String.format("%.3f", it) } ?: "-", style = MaterialTheme.typography.bodyMedium)
+                Text("${stack.height?.let { String.format("%.3f", it) } ?: "-"}", style = MaterialTheme.typography.bodyMedium)
+                Text("${stack.thickness?.let { String.format("%.3f", it) } ?: "-"}", style = MaterialTheme.typography.bodyMedium)
+                Text("${stack.numberOfPieces?.toString() ?: "-"}", style = MaterialTheme.typography.bodyMedium) // integer stays as-is
+                Text(stack.volume?.let { String.format("%.2f", it) } ?: "-", style = MaterialTheme.typography.bodyMedium)
             }
             Spacer(Modifier.height(8.dp))
             Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))

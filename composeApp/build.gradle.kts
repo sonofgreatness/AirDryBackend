@@ -89,6 +89,12 @@ kotlin {
                 implementation("io.insert-koin:koin-core:3.3.3")
                 implementation("io.insert-koin:koin-compose:1.1.2")
                 implementation("app.cash.sqldelight:sqlite-driver:${sqldelightVersion}")
+                implementation("com.github.librepdf:openpdf:1.3.32")
+                implementation("org.apache.poi:poi:5.3.0")
+                implementation("org.apache.poi:poi-ooxml:5.3.0")
+
+                // optional (only if you embed images or need advanced streaming)
+                implementation("org.apache.poi:poi-ooxml-full:5.3.0")
             }
         }
     }

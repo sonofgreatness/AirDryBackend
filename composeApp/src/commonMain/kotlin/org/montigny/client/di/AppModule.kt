@@ -22,6 +22,8 @@ import org.montigny.client.domain.synchronization.SyncSettingsRepository
 import org.montigny.client.ui.Theme.ThemeManager
 import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
+import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToExcelUseCase
+import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToPdfUseCase
 import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
@@ -75,6 +77,18 @@ single<AppWorkerManager> { AppWorkerManager(get(), get()) }
 single <ThemeManager>{ThemeManager()}
 
 single<StackApi>{ StackApiImpl(get(), get())}
+single<PrintStacksToPdfUseCase>{
+    PrintStacksToPdfUseCase(
+        get(), get(), get(),
+        get(),get())
+}
+single<PrintStacksToExcelUseCase>{
+    PrintStacksToExcelUseCase(
+        get(), get(),
+        get(),get(),
+        get()
+    )
+}
 single<StacksViewModel>{StacksViewModel(get(), get(), get(),
-    get(),get())}
+    get(),get(), get(), get())}
 }

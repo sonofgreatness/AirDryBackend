@@ -2,6 +2,7 @@ package org.montigny.client.ui.settings.stacks.viewModel
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.StackApi
@@ -9,6 +10,8 @@ import org.montigny.client.database.dao.StackRepository
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateStackDTO
 import org.montigny.client.dto.Work.GetStackDTO
+import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToExcelUseCase
+import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToPdfUseCase
 import org.montigny.client.util.ConnectivityObserver
 import org.montigny.client.util.UtilityFunctions.Companion.toUUID
 import org.montigny.client.util.ViewModel
@@ -22,7 +25,9 @@ class StacksViewModel(
     private val sessionManager: SessionManager,
     private  val connectivityObserver: ConnectivityObserver,
     private  val logger : Logger,
-    private val  stackRepository : StackRepository
+    private val  stackRepository : StackRepository,
+    private val printStacksToPdfUseCase: PrintStacksToPdfUseCase,
+    private val printStacksToExcelUseCase : PrintStacksToExcelUseCase,
 ): ViewModel()
 {
     private  val _allStacks  = MutableStateFlow<List<GetStackDTO>>(emptyList())
@@ -261,6 +266,53 @@ class StacksViewModel(
         viewModelScope.launch {
              //CASCADING DELETE
             stackApi.deleteStackCodeById(id.toUUID())
+        }
+    }
+
+    private val _pdfGeneratorMessage  = MutableStateFlow<String?>(null)
+     val  pdfGeneratorMessage: StateFlow<String?> = _pdfGeneratorMessage
+
+    private val _xslGeneratorMessage  = MutableStateFlow<String?>(null)
+    val  xslGeneratorMessage: StateFlow<String?> = _xslGeneratorMessage
+
+    fun  exportStacksDataToPdf(){
+     viewModelScope.launch {
+         val isConnectedToServer = isNetworkAvailable.value && isOnlineLoggedIn.value
+         printStacksToPdfUseCase.invoke(isConnectedToServer).collect {
+                when (it) {
+                    is UiState.Error -> {
+                        _pdfGeneratorMessage.value = "Failed to generate file"
+                        logger.error("failed to export ${it.message}")
+                    }
+                    is UiState.Success -> {
+                        _pdfGeneratorMessage.value = "Done."
+                    }
+                    is UiState.Loading -> {
+                        _pdfGeneratorMessage.value = "Loading..."
+                    }
+                    else -> {}
+                }
+         }
+     }
+    }
+   fun  exportStacksDataToExcel(){
+        viewModelScope.launch {
+            val isConnectedToServer = isNetworkAvailable.value && isOnlineLoggedIn.value
+            printStacksToExcelUseCase.invoke(isConnectedToServer).collect {
+                when (it) {
+                    is UiState.Error -> {
+                        _xslGeneratorMessage.value = "Failed to generate file"
+                        logger.error("failed to export ${it.message}")
+                    }
+                    is UiState.Success -> {
+                        _xslGeneratorMessage.value = "Done."
+                    }
+                    is UiState.Loading -> {
+                        _xslGeneratorMessage.value = "Loading..."
+                    }
+                    else -> {}
+                }
+            }
         }
     }
 }
