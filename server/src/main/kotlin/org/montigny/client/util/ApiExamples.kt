@@ -5,6 +5,10 @@ import org.montigny.client.dto.User.UpdateUserDTO
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateStackDTO
+import org.montigny.client.dto.Work.CreateWorkDoneDTO
+
+import java.time.Instant
+import java.util.Date
 import java.util.UUID
 
 class ApiExamples {
@@ -56,5 +60,27 @@ class ApiExamples {
         )
         val exampleCreateStackCodeDTO = CreateStackCodeDTO(displayCode = "SC-001",
             displayName = "Stack Code 1")
+
+        val  exampleCreateWorkDoneDTO = CreateWorkDoneDTO(
+            id = UUID.randomUUID(),
+            workDate = Date.from(Instant.now()),
+            workersList = listOf(
+                CreateWorkDoneDTO.WorkDoneUsersDTO(
+                    id = UUID.randomUUID(),
+                    listOf(
+                        UUID.randomUUID()
+                    )
+                )
+            ),
+            stacksList = listOf(
+                CreateWorkDoneDTO.WorkDoneStacksDTO(
+                    id = UUID.randomUUID(),
+                    stackId = listOf(UUID.randomUUID())
+                )
+            ),
+        )
+
+
     }
+
 }

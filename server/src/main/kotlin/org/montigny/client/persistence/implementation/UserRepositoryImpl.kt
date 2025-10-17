@@ -17,6 +17,7 @@ import org.montigny.client.persistence.repository.UserRepository
 import org.montigny.client.util.Constants
 import org.montigny.client.util.UserUtils
 import org.montigny.client.util.UserUtils.isSuperUser
+import java.time.Instant
 import java.util.*
 
 class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepository {
@@ -226,6 +227,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
         AppUsers.update({ AppUsers.id eq id })
            {
             it[updatedBy]=currentUser[AppUsers.id].value
+             it[updatedAt] = Instant.now()
             req.updated_name?.let { n -> it[name] = n }
             req.updated_surname?.let { s -> it[surname] = s }
             req.updated_phoneNumber?.let { p -> it[phoneNumber] = p }

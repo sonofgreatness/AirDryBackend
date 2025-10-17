@@ -23,6 +23,7 @@ import org.montigny.client.persistence.Sections.departmentId
 import org.montigny.client.persistence.repository.OrganizationRepository
 import org.montigny.client.util.Constants
 import org.montigny.client.util.UserUtils.isSuperUser
+import java.time.Instant
 import java.util.UUID
 
 class OrganizationRepositoryImpl(): OrganizationRepository {
@@ -60,6 +61,7 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
             ?: throw IllegalArgumentException("Organization with id $id not found")
         Organizations.update({ Organizations.id eq currentOrg[Organizations.id].value }) {
             it[updatedBy] = currentUser.id
+            it[updatedAt] = Instant.now()
             it[displayname] = req.displayName
             logo?.let { logo -> it[this.logo] = logo }
         }
@@ -102,6 +104,7 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
         throw IllegalArgumentException("Department with id ${req.id} not found")
         Departments.update(where = { Departments.id eq currentDept[Departments.id].value }) {
             it[updatedBy] = currentUser.id
+            it[updatedAt] = Instant.now()
             it[displayname] = req.displayName}
     }
 
@@ -126,6 +129,7 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
         checkIfBelongsToOrganization(currentUser,orgId)
         Sections.insertAndGetId {
             it[updatedBy] = currentUser.id
+            it[updatedAt] = Instant.now()
             it[displayname] = req.displayName
             it[id] = req.id!!
             it[departmentId] = req.departmentId!!
@@ -141,6 +145,7 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
        checkIfBelongsToOrganization(currentUser,orgId)
        Sections.update({ Sections.id eq req.id }) {
            it[updatedBy] = currentUser.id
+           it[updatedAt] = Instant.now()
            it[displayname] = req.displayName
        }
    }

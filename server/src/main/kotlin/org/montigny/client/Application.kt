@@ -3,6 +3,8 @@ package org.montigny.client
 
 import com.typesafe.config.ConfigFactory
 import io.bkbn.kompendium.core.plugin.NotarizedApplication
+import io.bkbn.kompendium.json.schema.definition.JsonSchema
+import kotlin.reflect.typeOf
 import io.bkbn.kompendium.oas.OpenApiSpec
 import io.bkbn.kompendium.oas.component.Components
 import io.bkbn.kompendium.oas.info.Info
@@ -32,12 +34,15 @@ import org.montigny.client.di.appModule
 import org.montigny.client.dto.Common.AnySerializer
 import org.montigny.client.domain.api.route.orgRoutes
 import org.montigny.client.domain.api.route.userRoutes
+import org.montigny.client.domain.api.route.stackRoutes
 import org.montigny.client.domain.api.route.workRoutes
 import org.montigny.client.service.OrganizationService
 import org.montigny.client.service.StackService
 import org.montigny.client.service.UserService
+import org.montigny.client.service.WorkerService
 import java.io.File
 import java.net.URI
+import kotlin.reflect.typeOf
 
 fun main() {
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
@@ -114,12 +119,14 @@ fun Application.module() {
                     )
                 )
             )
+
     }
 
     val jwtProvider: JwtProvider by inject()
     val userService: UserService by inject()
     val organizationService: OrganizationService by inject()
     val stackService: StackService by inject()
+    val  workerService: WorkerService by inject()
 
     install(Authentication) {
         jwtProvider.configureKtorAuth(this)
@@ -141,7 +148,8 @@ fun Application.module() {
         }
         userRoutes(userService)
         orgRoutes(organizationService,userService)
-        workRoutes(stackService, userService)
+        stackRoutes(stackService, userService)
+        workRoutes(userService,workerService)
         }
     }
 

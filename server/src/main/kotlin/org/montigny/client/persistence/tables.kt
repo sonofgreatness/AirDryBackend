@@ -63,15 +63,14 @@ object WorkDone : BaseTable("work_done") {
 
 object WorkDoneUsers : BaseTable("work_done_user") {
     val workDoneId = reference("work_done_id", WorkDone, onDelete = ReferenceOption.CASCADE)
-    val appUserId = reference("app_user_id", AppUsers, onDelete = ReferenceOption.CASCADE)
+    val appUserId = reference("app_user_id", AppUsers, onDelete = ReferenceOption.RESTRICT)
     init {
         index(isUnique = true, columns = arrayOf(workDoneId, appUserId))
     }
 }
-
 object WorkDoneStacks : BaseTable("work_done_stack") {
     val workDoneId = reference("work_done_id", WorkDone, onDelete = ReferenceOption.CASCADE)
-    val stackId = reference("stack_id", Stacks, onDelete = ReferenceOption.CASCADE)
+    val stackId = reference("stack_id", Stacks, onDelete = ReferenceOption.RESTRICT)
     init {
         index(isUnique = true, columns = arrayOf(workDoneId, stackId))
     }

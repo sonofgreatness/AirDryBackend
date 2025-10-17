@@ -3,6 +3,8 @@ package org.montigny.client
 
 const val SERVER_PORT = 9090
 const val ADMIN_DISPLAY_NAME = "admin"
+const  val PAGE_SIZE= "pageSize"
+const  val PAGE = "page"
 const val SUPER_USER_DISPLAY_NAME = "super_user"
 const val API_URL_USER_REGISTER= "/users/register"
 const val API_URL_ADMIN_REGISTER= "/users/admin_register"
@@ -46,3 +48,10 @@ const  val API_URL_WORK_STACK_CODE_GET_BY_ID = "/work/stack/stack_code/get/{id}"
 const val  API_URL_WORK_STACK_GET_BY_ID = "/work/stack/stack/{id}"
 const  val API_URL_WORK_STACK_GET_ALL = "/work/stack/get_all"
 const  val API_URL_WORK_STACK_CODE_GET_ALL = "/work/stack/stack_code/get_all"
+
+const val API_URL_WORK_WORK_REGISTER = "/work/work/register"
+const  val API_URL_WORK_WORK_UPDATE = "/work/work/update"
+const val API_URL_WORK_WORK_DELETE_BY_ID = "/work/work/delete"
+const val API_URL_WORK_WORK_GET_BY_ID = "/work/work/get_work_by_id/{id}"
+const val API_URL_WORK_WORK_GET_BY_USER_ID = "/work/work/get_work_by_user_id/{id}"
+const val API_URL_WORK_WORK_GET_ALL = "/work/work/get_all_work"

@@ -139,7 +139,9 @@ object UserUtils {
     fun isAdminUser(user: CurrentUserDTO): Boolean {
         return user.userTypeName?.equals(UserRole.ADMIN.displayName, ignoreCase = true) == true
     }
-
+    fun  isCapturerUser(user: CurrentUserDTO): Boolean {
+        return user.userTypeName?.equals(UserRole.CAPTURER.displayName, ignoreCase = true) == true
+    }
 
 
     /**
