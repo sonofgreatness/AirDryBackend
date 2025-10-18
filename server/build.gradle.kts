@@ -1,8 +1,11 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.gradle.api.file.DuplicatesStrategy
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ktor)
+    id("com.github.johnrengelman.shadow") version "8.1.1"
     application
 }
 
@@ -80,4 +83,30 @@ tasks.named<Zip>("distZip") {
 tasks.named<Tar>("distTar") {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
+tasks.register<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJarForServer") {
+    archiveBaseName.set("server")
+    archiveVersion.set("1.0.0")
+    archiveClassifier.set("all")
 
+    manifest {
+        attributes["Main-Class"] = "org.montigny.client.ApplicationKt"
+    }
+
+    // ✅ Include compiled classes directly (Kotlin JVM project)
+    from(sourceSets.main.get().output)
+
+    // ✅ Include runtime dependencies
+    configurations = listOf(project.configurations.runtimeClasspath.get())
+
+    // ✅ Merge service files and remove signatures
+    mergeServiceFiles()
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+
+    // Optional relocations if you want to avoid dependency conflicts
+    relocate("org.slf4j", "shadow.org.slf4j")
+    relocate("ch.qos.logback", "shadow.ch.qos.logback")
+
+    doLast {
+        println("✅ Server fat JAR built successfully at: ${archiveFile.get().asFile.absolutePath}")
+    }
+}
