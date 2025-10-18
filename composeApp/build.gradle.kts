@@ -1,7 +1,7 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-
-
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
     alias(libs.plugins.sqlDelight)
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 val sqldelightVersion = libs.versions.sqldelight.get()
 
@@ -21,6 +22,7 @@ kotlin {
             apiVersion = "2.2"
             progressiveMode = true
         }
+
     }
 
     @OptIn(ExperimentalWasmDsl::class)
@@ -103,12 +105,14 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "org.montigny.client.MainKt"
+        mainClass = "org.montigny.client.Main"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+          //  targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(TargetFormat.Exe)
             packageName = "org.montigny.client"
             packageVersion = "1.0.0"
+            modules("java.desktop")
         }
     }
 }
@@ -120,5 +124,32 @@ sqldelight {
             // sourceFolders = listOf("sqldelight")
         }
     }
-}
+}// Corrected ShadowJar task
+tasks.register<ShadowJar>("shadowJar") {
+    archiveBaseName.set("desktop")
+    archiveVersion.set("1.0.9")
+    archiveClassifier.set("all")
 
+    manifest {
+        attributes["Main-Class"] = "org.montigny.client.Main"
+    }
+
+    val jvmMainCompilation = kotlin.targets.getByName("jvm").compilations.getByName("main")
+    from(jvmMainCompilation.output.classesDirs)
+    from(jvmMainCompilation.output.resourcesDir)
+    from(kotlin.sourceSets.getByName("commonMain").resources)
+
+    configurations = listOf(project.configurations.getByName("jvmRuntimeClasspath"))
+
+    mergeServiceFiles()
+
+    // Corrected Kotlin DSL syntax for relocate()
+    relocate("org.slf4j", "shadow.org.slf4j")
+    relocate("ch.qos.logback", "shadow.ch.qos.logback")
+
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+
+    doLast {
+        println("✅ Shadow JAR built successfully at: ${archiveFile.get().asFile.absolutePath}")
+    }
+}
