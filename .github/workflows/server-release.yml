@@ -91,6 +91,12 @@ jobs:
           echo "server_jar=$server_jar" >> $GITHUB_OUTPUT
           echo "Found: $server_jar"
 
+      - name: Create and push Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.tag.outputs.tag }}
+          git push origin ${{ steps.tag.outputs.tag }}
 
       - name: Generate release tags
         id: tag
