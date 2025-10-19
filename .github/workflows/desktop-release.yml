@@ -19,6 +19,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
