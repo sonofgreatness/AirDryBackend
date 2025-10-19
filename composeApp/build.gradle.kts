@@ -138,6 +138,7 @@ sqldelight {
     databases {
         create("AppDatabase") {
             packageName.set("org.montigny.client.database")
+            //verifyMigrations.set(false)
             // sourceFolders = listOf("sqldelight")
         }
     }

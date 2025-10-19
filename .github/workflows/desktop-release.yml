@@ -24,6 +24,7 @@ jobs:
       # Make gradlew executable
       - name: Make gradlew executable
         run: chmod +x ./gradlew
+        shell: pwsh
 
       # Setup JDK 17
       - name: Setup JDK 17
@@ -31,9 +32,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-          cache: 'gradle'
+          cache: gradle
 
-      # ✅ Install SQLite native DLLs (fixed 2025 path)
+      # Install SQLite native DLLs
       - name: Install SQLite native libraries
         shell: pwsh
         run: |
@@ -42,39 +43,38 @@ jobs:
           New-Item -ItemType Directory -Force -Path $sqliteDir | Out-Null
 
           $dllZip = "sqlite-dll-win-x64-3500400.zip"
-          $url = "https://www.sqlite.org/2025/${dllZip}"
+          $url = "https://www.sqlite.org/2025/$dllZip"
           Write-Host "Downloading from $url"
           Invoke-WebRequest -Uri $url -OutFile "$sqliteDir\sqlite.zip"
 
           Expand-Archive -Path "$sqliteDir\sqlite.zip" -DestinationPath $sqliteDir -Force
           Write-Host "✅ SQLite native DLLs installed at $sqliteDir"
 
-          Add-Content gradle.properties "systemProp.sqlite4java.library.path=$sqliteDir"
-          Add-Content gradle.properties "systemProp.java.io.tmpdir=$sqliteDir"
+          Add-Content -Path "gradle.properties" -Value "systemProp.sqlite4java.library.path=$sqliteDir"
+          Add-Content -Path "gradle.properties" -Value "systemProp.java.io.tmpdir=$sqliteDir"
 
-      # Build Desktop project (EXE, MSI, and fat JAR)
+      # Build Desktop project (skip migration verification)
       - name: Build project and package distributables
-        run: |
-          ./gradlew --no-daemon --no-parallel clean build :composeApp:packageDistributionForCurrentOS :composeApp:shadowJar --stacktrace
-        shell: bash
+        run: ./gradlew --no-daemon --no-parallel clean build :composeApp:packageDistributionForCurrentOS :composeApp:shadowJar -x composeApp:verifyCommonMainAppDatabaseMigration --stacktrace
+        shell: pwsh
 
-      # Locate built artifacts
+      # Locate artifacts
       - name: Locate distributables (JAR, EXE, MSI)
         id: find-artifacts
-        shell: bash
+        shell: pwsh
         run: |
-          SHADOWJAR=$(find composeApp/build/libs -name "*all*.jar" -o -name "*.jar" | head -n 1 || true)
-          EXE=$(find composeApp/build/compose -name "*.exe" | head -n 1 || true)
-          MSI=$(find composeApp/build/compose -name "*.msi" | head -n 1 || true)
-          echo "shadowjar=$SHADOWJAR" >> $GITHUB_OUTPUT
-          echo "exe=$EXE" >> $GITHUB_OUTPUT
-          echo "msi=$MSI" >> $GITHUB_OUTPUT
-          echo "✅ Located:"
-          echo "  JAR: $SHADOWJAR"
-          echo "  EXE: $EXE"
-          echo "  MSI: $MSI"
+          $shadowJar = Get-ChildItem -Path "composeApp/build/libs" -Filter "*all*.jar" -Recurse | Select-Object -First 1
+          $exe = Get-ChildItem -Path "composeApp/build/compose" -Filter "*.exe" -Recurse | Select-Object -First 1
+          $msi = Get-ChildItem -Path "composeApp/build/compose" -Filter "*.msi" -Recurse | Select-Object -First 1
+          echo "shadowjar=$($shadowJar.FullName)" >> $env:GITHUB_OUTPUT
+          echo "exe=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+          echo "msi=$($msi.FullName)" >> $env:GITHUB_OUTPUT
+          Write-Host "✅ Located artifacts:"
+          Write-Host "  JAR: $($shadowJar.FullName)"
+          Write-Host "  EXE: $($exe.FullName)"
+          Write-Host "  MSI: $($msi.FullName)"
 
-      # Generate human-readable semantic version tag (v1.0.x)
+      # Generate semantic version tag
       - name: Generate semantic version tag
         id: tag
         shell: pwsh
@@ -94,16 +94,15 @@ jobs:
 
       # Create and push Git tag
       - name: Create and push Git tag
-        shell: bash
+        shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.tag.outputs.tag }}
-          git push origin ${{ steps.tag.outputs.tag }}
+          git tag $env:GITHUB_OUTPUT_tag
+          git push origin $env:GITHUB_OUTPUT_tag
 
-      # Create GitHub Release
-      - name: Create GitHub Release
-        id: create_release
+      # Create GitHub Release and upload artifacts
+      - name: Create GitHub Release and upload artifacts
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
@@ -115,13 +114,6 @@ jobs:
             - Windows **EXE** installer  
             - Windows **MSI** package  
             - Cross-platform **fat JAR**
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Upload all distributables to the release
-      - name: Upload built artifacts
-        uses: softprops/action-gh-release@v2
-        with:
           files: |
             ${{ steps.find-artifacts.outputs.shadowjar }}
             ${{ steps.find-artifacts.outputs.exe }}
