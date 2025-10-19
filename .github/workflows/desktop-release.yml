@@ -15,15 +15,17 @@ jobs:
       GRADLE_USER_HOME: ${{ github.workspace }}\.gradle-cache
 
     steps:
+      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Make gradlew executable
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-        shell: bash
 
+      # Setup JDK 17
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -31,24 +33,34 @@ jobs:
           java-version: 17
           cache: 'gradle'
 
-      # 🧩 Install SQLite native DLLs to fix migration task errors
+      # Install SQLite native DLLs for SQLDelight verification
       - name: Install SQLite native libraries
         shell: pwsh
         run: |
           Write-Host "Downloading SQLite native libraries..."
           $sqliteDir = "$env:GITHUB_WORKSPACE\sqlite-natives"
           New-Item -ItemType Directory -Force -Path $sqliteDir | Out-Null
-          Invoke-WebRequest -Uri "https://www.sqlite.org/2024/sqlite-dll-win64-x64-3450200.zip" -OutFile "$sqliteDir\sqlite.zip"
+
+          # ✅ Latest stable SQLite DLL package (as of Oct 2025)
+          $dllZip = "sqlite-dll-win-x64-3500400.zip"
+          $url = "https://www.sqlite.org/download/${dllZip}"
+          Write-Host "Downloading from $url"
+          Invoke-WebRequest -Uri $url -OutFile "$sqliteDir\sqlite.zip"
+
           Expand-Archive -Path "$sqliteDir\sqlite.zip" -DestinationPath $sqliteDir -Force
           Write-Host "✅ SQLite native DLLs installed at $sqliteDir"
+
+          # Set properties for SQLDelight to use native SQLite
           Add-Content gradle.properties "systemProp.sqlite4java.library.path=$sqliteDir"
           Add-Content gradle.properties "systemProp.java.io.tmpdir=$sqliteDir"
 
+      # Build Desktop project (EXE, MSI, and fat JAR)
       - name: Build project and package distributables
         run: |
-          ./gradlew --no-daemon --no-parallel clean shadowJar :composeApp:packageDistributionForCurrentOS --stacktrace
+          ./gradlew --no-daemon --no-parallel clean build :composeApp:packageDistributionForCurrentOS :composeApp:shadowJar --stacktrace
         shell: bash
 
+      # Locate built artifacts
       - name: Locate distributables (JAR, EXE, MSI)
         id: find-artifacts
         shell: bash
@@ -60,32 +72,51 @@ jobs:
           echo "exe=$EXE" >> $GITHUB_OUTPUT
           echo "msi=$MSI" >> $GITHUB_OUTPUT
 
-      # 🏷️ Generate human-readable version tag
-      - name: Generate release tag
+      # Generate human-readable semantic version tag (v1.0.x)
+      - name: Generate semantic version tag
         id: tag
         shell: pwsh
         run: |
-          $version = "v1.0.$(Get-Random -Minimum 10 -Maximum 9999)"
-          echo "tag=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding ASCII
+          $lastTag = (git tag -l "v*" | Sort-Object -Descending | Select-Object -First 1)
+          if (-not $lastTag) {
+            $newTag = "v1.0.0"
+          } else {
+            $parts = $lastTag -replace "v","" -split "\."
+            $major = [int]$parts[0]
+            $minor = [int]$parts[1]
+            $patch = [int]$parts[2] + 1
+            $newTag = "v$major.$minor.$patch"
+          }
+          echo "tag=$newTag" >> $env:GITHUB_OUTPUT
+          Write-Host "Generated tag: $newTag"
 
-      # 🚀 Create GitHub Release
+      # Create and push Git tag
+      - name: Create and push Git tag
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.tag.outputs.tag }}
+          git push origin ${{ steps.tag.outputs.tag }}
+
+      # Create GitHub release
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.tag }}
-          name: "Desktop Release ${{ env.tag }}"
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Desktop Release ${{ steps.tag.outputs.tag }}"
           body: |
             Automated Compose Desktop build for **deskTopRelease** branch.
 
             Includes:
-            - 🧱 Fat JAR (ready to run: `java -jar desktop-all.jar`)
-            - 🪟 Windows EXE installer
-            - 📦 MSI installer
+            - Windows **EXE** installer  
+            - Windows **MSI** package  
+            - **Fat JAR** (cross-platform run)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 📤 Upload artifacts to the release
+      # Upload all distributables to the release
       - name: Upload built artifacts
         uses: softprops/action-gh-release@v2
         with:
