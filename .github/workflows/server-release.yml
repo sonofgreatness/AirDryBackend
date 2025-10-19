@@ -1,0 +1,92 @@
+name: Server CI & Release
+
+on:
+  push:
+    branches:
+      - serverRelease
+
+permissions:
+  contents: write    # needed to create tags and releases
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    env:
+      GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-cache
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: 'gradle'
+
+      - name: Cache Gradle wrapper + caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .gradle-cache
+          key: gradle-cache-${{ runner.os }}-${{ hashFiles('**/gradle-wrapper.properties') }}-${{ hashFiles('**/*.gradle*','**/gradle.properties') }}
+          restore-keys: |
+            gradle-cache-${{ runner.os }}-
+
+      - name: Show environment
+        run: |
+          java -version
+          ./gradlew --version
+
+      - name: Build project + server shadow JAR
+        run: |
+          # build the whole repo so all modules compile
+          ./gradlew --no-daemon --no-parallel clean build :server:shadowJarForServer
+        # if you want faster incremental: remove 'clean build' but ensure full build before packaging
+
+      - name: Find server artifact
+        id: find-server-jar
+        run: |
+          echo "Searching for server shadow jar..."
+          ls -la server/build/libs || true
+          set -e
+          server_jar=$(ls server/build/libs/*all*.jar 2>/dev/null || true)
+          if [ -z "$server_jar" ]; then
+            server_jar=$(ls server/build/libs/*.jar 2>/dev/null | head -n1 || true)
+          fi
+          if [ -z "$server_jar" ]; then
+            echo "No server JAR found in server/build/libs"
+            exit 1
+          fi
+          echo "server_jar=$server_jar" >> $GITHUB_OUTPUT
+          echo "Found: $server_jar"
+
+      - name: Make tag name
+        id: tag
+        run: |
+          timestamp=$(date -u +"%Y%m%dT%H%M%SZ")
+          TAG="release/server-${timestamp}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Tag will be $TAG"
+
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Server Release ${{ steps.tag.outputs.tag }}
+          body: "Automated server release for branch serverRelease"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload server artifact to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.find-server-jar.outputs.server_jar }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

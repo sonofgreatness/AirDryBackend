@@ -53,7 +53,7 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
     val isOnlineLoggedIn by userViewModel.isOnlineLoggedIn.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-
+    println("Initial isSyncing ${isSyncing}")
     var userToDelete by remember { mutableStateOf<UUID?>(null) }
 
     Scaffold(
@@ -109,8 +109,10 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                         if(isNetworkAvailable && !isOnlineLoggedIn){
                             navigator.navigateTo(Destination.Login, Destination.Users)
                         }
+                        println(" at button click isSyncing ${isSyncing}")
                         userViewModel.synchronizeUserData()
-                    },
+                        println(" after button click isSyncing ${isSyncing}")
+                              },
                     enabled = !isSyncing,
                 ) {
                     if (isSyncing) {

@@ -1,7 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -24,29 +22,6 @@ kotlin {
         }
 
     }
-
-    @OptIn(ExperimentalWasmDsl::class)
-    /*wasmJs {
-        outputModuleName.set("composeApp")
-        browser {
-            val rootDirPath = project.rootDir.path
-            val projectDirPath = project.projectDir.path
-            commonWebpackConfig {
-                outputFileName = "composeApp.js"
-                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
-                    static = (static ?: mutableListOf()).apply {
-                        // Serve sources to debug inside browser
-                        add(rootDirPath)
-                        add(projectDirPath)
-                    }
-                    port = 8100
-                }
-            }
-        }
-        binaries.executable()
-    }*/
-
-
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -102,29 +77,6 @@ kotlin {
     }
 }
 
-
-compose.desktop {
-    application {
-        mainClass = "org.montigny.client.Main"
-
-        nativeDistributions {
-          //  targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            targetFormats(TargetFormat.Exe)
-            packageName = "org.montigny.client"
-            packageVersion = "1.0.0"
-            modules("java.desktop")
-        }
-    }
-}
-
-sqldelight {
-    databases {
-        create("AppDatabase") {
-            packageName.set("org.montigny.client.database")
-            // sourceFolders = listOf("sqldelight")
-        }
-    }
-}// Corrected ShadowJar task
 tasks.register<ShadowJar>("shadowJar") {
     archiveBaseName.set("desktop")
     archiveVersion.set("1.0.9")
@@ -132,6 +84,7 @@ tasks.register<ShadowJar>("shadowJar") {
 
     manifest {
         attributes["Main-Class"] = "org.montigny.client.Main"
+        attributes["APP_JARS"] = archiveFileName.get()
     }
 
     val jvmMainCompilation = kotlin.targets.getByName("jvm").compilations.getByName("main")
@@ -151,5 +104,41 @@ tasks.register<ShadowJar>("shadowJar") {
 
     doLast {
         println("✅ Shadow JAR built successfully at: ${archiveFile.get().asFile.absolutePath}")
+    }
+}
+
+compose.desktop {
+    application {
+        mainClass = "org.montigny.client.Main"
+        nativeDistributions {
+            targetFormats(TargetFormat.Exe, TargetFormat.Msi)
+            packageName = "Brotherhood Office"
+            packageVersion = "1.0.1"
+            modules("java.desktop")
+            includeAllModules = true
+
+            description = "Brotherhood Office — Admin tool for managing sawmill operations, payroll, and workforce transparency."
+            // Publisher info
+            vendor = "Brotherhood of Timber Workers"
+            copyright = "© 2025 Brotherhood of Timber Workers"
+            licenseFile.set(project.file("LICENSE.txt"))
+
+            // Icons
+            windows {
+                menuGroup = "Brotherhood of Timber Workers"
+                upgradeUuid = "C54A3B01-1234-4E12-A4B1-2234ACBFD701"
+                iconFile.set(project.file("src/jvmMain/resources/icons/btw_office.ico"))
+                shortcut = true
+            }
+        }
+    }
+}
+
+sqldelight {
+    databases {
+        create("AppDatabase") {
+            packageName.set("org.montigny.client.database")
+            // sourceFolders = listOf("sqldelight")
+        }
     }
 }

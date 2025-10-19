@@ -85,16 +85,13 @@ tasks.named<Tar>("distTar") {
 }
 tasks.register<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJarForServer") {
     archiveBaseName.set("server")
-    archiveVersion.set("1.0.0")
+    archiveVersion.set("1.0.1")
     archiveClassifier.set("all")
-
     manifest {
         attributes["Main-Class"] = "org.montigny.client.ApplicationKt"
     }
-
     // ✅ Include compiled classes directly (Kotlin JVM project)
     from(sourceSets.main.get().output)
-
     // ✅ Include runtime dependencies
     configurations = listOf(project.configurations.runtimeClasspath.get())
 

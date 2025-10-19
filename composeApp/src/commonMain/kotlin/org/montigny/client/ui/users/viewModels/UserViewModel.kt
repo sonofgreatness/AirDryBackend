@@ -235,8 +235,9 @@ init {
 }
 
 fun synchronizeUserData(){
+    _isSyncing.value = true
         synchronizeUserDataInternal(isNetworkAvailable.value, isOnlineLoggedIn.value)
-    }
+}
 private fun synchronizeUserDataInternal(isNetworkAvailable: Boolean =false,isOnlineLoggedIn : Boolean) {
         viewModelScope.launch {
             _isSyncing.value = true

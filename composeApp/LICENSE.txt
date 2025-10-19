@@ -1,0 +1,75 @@
+Brotherhood Office
+Copyright (c) 2025 Simphiwe Magagula
+All rights reserved.
+
+=========================================
+LICENSE AGREEMENT
+=========================================
+
+This software, known as “Brotherhood Office”, was developed by
+Simphiwe Magagula (“the Author”) as part of the
+Brotherhood of Timber Workers initiative — a community-driven effort
+to promote transparency, professionalism, and solidarity in the timber industry.
+
+This license remains in effect until the Brotherhood of Timber Workers
+becomes a formally registered entity, at which point legal ownership
+and associated rights may be transferred to that entity.
+
+-----------------------------------------
+1. GRANT OF LICENSE
+-----------------------------------------
+The Author grants you a non-exclusive, non-transferable right
+to install and use this software for legitimate business or
+organizational purposes.
+
+-----------------------------------------
+2. RESTRICTIONS
+-----------------------------------------
+- You may not modify, decompile, reverse-engineer, or redistribute
+  this software or any part thereof without written permission
+  from the Author.
+- You may not resell, sublicense, or claim authorship of this software.
+- All visual design elements, icons, and branding related to the
+  Brotherhood of Timber Workers remain the creative property
+  of the Author until transferred to the formal organization.
+
+-----------------------------------------
+3. INTELLECTUAL PROPERTY
+-----------------------------------------
+All source code, assets, and documentation are protected under
+copyright law and remain the intellectual property of
+Simphiwe Magagula until otherwise stated.
+
+-----------------------------------------
+4. LIMITED WARRANTY
+-----------------------------------------
+This software is provided “AS IS” without any warranties,
+express or implied, including but not limited to merchantability
+or fitness for a particular purpose.
+
+-----------------------------------------
+5. LIMITATION OF LIABILITY
+-----------------------------------------
+Under no circumstances shall the Author or any future entity
+representing the Brotherhood of Timber Workers be held liable
+for damages arising from the use or inability to use this software.
+
+-----------------------------------------
+6. FUTURE TRANSFER OF OWNERSHIP
+-----------------------------------------
+In the event that the Brotherhood of Timber Workers becomes
+a registered organization, this license shall automatically
+transfer to that entity without altering user rights or restrictions.
+
+-----------------------------------------
+7. CONTACT
+-----------------------------------------
+Author: Simphiwe Magagula
+Initiative: Brotherhood of Timber Workers
+Email: simphiweiq@gmail.com
+Copyright © 2025
+All rights reserved.
+
+=========================================
+END OF LICENSE
+=========================================
