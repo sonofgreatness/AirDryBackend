@@ -78,7 +78,12 @@ jobs:
         run: |
           echo "Searching for server shadow jar..."
           ls -la server/build/libs || true
-          server_jar=$(ls server/build/libs/*all*.jar 2>/dev/null || ls server/build/libs/*.jar | head -n1)
+          # pick the first matching *all*.jar
+          server_jar=$(ls server/build/libs/*all*.jar 2>/dev/null | head -n1)
+          # fallback if none found
+          if [ -z "$server_jar" ]; then
+            server_jar=$(ls server/build/libs/*.jar 2>/dev/null | head -n1)
+          fi
           if [ -z "$server_jar" ]; then
             echo "No server JAR found"
             exit 1
@@ -86,7 +91,8 @@ jobs:
           echo "server_jar=$server_jar" >> $GITHUB_OUTPUT
           echo "Found: $server_jar"
 
-      - name: Generate release tag
+
+      - name: Generate release tags
         id: tag
         run: |
           timestamp=$(date -u +"%Y%m%dT%H%M%SZ")
