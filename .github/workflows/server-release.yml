@@ -6,7 +6,7 @@ on:
       - serverRelease
 
 permissions:
-  contents: write # needed to create tags and releases
+  contents: write # Needed to create tags and releases
 
 jobs:
   build-and-release:
@@ -30,29 +30,13 @@ jobs:
           java-version: 17
           cache: 'gradle'
 
-      - name: Cache Gradle wrapper + caches
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            .gradle-cache
-          key: gradle-cache-${{ runner.os }}-${{ hashFiles('**/gradle-wrapper.properties') }}-${{ hashFiles('**/*.gradle*','**/gradle.properties') }}
-          restore-keys: |
-            gradle-cache-${{ runner.os }}-
-
-      - name: Show environment
-        run: |
-          java -version
-          ./gradlew --version
-
       - name: Prepare temp directories for SQLDelight
         run: |
           mkdir -p ${{ github.workspace }}/tmp/sqlite-natives
           echo "systemProp.java.io.tmpdir=${{ github.workspace }}/tmp" >> gradle.properties
           echo "systemProp.sqlite4java.library.path=${{ github.workspace }}/tmp/sqlite-natives" >> gradle.properties
 
-      # --- Web frontend build ---
+      # --- Web frontend build (optional) ---
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -69,33 +53,36 @@ jobs:
         run: npm run build
 
       # --- Build server and shared modules ---
-      - name: Build project + server shadow JAR
+      - name: Build project + server fat JAR
         run: |
           ./gradlew --no-daemon --no-parallel clean build :server:shadowJarForServer
 
-      - name: Find server artifact
+      - name: Find server fat JAR
         id: find-server-jar
         run: |
-          echo "Searching for server shadow jar..."
-          ls -la server/build/libs || true
           server_jar=$(ls server/build/libs/*all*.jar 2>/dev/null | head -n1)
           if [ -z "$server_jar" ]; then
-            server_jar=$(ls server/build/libs/*.jar 2>/dev/null | head -n1)
-          fi
-          if [ -z "$server_jar" ]; then
-            echo "No server JAR found"
+            echo "No server fat JAR found"
             exit 1
           fi
           echo "server_jar=$server_jar" >> $GITHUB_OUTPUT
-          echo "Found: $server_jar"
+          echo "Found server fat JAR: $server_jar"
 
-      - name: Generate release tag
+      - name: Generate semantic version tag
         id: tag
         run: |
-          timestamp=$(date -u +"%Y%m%dT%H%M%SZ")
-          TAG="release/server-${timestamp}"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "Tag will be $TAG"
+          LAST_TAG=$(git tag -l "v*.*.*" --sort=-v:refname | head -n1)
+          if [ -z "$LAST_TAG" ]; then
+            NEW_TAG="v1.0.0"
+          else
+            MAJOR=$(echo $LAST_TAG | cut -d. -f1 | sed 's/v//')
+            MINOR=$(echo $LAST_TAG | cut -d. -f2)
+            PATCH=$(echo $LAST_TAG | cut -d. -f3)
+            PATCH=$((PATCH + 1))
+            NEW_TAG="v$MAJOR.$MINOR.$PATCH"
+          fi
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "Generated semantic version tag: $NEW_TAG"
 
       - name: Create and push Git tag
         run: |
@@ -109,12 +96,12 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: "Server Release ${{ steps.tag.outputs.tag }}"
+          name: Server Release ${{ steps.tag.outputs.tag }}
           body: "Automated server release for branch serverRelease"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload server artifact to release
+      - name: Upload server fat JAR to release
         uses: softprops/action-gh-release@v1
         with:
           files: ${{ steps.find-server-jar.outputs.server_jar }}
