@@ -6,7 +6,7 @@ on:
       - serverRelease
 
 permissions:
-  contents: write
+  contents: write  # needed to create tags and releases
 
 jobs:
   build-and-release:
@@ -15,10 +15,11 @@ jobs:
       GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-cache
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
@@ -27,38 +28,38 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-          cache: 'gradle'
+          cache: gradle
 
-      - name: Cache Gradle wrapper + caches
-        uses: actions/cache@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            .gradle-cache
-          key: gradle-cache-${{ runner.os }}-${{ hashFiles('**/gradle-wrapper.properties') }}-${{ hashFiles('**/*.gradle*','**/gradle.properties') }}
-          restore-keys: |
-            gradle-cache-${{ runner.os }}-
+          node-version: 20
 
-      - name: Show environment
-        run: |
-          java -version
-          ./gradlew --version
+      - name: Install npm dependencies (React/web)
+        working-directory: web/superuser-ui
+        run: npm ci
 
-      - name: Prepare temp directories
+      - name: Prepare temp directories for SQLDelight
         run: |
           mkdir -p ${{ github.workspace }}/tmp/sqlite-natives
           echo "systemProp.java.io.tmpdir=${{ github.workspace }}/tmp" >> gradle.properties
           echo "systemProp.sqlite4java.library.path=${{ github.workspace }}/tmp/sqlite-natives" >> gradle.properties
 
-      - name: Build project + server shadow JAR
+      - name: Show environment
+        run: |
+          java -version
+          node -v
+          npm -v
+          ./gradlew --version
+
+      - name: Build all modules + server shadow JAR
         run: |
           ./gradlew --no-daemon --no-parallel clean build :server:shadowJarForServer
 
-      - name: Find server artifact
+      - name: Find server shadow JAR
         id: find-server-jar
         run: |
-          echo "Searching for server shadow jar..."
+          echo "Searching for server shadow JAR..."
           ls -la server/build/libs || true
           server_jar=$(ls server/build/libs/*all*.jar 2>/dev/null || ls server/build/libs/*.jar | head -n1)
           if [ -z "$server_jar" ]; then
@@ -68,7 +69,7 @@ jobs:
           echo "server_jar=$server_jar" >> $GITHUB_OUTPUT
           echo "Found: $server_jar"
 
-      - name: Make tag name
+      - name: Generate release tag
         id: tag
         run: |
           timestamp=$(date -u +"%Y%m%dT%H%M%SZ")
@@ -76,12 +77,12 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Tag will be $TAG"
 
-      - name: Create release
+      - name: Create GitHub release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: Server Release ${{ steps.tag.outputs.tag }}
+          name: "Server Release ${{ steps.tag.outputs.tag }}"
           body: "Automated server release for branch serverRelease"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
