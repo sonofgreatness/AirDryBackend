@@ -33,7 +33,7 @@ jobs:
           java-version: 17
           cache: 'gradle'
 
-      # Install SQLite native DLLs for SQLDelight verification
+      # ✅ Install SQLite native DLLs (fixed 2025 path)
       - name: Install SQLite native libraries
         shell: pwsh
         run: |
@@ -41,16 +41,14 @@ jobs:
           $sqliteDir = "$env:GITHUB_WORKSPACE\sqlite-natives"
           New-Item -ItemType Directory -Force -Path $sqliteDir | Out-Null
 
-          # ✅ Latest stable SQLite DLL package (as of Oct 2025)
           $dllZip = "sqlite-dll-win-x64-3500400.zip"
-          $url = "https://www.sqlite.org/download/${dllZip}"
+          $url = "https://www.sqlite.org/2025/${dllZip}"
           Write-Host "Downloading from $url"
           Invoke-WebRequest -Uri $url -OutFile "$sqliteDir\sqlite.zip"
 
           Expand-Archive -Path "$sqliteDir\sqlite.zip" -DestinationPath $sqliteDir -Force
           Write-Host "✅ SQLite native DLLs installed at $sqliteDir"
 
-          # Set properties for SQLDelight to use native SQLite
           Add-Content gradle.properties "systemProp.sqlite4java.library.path=$sqliteDir"
           Add-Content gradle.properties "systemProp.java.io.tmpdir=$sqliteDir"
 
@@ -71,6 +69,10 @@ jobs:
           echo "shadowjar=$SHADOWJAR" >> $GITHUB_OUTPUT
           echo "exe=$EXE" >> $GITHUB_OUTPUT
           echo "msi=$MSI" >> $GITHUB_OUTPUT
+          echo "✅ Located:"
+          echo "  JAR: $SHADOWJAR"
+          echo "  EXE: $EXE"
+          echo "  MSI: $MSI"
 
       # Generate human-readable semantic version tag (v1.0.x)
       - name: Generate semantic version tag
@@ -99,7 +101,7 @@ jobs:
           git tag ${{ steps.tag.outputs.tag }}
           git push origin ${{ steps.tag.outputs.tag }}
 
-      # Create GitHub release
+      # Create GitHub Release
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
@@ -112,7 +114,7 @@ jobs:
             Includes:
             - Windows **EXE** installer  
             - Windows **MSI** package  
-            - **Fat JAR** (cross-platform run)
+            - Cross-platform **fat JAR**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
