@@ -6,7 +6,7 @@ on:
       - serverRelease
 
 permissions:
-  contents: write  # needed to create tags and releases
+  contents: write # Needed to create tags and releases
 
 jobs:
   build-and-release:
@@ -28,16 +28,23 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-          cache: gradle
+          cache: 'gradle'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Cache Gradle wrapper + caches
+        uses: actions/cache@v4
         with:
-          node-version: 20
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .gradle-cache
+          key: gradle-cache-${{ runner.os }}-${{ hashFiles('**/gradle-wrapper.properties') }}-${{ hashFiles('**/*.gradle*','**/gradle.properties') }}
+          restore-keys: |
+            gradle-cache-${{ runner.os }}-
 
-      - name: Install npm dependencies (React/web)
-        working-directory: web/superuser-ui
-        run: npm ci
+      - name: Show environment
+        run: |
+          java -version
+          ./gradlew --version
 
       - name: Prepare temp directories for SQLDelight
         run: |
@@ -45,21 +52,31 @@ jobs:
           echo "systemProp.java.io.tmpdir=${{ github.workspace }}/tmp" >> gradle.properties
           echo "systemProp.sqlite4java.library.path=${{ github.workspace }}/tmp/sqlite-natives" >> gradle.properties
 
-      - name: Show environment
-        run: |
-          java -version
-          node -v
-          npm -v
-          ./gradlew --version
+      # --- Web frontend build ---
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
 
-      - name: Build all modules + server shadow JAR
+      - name: Clean install npm dependencies (React)
+        working-directory: web/superuser-ui
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install --force --legacy-peer-deps
+
+      - name: Build React frontend
+        working-directory: web/superuser-ui
+        run: npm run build
+
+      # --- Build server and shared modules ---
+      - name: Build project + server shadow JAR
         run: |
           ./gradlew --no-daemon --no-parallel clean build :server:shadowJarForServer
 
-      - name: Find server shadow JAR
+      - name: Find server artifact
         id: find-server-jar
         run: |
-          echo "Searching for server shadow JAR..."
+          echo "Searching for server shadow jar..."
           ls -la server/build/libs || true
           server_jar=$(ls server/build/libs/*all*.jar 2>/dev/null || ls server/build/libs/*.jar | head -n1)
           if [ -z "$server_jar" ]; then
@@ -82,7 +99,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: "Server Release ${{ steps.tag.outputs.tag }}"
+          name: Server Release ${{ steps.tag.outputs.tag }}
           body: "Automated server release for branch serverRelease"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
