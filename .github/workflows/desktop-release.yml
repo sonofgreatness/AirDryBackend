@@ -19,8 +19,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
+        shell: bash
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -29,18 +31,22 @@ jobs:
           java-version: 17
           cache: 'gradle'
 
-      - name: Prepare temp directories
+      # 🧩 Install SQLite native DLLs to fix migration task errors
+      - name: Install SQLite native libraries
         shell: pwsh
         run: |
-          $tmp = "$env:GITHUB_WORKSPACE\tmp"
-          $sqlite = "$tmp\sqlite-natives"
-          New-Item -ItemType Directory -Force -Path $sqlite | Out-Null
-          Add-Content gradle.properties "systemProp.java.io.tmpdir=$tmp"
-          Add-Content gradle.properties "systemProp.sqlite4java.library.path=$sqlite"
+          Write-Host "Downloading SQLite native libraries..."
+          $sqliteDir = "$env:GITHUB_WORKSPACE\sqlite-natives"
+          New-Item -ItemType Directory -Force -Path $sqliteDir | Out-Null
+          Invoke-WebRequest -Uri "https://www.sqlite.org/2024/sqlite-dll-win64-x64-3450200.zip" -OutFile "$sqliteDir\sqlite.zip"
+          Expand-Archive -Path "$sqliteDir\sqlite.zip" -DestinationPath $sqliteDir -Force
+          Write-Host "✅ SQLite native DLLs installed at $sqliteDir"
+          Add-Content gradle.properties "systemProp.sqlite4java.library.path=$sqliteDir"
+          Add-Content gradle.properties "systemProp.java.io.tmpdir=$sqliteDir"
 
       - name: Build project and package distributables
         run: |
-          ./gradlew --no-daemon --no-parallel clean build :composeApp:packageDistributionForCurrentOS --stacktrace
+          ./gradlew --no-daemon --no-parallel clean shadowJar :composeApp:packageDistributionForCurrentOS --stacktrace
         shell: bash
 
       - name: Locate distributables (JAR, EXE, MSI)
@@ -54,24 +60,32 @@ jobs:
           echo "exe=$EXE" >> $GITHUB_OUTPUT
           echo "msi=$MSI" >> $GITHUB_OUTPUT
 
+      # 🏷️ Generate human-readable version tag
       - name: Generate release tag
         id: tag
         shell: pwsh
         run: |
-          $timestamp = (Get-Date).ToString("yyyyMMddTHHmmssZ")
-          $tag = "release/desktop-$timestamp"
-          echo "tag=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding ASCII
+          $version = "v1.0.$(Get-Random -Minimum 10 -Maximum 9999)"
+          echo "tag=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding ASCII
 
+      # 🚀 Create GitHub Release
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.tag }}
           name: "Desktop Release ${{ env.tag }}"
-          body: "Automated Compose Desktop build for deskTopRelease branch. Includes Windows executables and fat JAR."
+          body: |
+            Automated Compose Desktop build for **deskTopRelease** branch.
+
+            Includes:
+            - 🧱 Fat JAR (ready to run: `java -jar desktop-all.jar`)
+            - 🪟 Windows EXE installer
+            - 📦 MSI installer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # 📤 Upload artifacts to the release
       - name: Upload built artifacts
         uses: softprops/action-gh-release@v2
         with:
