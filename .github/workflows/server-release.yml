@@ -6,7 +6,7 @@ on:
       - serverRelease
 
 permissions:
-  contents: write # Needed to create tags and releases
+  contents: write
 
 jobs:
   build-and-release:
@@ -36,7 +36,7 @@ jobs:
           echo "systemProp.java.io.tmpdir=${{ github.workspace }}/tmp" >> gradle.properties
           echo "systemProp.sqlite4java.library.path=${{ github.workspace }}/tmp/sqlite-natives" >> gradle.properties
 
-      # --- Web frontend build (optional) ---
+      # --- Optional frontend ---
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -52,7 +52,7 @@ jobs:
         working-directory: web/superuser-ui
         run: npm run build
 
-      # --- Build server and shared modules ---
+      # --- Build server ---
       - name: Build project + server fat JAR
         run: |
           ./gradlew --no-daemon --no-parallel clean build :server:shadowJarForServer
@@ -68,6 +68,7 @@ jobs:
           echo "server_jar=$server_jar" >> $GITHUB_OUTPUT
           echo "Found server fat JAR: $server_jar"
 
+      # --- Tagging ---
       - name: Generate semantic version tag
         id: tag
         run: |
@@ -91,6 +92,7 @@ jobs:
           git tag ${{ steps.tag.outputs.tag }}
           git push origin ${{ steps.tag.outputs.tag }}
 
+      # --- Release ---
       - name: Create GitHub release
         id: create_release
         uses: softprops/action-gh-release@v1
