@@ -15,6 +15,7 @@ jobs:
       GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-cache
 
     steps:
+      # --- Repo setup ---
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -28,15 +29,16 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-          cache: 'gradle'
+          cache: gradle
 
+      # --- SQLDelight temp fix ---
       - name: Prepare temp directories for SQLDelight
         run: |
           mkdir -p ${{ github.workspace }}/tmp/sqlite-natives
           echo "systemProp.java.io.tmpdir=${{ github.workspace }}/tmp" >> gradle.properties
           echo "systemProp.sqlite4java.library.path=${{ github.workspace }}/tmp/sqlite-natives" >> gradle.properties
 
-      # --- Optional frontend ---
+      # --- Optional frontend (React build) ---
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -53,6 +55,11 @@ jobs:
         run: npm run build
 
       # --- Build server ---
+      - name: Clean old JARs
+        run: |
+          echo "🧹 Removing old server JARs..."
+          rm -f server/build/libs/*all*.jar || true
+
       - name: Build project + server fat JAR
         run: |
           ./gradlew --no-daemon --no-parallel clean build :server:shadowJarForServer
@@ -60,13 +67,13 @@ jobs:
       - name: Find server fat JAR
         id: find-server-jar
         run: |
-          server_jar=$(ls server/build/libs/*all*.jar 2>/dev/null | head -n1)
+          server_jar=$(find server/build/libs -type f -name "*all*.jar" | head -n1)
           if [ -z "$server_jar" ]; then
-            echo "No server fat JAR found"
+            echo "❌ No server fat JAR found"
             exit 1
           fi
           echo "server_jar=$server_jar" >> $GITHUB_OUTPUT
-          echo "Found server fat JAR: $server_jar"
+          echo "✅ Found server fat JAR: $server_jar"
 
       # --- Tagging ---
       - name: Generate semantic version tag
@@ -83,7 +90,7 @@ jobs:
             NEW_TAG="v$MAJOR.$MINOR.$PATCH"
           fi
           echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
-          echo "Generated semantic version tag: $NEW_TAG"
+          echo "🆕 Generated semantic version tag: $NEW_TAG"
 
       - name: Create and push Git tag
         run: |
@@ -93,19 +100,14 @@ jobs:
           git push origin ${{ steps.tag.outputs.tag }}
 
       # --- Release ---
-      - name: Create GitHub release
-        id: create_release
+      - name: Create GitHub release with JAR asset
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: Server Release ${{ steps.tag.outputs.tag }}
-          body: "Automated server release for branch serverRelease"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload server fat JAR to release
-        uses: softprops/action-gh-release@v1
-        with:
+          body: |
+            Automated release for branch `serverRelease`
+            Includes downloadable fat JAR ready for deployment.
           files: ${{ steps.find-server-jar.outputs.server_jar }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
