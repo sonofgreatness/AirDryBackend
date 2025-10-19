@@ -6,7 +6,7 @@ on:
       - serverRelease
 
 permissions:
-  contents: write    # needed to create tags and releases
+  contents: write
 
 jobs:
   build-and-release:
@@ -43,24 +43,24 @@ jobs:
           java -version
           ./gradlew --version
 
+      - name: Prepare temp directories
+        run: |
+          mkdir -p ${{ github.workspace }}/tmp/sqlite-natives
+          echo "systemProp.java.io.tmpdir=${{ github.workspace }}/tmp" >> gradle.properties
+          echo "systemProp.sqlite4java.library.path=${{ github.workspace }}/tmp/sqlite-natives" >> gradle.properties
+
       - name: Build project + server shadow JAR
         run: |
-          # build the whole repo so all modules compile
           ./gradlew --no-daemon --no-parallel clean build :server:shadowJarForServer
-        # if you want faster incremental: remove 'clean build' but ensure full build before packaging
 
       - name: Find server artifact
         id: find-server-jar
         run: |
           echo "Searching for server shadow jar..."
           ls -la server/build/libs || true
-          set -e
-          server_jar=$(ls server/build/libs/*all*.jar 2>/dev/null || true)
+          server_jar=$(ls server/build/libs/*all*.jar 2>/dev/null || ls server/build/libs/*.jar | head -n1)
           if [ -z "$server_jar" ]; then
-            server_jar=$(ls server/build/libs/*.jar 2>/dev/null | head -n1 || true)
-          fi
-          if [ -z "$server_jar" ]; then
-            echo "No server JAR found in server/build/libs"
+            echo "No server JAR found"
             exit 1
           fi
           echo "server_jar=$server_jar" >> $GITHUB_OUTPUT

@@ -4,15 +4,21 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import java.io.File
 
 object DatabaseFactory : DatabaseProvider {
+
     override val database: AppDatabase by lazy {
         val dbFile = getDatabasePath()
-        println("Db file created: ${dbFile.absolutePath}")
+        println("Database file path: ${dbFile.absolutePath}")
+
         val driver = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
+
         if (!dbFile.exists()) {
+            println("Database file not found. Creating schema...")
             AppDatabase.Schema.create(driver)
         } else {
+            println("Database file exists. Running migrations if needed...")
             AppDatabase.Schema.migrate(driver, AppDatabase.Schema.version, AppDatabase.Schema.version)
         }
+
         AppDatabase(driver)
     }
 

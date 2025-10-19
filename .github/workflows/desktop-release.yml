@@ -15,44 +15,36 @@ jobs:
       GRADLE_USER_HOME: ${{ github.workspace }}\.gradle-cache
 
     steps:
-      - name: 🧩 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: ☕ Setup JDK 17
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
           cache: 'gradle'
 
-      - name: 🔧 Show Java environment
+      - name: Prepare temp directories
+        shell: pwsh
         run: |
-          java -version
-          echo "Gradle on PATH?"
-          where gradle || echo "❌ gradle not on PATH, using wrapper instead"
+          $tmp = "$env:GITHUB_WORKSPACE\tmp"
+          $sqlite = "$tmp\sqlite-natives"
+          New-Item -ItemType Directory -Force -Path $sqlite | Out-Null
+          Add-Content gradle.properties "systemProp.java.io.tmpdir=$tmp"
+          Add-Content gradle.properties "systemProp.sqlite4java.library.path=$sqlite"
 
-      - name: 🏗️ Build project and package distributables
+      - name: Build project and package distributables
         run: |
-          echo "Starting Gradle build..."
           ./gradlew --no-daemon --no-parallel clean build :composeApp:packageDistributionForCurrentOS --stacktrace
         shell: bash
 
-      - name: 📂 Log directory structure and assumptions
-        run: |
-          echo "== Compose App Build Directory =="
-          dir composeApp\build
-          echo "== Looking for packaged outputs =="
-          dir /B /S composeApp\build\compose\binaries\main\app || echo "❌ No app folder found under binaries/main"
-          echo "== Looking for JARs =="
-          dir /B /S composeApp\build\libs || echo "❌ No JARs found in build/libs"
-
-      - name: 🔍 Locate distributables (JAR, EXE, MSI)
+      - name: Locate distributables (JAR, EXE, MSI)
         id: find-artifacts
         shell: bash
         run: |
-          echo "Searching for desktop build outputs..."
           SHADOWJAR=$(find composeApp/build/libs -name "*all*.jar" -o -name "*.jar" | head -n 1 || true)
           EXE=$(find composeApp/build/compose -name "*.exe" | head -n 1 || true)
           MSI=$(find composeApp/build/compose -name "*.msi" | head -n 1 || true)
@@ -60,36 +52,25 @@ jobs:
           echo "exe=$EXE" >> $GITHUB_OUTPUT
           echo "msi=$MSI" >> $GITHUB_OUTPUT
 
-          echo "🧠 Assumptions:"
-          echo "- JAR expected under: composeApp/build/libs"
-          echo "- EXE/MSI expected under: composeApp/build/compose/binaries/main/app/"
-          echo "📦 Found ->"
-          echo "  JAR: $SHADOWJAR"
-          echo "  EXE: $EXE"
-          echo "  MSI: $MSI"
-
-      - name: 🏷️ Generate release tag
+      - name: Generate release tag
         id: tag
         shell: pwsh
         run: |
           $timestamp = (Get-Date).ToString("yyyyMMddTHHmmssZ")
           $tag = "release/desktop-$timestamp"
           echo "tag=$tag" | Out-File -FilePath $env:GITHUB_ENV -Encoding ASCII
-          echo "Created tag: $tag"
 
-      - name: 🚀 Create GitHub Release
+      - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.tag }}
           name: "Desktop Release ${{ env.tag }}"
-          body: |
-            Automated Compose Desktop build for **deskTopRelease** branch.
-            Includes Windows executables and fat JAR.
+          body: "Automated Compose Desktop build for deskTopRelease branch. Includes Windows executables and fat JAR."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 📤 Upload built artifacts
+      - name: Upload built artifacts
         uses: softprops/action-gh-release@v2
         with:
           files: |
