@@ -6,7 +6,7 @@ on:
       - serverRelease
 
 permissions:
-  contents: write # Needed to create tags and releases
+  contents: write # needed to create tags and releases
 
 jobs:
   build-and-release:
@@ -78,9 +78,7 @@ jobs:
         run: |
           echo "Searching for server shadow jar..."
           ls -la server/build/libs || true
-          # pick the first matching *all*.jar
           server_jar=$(ls server/build/libs/*all*.jar 2>/dev/null | head -n1)
-          # fallback if none found
           if [ -z "$server_jar" ]; then
             server_jar=$(ls server/build/libs/*.jar 2>/dev/null | head -n1)
           fi
@@ -91,14 +89,7 @@ jobs:
           echo "server_jar=$server_jar" >> $GITHUB_OUTPUT
           echo "Found: $server_jar"
 
-      - name: Create and push Git tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.tag.outputs.tag }}
-          git push origin ${{ steps.tag.outputs.tag }}
-
-      - name: Generate release tags
+      - name: Generate release tag
         id: tag
         run: |
           timestamp=$(date -u +"%Y%m%dT%H%M%SZ")
@@ -106,12 +97,19 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Tag will be $TAG"
 
+      - name: Create and push Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.tag.outputs.tag }}
+          git push origin ${{ steps.tag.outputs.tag }}
+
       - name: Create GitHub release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: Server Release ${{ steps.tag.outputs.tag }}
+          name: "Server Release ${{ steps.tag.outputs.tag }}"
           body: "Automated server release for branch serverRelease"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
