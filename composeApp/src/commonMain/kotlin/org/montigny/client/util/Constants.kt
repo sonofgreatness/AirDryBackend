@@ -8,5 +8,8 @@ class Constants {
         const val NOT_LOGGED_IN_ERROR= "User is not logged in"
         const val USER_FOUND_NOT_ERROR = "User not found"
         const val NULL_PLACEHOLDER = "null"
+        const val DEFAULT_PAGE = 1
+        const val DEFAULT_PAGE_SIZE = 20
+
     }
 }

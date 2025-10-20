@@ -16,6 +16,7 @@ import kotlinx.serialization.json.Json
 import io.ktor.server.routing.route
 import org.montigny.client.API_URL_WORK_WORK_DELETE_BY_ID
 import org.montigny.client.API_URL_WORK_WORK_GET_ALL
+import org.montigny.client.API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY
 import org.montigny.client.API_URL_WORK_WORK_GET_BY_ID
 import org.montigny.client.API_URL_WORK_WORK_GET_BY_USER_ID
 import org.montigny.client.API_URL_WORK_WORK_REGISTER
@@ -31,6 +32,7 @@ import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateWorkDTOStringAsDate
 import org.montigny.client.dto.Work.CreateWorkDoneDTO
+import org.montigny.client.dto.Work.WorkDaySummaryDTO
 import org.montigny.client.service.UserService
 import org.montigny.client.service.WorkerService
 import org.montigny.client.util.ApiExamples.Companion.exampleCreateWorkDoneDTO
@@ -313,5 +315,44 @@ fun Route.workRoutes(
         }
     }
 
+    route(API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY){
+        install(NotarizedRoute()){
+            tags = setOf("Work")
+            security = mapOf("BearerAuth" to emptyList())
+            parameters = listOf(
+                Parameter(name = PAGE, `in` = Parameter.Location.query, schema = TypeDefinition.INT),
+                Parameter(name = PAGE_SIZE, `in` = Parameter.Location.query, schema = TypeDefinition.INT)
+            )
+            get = GetInfo.builder {
+                summary("Get All Work Summaries")
+                description("Get All Work Summaries")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<WorkDaySummaryDTO>>()
+                    description("Get All Work Summaries")
+                }
+            }
+        }
+        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
+            UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) {
+            get {
+                try {
+                    val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+                    val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+                    val user = UserUtils.getLoggedInUser(call)
+                    val resp = workService.getDailyWorkSummaries(user, page = page, pageSize = pageSize)
+                    resp?.let {
+                        call.respond(HttpStatusCode.OK, it)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
 
 }

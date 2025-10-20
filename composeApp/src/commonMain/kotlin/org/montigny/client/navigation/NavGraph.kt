@@ -25,6 +25,7 @@ import org.montigny.client.ui.users.UsersScreen
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.ui.work.WorkScreen
+import org.montigny.client.ui.work.WorkViewModel
 
 @Composable
 fun NavGraph(
@@ -36,14 +37,15 @@ fun NavGraph(
     organizationViewModelWithDpt : OrganizationDepartmentsAndSectionsViewModel,
     syncSettingsRepository: SyncSettingsRepository,
     themeManager: ThemeManager,
-    stacksViewModel: StacksViewModel
+    stacksViewModel: StacksViewModel,
+    workViewModel: WorkViewModel
 ) {
     val currentDestination by navigator.currentDestination
      val nextDestination by navigator.nextDestination
     when (currentDestination) {
         Destination.Users -> UsersScreen(usersViewModel,navigator)
         Destination.Organizations -> OrganizationScreen(organizationViewModel,navigator)
-        Destination.Work -> WorkScreen()
+        Destination.Work -> WorkScreen(workViewModel)
         Destination.ManageStacksScreen-> ManageStacksScreen(stacksViewModel, navigator)
         Destination.Reports -> ReportsScreen()
         Destination.Settings -> SettingsScreen()

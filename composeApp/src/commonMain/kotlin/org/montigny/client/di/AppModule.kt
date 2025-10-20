@@ -12,10 +12,12 @@ import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.implementation.OrganizationApiImpl
 import org.montigny.client.data.api.implementation.StackApiImpl
 import org.montigny.client.data.api.implementation.UserApiImpl
+import org.montigny.client.data.api.implementation.WorkApiImpl
 import org.montigny.client.data.api.implementation.provideHttpClient
 import org.montigny.client.data.api.repository.OrganizationApi
 import org.montigny.client.data.api.repository.StackApi
 import org.montigny.client.data.api.repository.UserApi
+import org.montigny.client.data.api.repository.WorkApi
 import org.montigny.client.domain.synchronization.BackgroundSyncWorker
 import org.montigny.client.domain.synchronization.SyncManager
 import org.montigny.client.domain.synchronization.SyncSettingsRepository
@@ -27,9 +29,11 @@ import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToPdfUseCase
 import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
+import org.montigny.client.ui.work.WorkViewModel
 import org.montigny.client.util.ConnectivityObserver
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.math.sin
 
 val appModule = module {
     single <Settings>{Settings() }
@@ -76,6 +80,7 @@ single {BackgroundSyncWorker(get(), get()) }
 single<AppWorkerManager> { AppWorkerManager(get(), get()) }
 single <ThemeManager>{ThemeManager()}
 
+single<WorkApi>{ WorkApiImpl(get()) }
 single<StackApi>{ StackApiImpl(get(), get())}
 single<PrintStacksToPdfUseCase>{
     PrintStacksToPdfUseCase(
@@ -91,4 +96,6 @@ single<PrintStacksToExcelUseCase>{
 }
 single<StacksViewModel>{StacksViewModel(get(), get(), get(),
     get(),get(), get(), get())}
+
+single<WorkViewModel>{WorkViewModel(get())}
 }

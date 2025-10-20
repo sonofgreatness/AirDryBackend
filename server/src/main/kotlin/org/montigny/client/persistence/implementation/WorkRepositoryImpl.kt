@@ -1,6 +1,7 @@
 package org.montigny.client.persistence.implementation
 
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
@@ -12,6 +13,8 @@ import org.jetbrains.exposed.sql.update
 import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.dto.Work.CreateWorkDoneDTO
+import org.montigny.client.dto.Work.StackInfoDTO
+import org.montigny.client.dto.Work.UserInfoDTO
 import org.montigny.client.persistence.AppUsers
 import org.montigny.client.persistence.Stacks
 import org.montigny.client.persistence.WorkDone
@@ -23,13 +26,17 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.UUID
+import org.montigny.client.dto.Work.WorkDaySummaryDTO
+import org.montigny.client.dto.Work.WorkSummaryDTO
+import org.montigny.client.persistence.StackCodes
+import java.text.SimpleDateFormat
+import org.jetbrains.exposed.sql.ResultRow
 
 class WorkRepositoryImpl(): WorkRepository {
     override fun createWork(
         user: CurrentUserDTO,
         req: CreateWorkDoneDTO
     ): UUID = transaction {
-
         // --- 1️⃣ Insert into work_done ---
         val workDoneId = WorkDone.insertAndGetId {
             it[id] = req.id
@@ -38,27 +45,26 @@ class WorkRepositoryImpl(): WorkRepository {
             it[createdAt] = Instant.now()
         }.value
 
-        // --- 2️⃣ Validate user IDs ---
-        val allUserIds = req.workersList.flatMap { it.userIds }
+        // --- 2️⃣ Collect and validate user IDs ---
+        val allUserIds = req.workersList.flatMap { it.userIds }.distinct() // enforce uniqueness
         val missingUsers = allUserIds.filterNot { uid ->
             AppUsers.select { AppUsers.id eq uid }.any()
         }
-
         if (missingUsers.isNotEmpty()) {
             error("Some users not found: ${missingUsers.joinToString()}")
         }
 
-        // --- 3️⃣ Validate stack IDs ---
-        val allStackIds = req.stacksList.flatMap { it.stackId }
-        val missingStacks = allStackIds.filterNot { sid ->
+        // --- 3️⃣ Collect and validate stack IDs (duplicates allowed) ---
+        val allStackIds = req.stacksList.flatMap { it.stackIds } // do NOT distinct here
+        val missingStacks = allStackIds.distinct().filterNot { sid ->
             Stacks.select { Stacks.id eq sid }.any()
         }
-
         if (missingStacks.isNotEmpty()) {
             error("Some stacks not found: ${missingStacks.joinToString()}")
         }
-        // --- 4️⃣ Insert work_done_user links ---
-        allUserIds.distinct().forEach { userId ->
+
+        // --- 4️⃣ Insert work_done_user links (unique per user) ---
+        allUserIds.forEach { userId ->
             WorkDoneUsers.insert {
                 it[this.workDoneId] = EntityID(workDoneId, WorkDone)
                 it[appUserId] = EntityID(userId, AppUsers)
@@ -66,8 +72,9 @@ class WorkRepositoryImpl(): WorkRepository {
                 it[createdAt] = Instant.now()
             }
         }
-        // --- 5️⃣ Insert work_done_stack links ---
-        allStackIds.distinct().forEach { stackId ->
+
+        // --- 5️⃣ Insert work_done_stack links (duplicates allowed) ---
+        allStackIds.forEach { stackId ->
             WorkDoneStacks.insert {
                 it[this.workDoneId] = EntityID(workDoneId, WorkDone)
                 it[this.stackId] = EntityID(stackId, Stacks)
@@ -75,11 +82,12 @@ class WorkRepositoryImpl(): WorkRepository {
                 it[createdAt] = Instant.now()
             }
         }
-        // --- 6️⃣ Return the new WorkDone ID ---
-         workDoneId
-    }
-    override fun updateWork(user: CurrentUserDTO, req: CreateWorkDoneDTO): Int = transaction {
 
+        // --- 6️⃣ Return the new WorkDone ID ---
+        workDoneId
+    }
+
+    override fun updateWork(user: CurrentUserDTO, req: CreateWorkDoneDTO): Int = transaction {
         // --- 1️⃣ Check existence of WorkDone record ---
         val existing = WorkDone.select { WorkDone.id eq req.id }.singleOrNull()
             ?: error("Work record not found for ID: ${req.id}")
@@ -87,6 +95,7 @@ class WorkRepositoryImpl(): WorkRepository {
         val myCreatedAt = existing[WorkDone.createdAt]
         val now = Instant.now()
 
+        // --- 2️⃣ Enforce time update rules ---
         if (UserUtils.isAdminUser(user) &&
             myCreatedAt.isBefore(now.minus(7, ChronoUnit.DAYS))) {
             error("Admin cannot update work older than 7 days")
@@ -97,14 +106,15 @@ class WorkRepositoryImpl(): WorkRepository {
             error("Capturer cannot update work older than 2 days")
         }
 
-        // --- 2️⃣ Update main record ---
+        // --- 3️⃣ Update main record ---
         val updatedRows = WorkDone.update({ WorkDone.id eq req.id }) {
             it[workDate] = req.workDate.toInstant()
             it[updatedBy] = user.id
             it[updatedAt] = Instant.now()
         }
-        // --- 3️⃣ Validate user IDs --
-        val allUserIds = req.workersList.flatMap { it.userIds }
+
+        // --- 4️⃣ Validate users ---
+        val allUserIds = req.workersList.flatMap { it.userIds }.distinct()
         val missingUsers = allUserIds.filterNot { uid ->
             AppUsers.select { AppUsers.id eq uid }.any()
         }
@@ -112,20 +122,20 @@ class WorkRepositoryImpl(): WorkRepository {
             error("Some users not found: ${missingUsers.joinToString()}")
         }
 
-        // --- 4️⃣ Validate stack IDs ---
-        val allStackIds = req.stacksList.flatMap { it.stackId }
-        val missingStacks = allStackIds.filterNot { sid ->
+        // --- 5️⃣ Validate stacks ---
+        val allStackIds = req.stacksList.flatMap { it.stackIds } // duplicates allowed
+        val missingStacks = allStackIds.distinct().filterNot { sid ->
             Stacks.select { Stacks.id eq sid }.any()
         }
         if (missingStacks.isNotEmpty()) {
             error("Some stacks not found: ${missingStacks.joinToString()}")
         }
-        // --- 5️⃣ Clear existing relations ---
+
+        // --- 6️⃣ Clear existing relations ---
         WorkDoneUsers.deleteWhere { WorkDoneUsers.workDoneId eq EntityID(req.id, WorkDone) }
         WorkDoneStacks.deleteWhere { WorkDoneStacks.workDoneId eq EntityID(req.id, WorkDone) }
-
-        // --- 6️⃣ Re-insert updated work_done_user relations ---
-        allUserIds.distinct().forEach { userId ->
+        // --- 7️⃣ Re-insert user relations (unique) ---
+        allUserIds.forEach { userId ->
             WorkDoneUsers.insert {
                 it[workDoneId] = EntityID(req.id, WorkDone)
                 it[appUserId] = EntityID(userId, AppUsers)
@@ -133,8 +143,8 @@ class WorkRepositoryImpl(): WorkRepository {
                 it[createdAt] = Instant.now()
             }
         }
-        // --- 7️⃣ Re-insert updated work_done_stack relations ---
-        allStackIds.distinct().forEach { stackId ->
+        // --- 8️⃣ Re-insert stack relations (duplicates allowed) ---
+        allStackIds.forEach { stackId ->
             WorkDoneStacks.insert {
                 it[workDoneId] = EntityID(req.id, WorkDone)
                 it[this.stackId] = EntityID(stackId, Stacks)
@@ -142,9 +152,14 @@ class WorkRepositoryImpl(): WorkRepository {
                 it[createdAt] = Instant.now()
             }
         }
-        // --- 8️⃣ Return number of updated rows ---
+        // --- 9️⃣ Return number of updated rows ---
         updatedRows
     }
+
+
+
+
+
     override  fun  deleteWorkById (user: CurrentUserDTO, id: UUID): Int =transaction{
         // --- 1️⃣ Check existence of WorkDone record ---
         val existing = WorkDone.select { WorkDone.id eq id }.singleOrNull()
@@ -219,7 +234,7 @@ class WorkRepositoryImpl(): WorkRepository {
         val stacksDTO = listOf(
             CreateWorkDoneDTO.WorkDoneStacksDTO(
                 id = UUID.randomUUID(),
-                stackId = stackIds
+                stackIds = stackIds
             )
         )
 
@@ -266,6 +281,92 @@ class WorkRepositoryImpl(): WorkRepository {
 
         PaginatedResponse(
             items = items,
+            page = page,
+            pageSize = pageSize,
+            totalCount = totalCount,
+            totalPages = totalPages
+        )
+    }
+
+    override fun getDailyWorkSummaries(
+        currentUserDTO: CurrentUserDTO,
+        page: Int,
+        pageSize: Int
+    ): PaginatedResponse<WorkDaySummaryDTO> = transaction {
+        // Step 1 — Select all WorkDone entries, sorted by date (latest first)
+        val query = WorkDone.selectAll()
+            .orderBy(WorkDone.workDate to SortOrder.DESC)
+
+        // Pagination calculation
+        val totalCount = query.count()
+        val totalPages = if (totalCount == 0L) 1 else ((totalCount + pageSize - 1) / pageSize).toInt()
+
+        val pagedRows = query
+            .limit(pageSize, offset = ((page - 1) * pageSize).toLong())
+            .toList()
+
+        // Step 2 — Transform each WorkDone record into WorkSummaryDTO
+        val summaries = pagedRows.map { workRow: ResultRow ->
+            val workId = workRow[WorkDone.id].value
+            val workDateInstant = workRow[WorkDone.workDate]
+            val date = Date.from(workDateInstant)
+            val dateFmt = SimpleDateFormat("EEEE dd/MM/yyyy")
+            val dayLabel = dateFmt.format(date)
+
+            // --- Get related stacks ---
+            val stacks = (WorkDoneStacks innerJoin Stacks innerJoin StackCodes)
+                .select { WorkDoneStacks.workDoneId eq workRow[WorkDone.id] }
+                .map { row: ResultRow ->
+                    val stackId = row[Stacks.id].value
+                    val displayName = row[Stacks.displayName]
+                    val stackCodeDisplayName = row[StackCodes.displayName]
+                    val volume = row[Stacks.volume]
+                    StackInfoDTO(stackId, displayName, stackCodeDisplayName, volume)
+                }
+
+            val totalVolume = stacks.sumOf { it.volume }
+            val totalStacks = stacks.size
+
+            // --- Get related users ---
+            val users = (WorkDoneUsers innerJoin AppUsers)
+                .select { WorkDoneUsers.workDoneId eq workRow[WorkDone.id] }
+                .map { row: ResultRow ->
+                    val userId = row[AppUsers.id].value
+                    val name = row[AppUsers.name]
+                    val surname = row[AppUsers.surname]
+                    val phone = row[AppUsers.phoneNumber]
+                    UserInfoDTO(userId, name, surname, phone, 0.0)
+                }
+
+            val totalUsers = users.size
+            val perUserVolume = if (totalUsers > 0) totalVolume / totalUsers else 0.0
+            val usersWithCubes = users.map { it.copy(personalCubes = perUserVolume) }
+
+            WorkSummaryDTO(
+                id = workId,
+                workDate = dayLabel,
+                totalVolume = totalVolume,
+                totalStacks = totalStacks,
+                totalUsers = totalUsers,
+                stacks = stacks,
+                users = usersWithCubes
+            )
+        }
+        // Step 3 — Group by dayLabel to create WorkDaySummaryDTO
+        val groupedByDay = summaries.groupBy { it.workDate }.map { entry ->
+            val day = entry.key
+            val works = entry.value
+            WorkDaySummaryDTO(
+                dayLabel = day,
+                totalVolume = works.sumOf { it.totalVolume },
+                totalStacks = works.sumOf { it.totalStacks },
+                totalUsers = works.flatMap { it.users }.distinctBy { u -> u.id }.size,
+                workList = works
+            )
+        }
+        // Step 4 — Return paginated response
+        PaginatedResponse(
+            items = groupedByDay,
             page = page,
             pageSize = pageSize,
             totalCount = totalCount,

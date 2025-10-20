@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server/start.sh",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "server"
+      }
+    }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "server/start.sh" }
+  ]
+}

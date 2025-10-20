@@ -36,7 +36,10 @@ data class WorkDoneStacksDTO(
     @Serializable(with = UUIDNonNullableSerializer::class)
     val id : UUID,
     @Serializable(UUIDNonNullableListSerializer::class)
-    val  stackId : List<UUID> =emptyList())
+    val  stackIds : List<UUID> =emptyList()
+
+
+)
 
 
 private fun getFormattedDate(date: Date): String {

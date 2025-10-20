@@ -71,8 +71,6 @@ object WorkDoneUsers : BaseTable("work_done_user") {
 object WorkDoneStacks : BaseTable("work_done_stack") {
     val workDoneId = reference("work_done_id", WorkDone, onDelete = ReferenceOption.CASCADE)
     val stackId = reference("stack_id", Stacks, onDelete = ReferenceOption.RESTRICT)
-    init {
-        index(isUnique = true, columns = arrayOf(workDoneId, stackId))
-    }
+
 }
 

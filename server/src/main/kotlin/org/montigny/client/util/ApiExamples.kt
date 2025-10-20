@@ -75,7 +75,7 @@ class ApiExamples {
             stacksList = listOf(
                 CreateWorkDoneDTO.WorkDoneStacksDTO(
                     id = UUID.randomUUID(),
-                    stackId = listOf(UUID.randomUUID())
+                    stackIds = listOf(UUID.randomUUID())
                 )
             ),
         )

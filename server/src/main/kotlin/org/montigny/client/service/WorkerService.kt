@@ -18,5 +18,5 @@ class WorkerService
     =workRepo.getWorkById(currentUserDTO, id)
     fun  getAllWork(currentUserDTO: CurrentUserDTO, page: Int,pageSize: Int): PaginatedResponse<CreateWorkDoneDTO>
     = workRepo.getAllWork(currentUserDTO, page, pageSize)
-
+    fun getDailyWorkSummaries(currentUserDTO: CurrentUserDTO, page: Int,pageSize: Int) = workRepo.getDailyWorkSummaries(currentUserDTO, page, pageSize)
 }
