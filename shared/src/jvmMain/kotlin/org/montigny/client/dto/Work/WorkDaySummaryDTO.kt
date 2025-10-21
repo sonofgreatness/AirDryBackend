@@ -40,5 +40,7 @@ data class UserInfoDTO(
     val name: String,
     val surname: String,
     val phoneNumber: String,
+    val isActive : Boolean,
+    val isApproved: Boolean,
     val personalCubes: Double
 )

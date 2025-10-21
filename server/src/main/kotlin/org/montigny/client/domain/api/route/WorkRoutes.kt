@@ -33,9 +33,11 @@ import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateWorkDTOStringAsDate
 import org.montigny.client.dto.Work.CreateWorkDoneDTO
 import org.montigny.client.dto.Work.WorkDaySummaryDTO
+import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.service.UserService
 import org.montigny.client.service.WorkerService
 import org.montigny.client.util.ApiExamples.Companion.exampleCreateWorkDoneDTO
+import org.montigny.client.util.ApiExamples.Companion.exampleFilters
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import org.montigny.client.util.Constants.Companion.DELETED_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION_TYPE
@@ -323,9 +325,21 @@ fun Route.workRoutes(
                 Parameter(name = PAGE, `in` = Parameter.Location.query, schema = TypeDefinition.INT),
                 Parameter(name = PAGE_SIZE, `in` = Parameter.Location.query, schema = TypeDefinition.INT)
             )
-            get = GetInfo.builder {
+            post = PostInfo.builder {
                 summary("Get All Work Summaries")
                 description("Get All Work Summaries")
+                request {
+                    requestType<CreateStackCodeDTO>()
+                    examples(
+                        "application/json" to MediaType.Example(
+                            value = Json.encodeToJsonElement(
+                                WorkDataFiltersDTO.serializer(),
+                                exampleFilters)
+                        )
+                    )
+                    description("Registers a new work object")
+
+                }
                 response {
                     responseCode(HttpStatusCode.OK)
                     responseType<List<WorkDaySummaryDTO>>()
@@ -335,12 +349,13 @@ fun Route.workRoutes(
         }
         authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
             UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) {
-            get {
+            post {
                 try {
                     val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
                     val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
                     val user = UserUtils.getLoggedInUser(call)
-                    val resp = workService.getDailyWorkSummaries(user, page = page, pageSize = pageSize)
+                    val filters = call.receive<WorkDataFiltersDTO>()
+                    val resp = workService.getDailyWorkSummaries(user, page = page, pageSize = pageSize, filters = filters)
                     resp?.let {
                         call.respond(HttpStatusCode.OK, it)
                     }

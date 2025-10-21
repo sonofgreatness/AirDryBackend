@@ -97,5 +97,6 @@ single<PrintStacksToExcelUseCase>{
 single<StacksViewModel>{StacksViewModel(get(), get(), get(),
     get(),get(), get(), get())}
 
-single<WorkViewModel>{WorkViewModel(get())}
+single<WorkViewModel>{WorkViewModel(get(), get(), get(),
+get(),get(), get())}
 }

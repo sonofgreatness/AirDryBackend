@@ -6,6 +6,7 @@ import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateStackDTO
 import org.montigny.client.dto.Work.CreateWorkDoneDTO
+import org.montigny.client.dto.WorkDataFiltersDTO
 
 import java.time.Instant
 import java.util.Date
@@ -79,7 +80,7 @@ class ApiExamples {
                 )
             ),
         )
-
+        val exampleFilters  = WorkDataFiltersDTO()
 
     }
 

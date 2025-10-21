@@ -1,6 +1,7 @@
 package org.montigny.client.persistence.implementation
 
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
@@ -31,6 +32,13 @@ import org.montigny.client.dto.Work.WorkSummaryDTO
 import org.montigny.client.persistence.StackCodes
 import java.text.SimpleDateFormat
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.between
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.lowerCase
+import org.montigny.client.dto.WorkDataFiltersDTO
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 class WorkRepositoryImpl(): WorkRepository {
     override fun createWork(
@@ -291,32 +299,84 @@ class WorkRepositoryImpl(): WorkRepository {
     override fun getDailyWorkSummaries(
         currentUserDTO: CurrentUserDTO,
         page: Int,
-        pageSize: Int
+        pageSize: Int,
+        filters: WorkDataFiltersDTO
     ): PaginatedResponse<WorkDaySummaryDTO> = transaction {
-        // Step 1 — Select all WorkDone entries, sorted by date (latest first)
-        val query = WorkDone.selectAll()
-            .orderBy(WorkDone.workDate to SortOrder.DESC)
 
-        // Pagination calculation
-        val totalCount = query.count()
+        // --------------------------------------------------------
+        // STEP 1 — Build user filter conditions
+        // --------------------------------------------------------
+        val userConditions = mutableListOf<Op<Boolean>>()
+
+        if (!filters.includeInactiveWorkers) {
+            userConditions += (AppUsers.isActive eq true) and (AppUsers.isApproved eq true)
+        }
+
+        filters.filterDepartmentId?.let { userConditions += (AppUsers.departmentId eq it) }
+        filters.filterSectionId?.let { userConditions += (AppUsers.sectionId eq it) }
+        filters.filterName?.takeIf { it.isNotBlank() }?.let { userConditions += AppUsers.name.lowerCase() like "%${it.lowercase()}%" }
+        filters.filterSurname?.takeIf { it.isNotBlank() }?.let { userConditions += AppUsers.surname.lowerCase() like "%${it.lowercase()}%" }
+        filters.filterPhoneNumber?.takeIf { it.isNotBlank() }?.let { userConditions += AppUsers.phoneNumber like "%$it%" }
+        filters.filterSecondaryPhoneNumber?.takeIf { it.isNotBlank() }?.let { userConditions += AppUsers.secondaryPhone like "%$it%" }
+
+        val combinedUserCondition = userConditions.reduceOrNull { acc, op -> acc and op } ?: Op.TRUE
+
+        // --------------------------------------------------------
+        // STEP 2 — Find WorkDone IDs linked to users matching filters
+        // --------------------------------------------------------
+        val filteredWorkDoneIds = (WorkDoneUsers innerJoin AppUsers)
+            .slice(WorkDoneUsers.workDoneId)
+            .select(combinedUserCondition)
+            .map { it[WorkDoneUsers.workDoneId].value }
+            .toSet()
+
+        if (filteredWorkDoneIds.isEmpty()) {
+            return@transaction PaginatedResponse(emptyList(), page, pageSize, 0, 1)
+        }
+
+        // --------------------------------------------------------
+// STEP 3 — Base query with optional date filter
+// --------------------------------------------------------
+        val filteredQuery = filters.filterDate
+            ?.takeIf { it.isNotBlank() }
+            ?.let { dateStr ->
+                val date = LocalDate.parse(dateStr)
+                val startOfDay = date.atStartOfDay(ZoneOffset.UTC).toInstant()
+                val endOfDay = date.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
+                WorkDone
+                    .select {
+                        (WorkDone.id inList filteredWorkDoneIds) and
+                                (WorkDone.workDate.between(startOfDay, endOfDay))
+                    }
+                    .orderBy(WorkDone.workDate to SortOrder.DESC)
+            }
+            ?: WorkDone
+                .select { WorkDone.id inList filteredWorkDoneIds }
+                .orderBy(WorkDone.workDate to SortOrder.DESC)
+
+        // --------------------------------------------------------
+        // STEP 4 — Pagination
+        // --------------------------------------------------------
+        val totalCount = filteredQuery.count()
         val totalPages = if (totalCount == 0L) 1 else ((totalCount + pageSize - 1) / pageSize).toInt()
-
-        val pagedRows = query
+        val pagedRows = filteredQuery
             .limit(pageSize, offset = ((page - 1) * pageSize).toLong())
             .toList()
 
-        // Step 2 — Transform each WorkDone record into WorkSummaryDTO
-        val summaries = pagedRows.map { workRow: ResultRow ->
+        // --------------------------------------------------------
+        // STEP 5 — Transform each WorkDone into WorkSummaryDTO
+        // --------------------------------------------------------
+        val summaries = pagedRows.map { workRow ->
             val workId = workRow[WorkDone.id].value
             val workDateInstant = workRow[WorkDone.workDate]
             val date = Date.from(workDateInstant)
             val dateFmt = SimpleDateFormat("EEEE dd/MM/yyyy")
             val dayLabel = dateFmt.format(date)
 
-            // --- Get related stacks ---
+            // --- Related stacks ---
             val stacks = (WorkDoneStacks innerJoin Stacks innerJoin StackCodes)
-                .select { WorkDoneStacks.workDoneId eq workRow[WorkDone.id] }
-                .map { row: ResultRow ->
+                .select { WorkDoneStacks.workDoneId eq workId }
+                .map { row ->
                     val stackId = row[Stacks.id].value
                     val displayName = row[Stacks.displayName]
                     val stackCodeDisplayName = row[StackCodes.displayName]
@@ -327,15 +387,18 @@ class WorkRepositoryImpl(): WorkRepository {
             val totalVolume = stacks.sumOf { it.volume }
             val totalStacks = stacks.size
 
-            // --- Get related users ---
+            // --- Related users ---
             val users = (WorkDoneUsers innerJoin AppUsers)
-                .select { WorkDoneUsers.workDoneId eq workRow[WorkDone.id] }
-                .map { row: ResultRow ->
+                .select { WorkDoneUsers.workDoneId eq workId }
+                .map { row ->
                     val userId = row[AppUsers.id].value
                     val name = row[AppUsers.name]
                     val surname = row[AppUsers.surname]
                     val phone = row[AppUsers.phoneNumber]
-                    UserInfoDTO(userId, name, surname, phone, 0.0)
+                    UserInfoDTO(userId, name, surname, phone,
+                        isActive =  row[AppUsers.isActive],
+                        isApproved = row[AppUsers.isApproved],
+                        0.0)
                 }
 
             val totalUsers = users.size
@@ -352,7 +415,10 @@ class WorkRepositoryImpl(): WorkRepository {
                 users = usersWithCubes
             )
         }
-        // Step 3 — Group by dayLabel to create WorkDaySummaryDTO
+
+        // --------------------------------------------------------
+        // STEP 6 — Group by day label
+        // --------------------------------------------------------
         val groupedByDay = summaries.groupBy { it.workDate }.map { entry ->
             val day = entry.key
             val works = entry.value
@@ -360,11 +426,14 @@ class WorkRepositoryImpl(): WorkRepository {
                 dayLabel = day,
                 totalVolume = works.sumOf { it.totalVolume },
                 totalStacks = works.sumOf { it.totalStacks },
-                totalUsers = works.flatMap { it.users }.distinctBy { u -> u.id }.size,
+                totalUsers = works.flatMap { it.users }.distinctBy { it.id }.size,
                 workList = works
             )
         }
-        // Step 4 — Return paginated response
+
+        // --------------------------------------------------------
+        // STEP 7 — Return paginated response
+        // --------------------------------------------------------
         PaginatedResponse(
             items = groupedByDay,
             page = page,
@@ -373,5 +442,6 @@ class WorkRepositoryImpl(): WorkRepository {
             totalPages = totalPages
         )
     }
+
 
 }

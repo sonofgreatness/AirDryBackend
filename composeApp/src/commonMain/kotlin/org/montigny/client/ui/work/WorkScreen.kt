@@ -3,6 +3,7 @@ package org.montigny.client.ui.work
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
@@ -12,7 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.montigny.client.dto.Work.*
+import org.montigny.client.dto.Work.StackInfoDTO
+import org.montigny.client.dto.Work.UserInfoDTO
+import org.montigny.client.dto.Work.WorkDaySummaryDTO
+import org.montigny.client.dto.Work.WorkSummaryDTO
+import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import java.time.Instant
 import java.time.ZoneId
@@ -33,6 +38,7 @@ fun WorkScreen(
 
     LaunchedEffect(Unit) {
         workViewModel.populateDailyWorkSummaries(page = currentPage, pageSize = pageSize)
+        workViewModel.populateDepartmentsAndSections()
     }
 
     Surface(
@@ -46,11 +52,10 @@ fun WorkScreen(
                     ""
                 )
             })
-
             Spacer(Modifier.height(18.dp))
 
-            FilterSection(filtersDTO, workViewModel)
-
+            FilterSectionTopRow(filtersDTO, workViewModel)
+            FilterSectionBottomRow(filtersDTO, workViewModel)
             Spacer(Modifier.height(18.dp))
 
             if (workSummaries.isEmpty()) {
@@ -110,11 +115,9 @@ private fun HeaderSection(filtersDTO: WorkDataFiltersDTO, onToggle: (Boolean) ->
         }
     }
 }
-
-/** ✅ FILTER SECTION WITH MATERIAL DATE PICKER **/
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterSection(
+private fun FilterSectionTopRow(
     filtersDTO: WorkDataFiltersDTO,
     workViewModel: WorkViewModel
 ) {
@@ -122,10 +125,24 @@ private fun FilterSection(
     val openDialog = remember { mutableStateOf(false) }
     val dateState = rememberDatePickerState(initialSelectedDateMillis = System.currentTimeMillis())
 
+    var expandedDepartment by remember { mutableStateOf(false) }
+    var expandedSection by remember { mutableStateOf(false) }
+
+    val departments by workViewModel.departments.collectAsState()
+    val sections by workViewModel.sections.collectAsState()
+
+    val selectedDepartment by remember(filtersDTO, departments) {
+        derivedStateOf { departments.find { it.id == filtersDTO.filterDepartmentId } }
+    }
+    val selectedSection by remember(filtersDTO, sections) {
+        derivedStateOf { sections.find { it.id == filtersDTO.filterSectionId } }
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // === Date Picker ===
         OutlinedTextField(
             value = filtersDTO.filterDate ?: "",
             onValueChange = {},
@@ -160,14 +177,10 @@ private fun FilterSection(
                             }
                             openDialog.value = false
                         }
-                    ) {
-                        Text("OK")
-                    }
+                    ) { Text("OK") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { openDialog.value = false }) {
-                        Text("Cancel")
-                    }
+                    TextButton(onClick = { openDialog.value = false }) { Text("Cancel") }
                 }
             ) {
                 DatePicker(
@@ -179,24 +192,72 @@ private fun FilterSection(
             }
         }
 
-        OutlinedTextField(
-            value = filtersDTO.filterDepartment ?: "",
-            onValueChange = {
-                workViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterDepartment, it)
-            },
-            label = { Text("Department") },
+        // === Department Dropdown ===
+        ExposedDropdownMenuBox(
+            expanded = expandedDepartment,
+            onExpandedChange = { expandedDepartment = it },
             modifier = Modifier.weight(1f)
-        )
+        ) {
+            OutlinedTextField(
+                readOnly = true,
+                value = selectedDepartment?.displayName ?: "Select department",
+                onValueChange = {},
+                label = { Text("Department") },
+                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDepartment) }
+            )
+            ExposedDropdownMenu(
+                expanded = expandedDepartment,
+                onDismissRequest = { expandedDepartment = false }
+            ) {
+                departments.forEach { dept ->
+                    DropdownMenuItem(
+                        text = { Text(dept.displayName) },
+                        onClick = {
+                            expandedDepartment = false
+                            workViewModel.onChangeFilter(
+                                WorkDataFiltersDTOState.FilterDepartment,
+                                dept.id.toString()
+                            )
+                        }
+                    )
+                }
+            }
+        }
 
-        OutlinedTextField(
-            value = filtersDTO.filterSection ?: "",
-            onValueChange = {
-                workViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterSection, it)
-            },
-            label = { Text("Section") },
+        // === Section Dropdown ===
+        ExposedDropdownMenuBox(
+            expanded = expandedSection,
+            onExpandedChange = { expandedSection = it },
             modifier = Modifier.weight(1f)
-        )
-
+        ) {
+            OutlinedTextField(
+                readOnly = true,
+                value = selectedSection?.displayName ?: "Select section",
+                onValueChange = {},
+                label = { Text("Section") },
+                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedSection) }
+            )
+            ExposedDropdownMenu(
+                expanded = expandedSection,
+                onDismissRequest = { expandedSection = false }
+            ) {
+                sections.forEach { section ->
+                    DropdownMenuItem(
+                        text = { Text(section.displayName) },
+                        onClick = {
+                            expandedSection = false
+                            workViewModel.onChangeFilter(
+                                WorkDataFiltersDTOState.FilterSection,
+                                section.id.toString()
+                            )
+                        }
+                    )
+                }
+            }
+        }
+        // === Worker name ===
         OutlinedTextField(
             value = filtersDTO.filterName ?: "",
             onValueChange = {
@@ -207,6 +268,50 @@ private fun FilterSection(
         )
     }
 }
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterSectionBottomRow(
+    filtersDTO: WorkDataFiltersDTO,
+    workViewModel: WorkViewModel
+) {
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+
+        OutlinedTextField(
+            value = filtersDTO.filterSurname ?: "",
+            onValueChange = {
+                workViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterSurname, it)
+            },
+            label = { Text("Worker Surname") },
+            modifier = Modifier.weight(1f)
+        )
+
+        OutlinedTextField(
+            value = filtersDTO.filterPhoneNumber ?: "",
+            onValueChange = {
+                workViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterPhone, it)
+            },
+            label = { Text("Phone number") },
+            modifier = Modifier.weight(1f)
+        )
+
+        OutlinedTextField(
+            value = filtersDTO.filterSecondaryPhoneNumber?: "",
+            onValueChange = {
+                workViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterSecondaryPhone, it)
+            },
+            label = { Text("Secondary phone number.") },
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+
 
 /** ✅ DAY SUMMARY CARD **/
 @OptIn(ExperimentalMaterial3Api::class)
@@ -310,7 +415,7 @@ private fun StackRow(stack: StackInfoDTO) {
             Text(stack.displayName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
             Text(stack.stackCodeDisplayName, style = MaterialTheme.typography.labelSmall)
         }
-        Text(String.format("%.2f m³", stack.volume), style = MaterialTheme.typography.bodyMedium)
+        Text(String.format("%.3f m³", stack.volume), style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -319,9 +424,10 @@ private fun StackRow(stack: StackInfoDTO) {
 private fun UserRow(user: UserInfoDTO) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("${user.name} ${user.surname}", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+            Text("${user.name} ${user.surname} isActive :${user.isActive} isApproved ${user.isApproved}",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
             Text(user.phoneNumber, style = MaterialTheme.typography.labelSmall)
         }
-        Text(String.format("%.2f m³", user.personalCubes), style = MaterialTheme.typography.bodyMedium)
+        Text(String.format("%.3f m³", user.personalCubes), style = MaterialTheme.typography.bodyMedium)
     }
 }
