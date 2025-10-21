@@ -1,15 +1,23 @@
 package org.montigny.client.ui.work
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -419,15 +427,108 @@ private fun StackRow(stack: StackInfoDTO) {
     }
 }
 
-/** ✅ USER ROW **/
 @Composable
 private fun UserRow(user: UserInfoDTO) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text("${user.name} ${user.surname} isActive :${user.isActive} isApproved ${user.isApproved}",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
-            Text(user.phoneNumber, style = MaterialTheme.typography.labelSmall)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // --- Left: Avatar Circle with Initials ---
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (user.isActive) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "${user.name.firstOrNull() ?: '?'}${user.surname.firstOrNull() ?: '?'}".uppercase(),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // --- Middle: User info ---
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${user.name} ${user.surname}",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Call,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = user.phoneNumber,
+                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    )
+                }
+
+                // Active / Approved badges
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatusChip("Active", user.isActive, Icons.Default.CheckCircle)
+                    StatusChip("Approved", user.isApproved, Icons.Default.Verified)
+                }
+            }
+
+            // --- Right: Volume ---
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = String.format("%.3f m³", user.personalCubes),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = "\uD83D\uDCC8 Volume",
+                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.outline)
+                )
+            }
         }
-        Text(String.format("%.3f m³", user.personalCubes), style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun StatusChip(label: String, status: Boolean, icon: ImageVector) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(
+                if (status) MaterialTheme.colorScheme.secondaryContainer
+                else MaterialTheme.colorScheme.surfaceVariant
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (status) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
+            modifier = Modifier.size(12.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = if (status) MaterialTheme.colorScheme.secondary
+                else MaterialTheme.colorScheme.outline
+            )
+        )
     }
 }
