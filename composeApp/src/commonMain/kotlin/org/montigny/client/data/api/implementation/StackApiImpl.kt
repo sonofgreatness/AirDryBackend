@@ -7,6 +7,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import org.montigny.client.*
 import org.montigny.client.data.api.repository.StackApi
+import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateStackDTO
 import org.montigny.client.dto.Work.GetStackDTO
@@ -129,5 +130,15 @@ class StackApiImpl(
             contentType(ContentType.Application.Json)
         }.body()
         return  response
+    }
+    override  suspend  fun getPaginatedStacks(page: Int,pageSize: Int,query:String?): PaginatedResponse<GetStackDTO>?{
+        val resp :PaginatedResponse<GetStackDTO>? = client.get("$API_BASE_URL$API_URL_WORK_STACK_GET_ALL_PAGINATED"){
+            url {
+                parameters.append(QUERY_PAGE, page.toString())
+                parameters.append(QUERY_PAGE_SIZE, pageSize.toString())
+                query?.let { parameters.append(QUERY_STRING, it) }
+            }
+        }.body()
+        return  resp
     }
 }

@@ -23,5 +23,5 @@ interface UserApi {
     suspend fun  getServerHealth(): SimpleResponse
     suspend fun  updateUser(user: UserRegisterRequest): ApiResponse
     suspend fun   deleteUserId(userId: UUID): ApiResponse
-
+    suspend fun  getCasualUsers(page: Int,pageSize: Int, queryString : String? = null) :PaginatedResponse<UserResponse>?
 }

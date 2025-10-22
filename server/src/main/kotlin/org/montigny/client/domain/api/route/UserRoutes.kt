@@ -22,6 +22,7 @@ import org.montigny.client.API_URL_USERTYPES_GET_ALL
 import org.montigny.client.API_URL_USER_CURRENT
 import org.montigny.client.API_URL_USER_DELETE
 import org.montigny.client.API_URL_USER_GET_ALL
+import org.montigny.client.API_URL_USER_GET_ALL_CASUALS
 import org.montigny.client.API_URL_USER_LOGIN
 import org.montigny.client.API_URL_USER_REGISTER
 import org.montigny.client.API_URL_USER_UPDATE
@@ -50,6 +51,7 @@ import org.montigny.client.util.Constants.Companion.BEARER_AUTH_TAG
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import org.montigny.client.util.Constants.Companion.DELETED_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.ERROR_EXCEPTION
+import org.montigny.client.util.Constants.Companion.GET_CASUAL_USERS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION_TYPE
 import org.montigny.client.util.Constants.Companion.UPDATED_USER_SUCCESS_DESCRIPTION
@@ -63,6 +65,8 @@ fun Route.userRoutes(userService: UserService) {
     route(API_URL_USER_REGISTER) {
         install(NotarizedRoute()) {
             tags = setOf("User")
+            security = mapOf(
+                BEARER_AUTH_TAG to emptyList())
             post = PostInfo.builder {
                 summary("Register User")
                 description("Registers a new user in the system")
@@ -240,6 +244,63 @@ fun Route.userRoutes(userService: UserService) {
            }
        }
    }
+
+
+
+    //==================GET ALL CASUAL USERS================
+    route(API_URL_USER_GET_ALL_CASUALS) {
+        install(NotarizedRoute()) {
+            tags = setOf("User")
+            security = mapOf(
+                BEARER_AUTH_TAG to emptyList())
+            parameters = listOf(
+                Parameter(
+                    name = "page",
+                    `in` = Parameter.Location.query,
+                    schema = TypeDefinition.INT)
+                ,Parameter(
+                    name = "pageSize",
+                    `in` = Parameter.Location.query,
+                    schema = TypeDefinition.INT),
+                Parameter(
+                    name = "queryString",
+                    `in` = Parameter.Location.query,
+                    schema = TypeDefinition.STRING)
+            )
+            get = GetInfo.builder {
+                summary(GET_CASUAL_USERS_DESCRIPTION)
+                description(GET_CASUAL_USERS_DESCRIPTION)
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<PaginatedResponse<UserResponse>>()
+                    description(GET_CASUAL_USERS_DESCRIPTION)
+                }
+            }
+            authorize(userService, UserRole.ADMIN,UserRole.SUPER_USER, UserRole.CAPTURER) {
+                get{
+
+                    try {
+                        val currentUser = UserUtils.getLoggedInUser(call)
+                        val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
+                        val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
+                        val  queryString  = call.request.queryParameters["queryString"]
+                        val users = userService.getCasualUsers(currentUser,page,pageSize, queryString)
+                        call.respond(HttpStatusCode.OK, users)
+
+                    } catch (e: IllegalStateException) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                    } catch (e: IllegalArgumentException) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("$ERROR_EXCEPTION :${e.message}",400))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        call.respond(HttpStatusCode.InternalServerError,ErrorResponse("$ERROR_EXCEPTION :${e.message}",500))
+                    }
+
+                }
+            }
+        }
+    }
+
 //===============GET ALL USER TYPES ======
     route(API_URL_USERTYPES_GET_ALL) {
         install(NotarizedRoute()) {

@@ -1,9 +1,8 @@
-package org.montigny.client.ui.work
+package org.montigny.client.ui.work.viewModel
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.OrganizationApi
 import org.montigny.client.data.api.repository.WorkApi
@@ -15,13 +14,13 @@ import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.util.ConnectivityObserver
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
-import org.montigny.client.util.UtilityFunctions.Companion.toUUID
 import org.montigny.client.util.UtilityFunctions.Companion.toUUIDOrNull
 import org.montigny.client.util.ViewModel
 import org.slf4j.Logger
-import java.util.UUID
+import java.util.*
 
-class WorkViewModel(
+//LOAD, DISPLAY WORK
+class LoadWorkViewModel(
     private val workApi: WorkApi,
     private  val organizationApi: OrganizationApi,
     private  val organizationRepository: OrganizationRepository,
@@ -58,6 +57,8 @@ ViewModel(){
             }
         }
     }
+    fun clearAllFilters(){_filterDto.value = WorkDataFiltersDTO()
+    populateDailyWorkSummaries()}
     fun onChangeFilter(state : WorkDataFiltersDTOState, newValue: String) {
         when(state) {
             is WorkDataFiltersDTOState.IncludeInactiveWorkers -> {
@@ -96,6 +97,7 @@ ViewModel(){
             }
         }
     }
+
 
     fun populateDepartmentsAndSections(){
         populateDepartments()

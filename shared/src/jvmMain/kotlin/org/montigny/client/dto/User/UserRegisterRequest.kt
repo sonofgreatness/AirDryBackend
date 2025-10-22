@@ -3,6 +3,7 @@ package org.montigny.client.dto.User
 import kotlinx.serialization.Serializable
 import org.montigny.client.dto.Common.UUIDSerializer
 import java.util.UUID
+import javax.naming.Name
 
 @Serializable
 data class UserRegisterRequest(
@@ -31,6 +32,33 @@ data class UserRegisterRequest(
             updated_secondaryPhoneNumber = secondaryPhoneNumber, updated_password = password,
             updated_sectionId = sectionId, updated_userTypeId = userTypeId, updated_departmentId = departmentId,
             updated_email = email, isApproved = isApproved, isActive = isActive
+        )
+    }
+    fun toUserResponseDTO(): UserResponse {
+        return UserResponse(
+            id = id!!,
+            name = name,
+            surname = surname,
+            phoneNumber = phoneNumber,
+            secondaryPhoneNumber = secondaryPhoneNumber,
+            email = email,
+            isActive = isActive,
+            isApproved = isApproved,
+            userType = NamedEntityResponse(
+                id = userTypeId!!,
+                displayName = name,
+            ),
+            organization = NamedEntityResponse(
+                id = organizationId!!,
+                displayName = name,
+            ),
+            department = NamedEntityResponse(
+                id = departmentId!!,
+                displayName = name,
+            ),
+            section = NamedEntityResponse(
+                id = sectionId!!,
+                displayName = name),
         )
     }
 }

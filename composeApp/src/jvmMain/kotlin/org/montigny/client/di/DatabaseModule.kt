@@ -8,9 +8,11 @@ import org.montigny.client.database.PasswordHasher
 import org.montigny.client.database.dao.OrganizationRepository
 import org.montigny.client.database.dao.StackRepository
 import org.montigny.client.database.dao.UserRepository
+import org.montigny.client.database.dao.WorkRepository
 import org.montigny.client.database.daoImp.OrganizationRepositoryImpl
 import org.montigny.client.database.daoImp.StackRepositoryImpl
 import org.montigny.client.database.daoImp.UserRepositoryImpl
+import org.montigny.client.database.daoImp.WorkRepositoryImpl
 
 val databaseModule = module {
     single<PasswordHasher> { BCryptPasswordHasher() }
@@ -19,4 +21,8 @@ val databaseModule = module {
         get())}
     single<OrganizationRepository>{ OrganizationRepositoryImpl(get(), get()) }
     single<StackRepository>{ StackRepositoryImpl(get(), get()) }
+    single<WorkRepository>{ WorkRepositoryImpl(get(), get(),
+    get(), get())}
+
+
 }

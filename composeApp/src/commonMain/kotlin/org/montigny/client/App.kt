@@ -3,7 +3,6 @@ package org.montigny.client
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.Business
 import androidx.compose.material.icons.outlined.CloudDone
@@ -14,18 +13,15 @@ import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Workspaces
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import org.koin.compose.koinInject
 import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.domain.synchronization.SyncSettingsRepository
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.NavGraph
 import org.montigny.client.navigation.Navigator
-import org.montigny.client.ui.Theme.Danger
 import org.montigny.client.ui.Theme.Neutral
 import org.montigny.client.ui.Theme.ThemeManager
 import org.montigny.client.ui.Theme.TimberTheme
@@ -35,9 +31,9 @@ import org.montigny.client.ui.settings.SettingsNavItem
 import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
-import org.montigny.client.ui.work.WorkViewModel
+import org.montigny.client.ui.work.viewModel.CreateAndUpdateWorkViewModel
+import org.montigny.client.ui.work.viewModel.LoadWorkViewModel
 import org.montigny.client.util.ConnectivityObserver
-import org.slf4j.Logger
 
 @Composable
 fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
@@ -48,7 +44,8 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
         syncSettingsRepository: SyncSettingsRepository,
         themeManager: ThemeManager,
         stacksViewModel: StacksViewModel,
-        workViewModel: WorkViewModel
+        loadWorkViewModel: LoadWorkViewModel,
+        createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel,
 ) {
 
     val isOffLineLoggedIn by offlineSessionManager.isLoggedInFlow.collectAsState(initial = false)
@@ -91,13 +88,13 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                     label = { Text("Orgs", style = MaterialTheme.typography.labelSmall) }
                 )
                 NavigationRailItem(
-                    selected = navigator.currentDestination.value == Destination.Work,
-                    onClick = { navigator.navigateTo(Destination.Work) },
+                    selected = navigator.currentDestination.value == Destination.WorkLandingPage,
+                    onClick = { navigator.navigateTo(Destination.WorkLandingPage) },
                     icon = {
                         Icon(
                             Icons.Outlined.Workspaces,
                             contentDescription = "Work",
-                            tint = if (navigator.currentDestination.value == Destination.Work)
+                            tint = if (navigator.currentDestination.value == Destination.WorkLandingPage)
                                 MaterialTheme.colorScheme.primary else Neutral
                         )
                     },
@@ -134,7 +131,7 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                 NavGraph(navigator, authViewModel, sessionManager,
                     usersViewModel,organizationViewModel, organizationViewModelWithDpt,
                     syncSettingsRepository,themeManager, stacksViewModel,
-                    workViewModel)
+                    loadWorkViewModel, createAndUpdateWorkViewModel)
             }
         }
     }

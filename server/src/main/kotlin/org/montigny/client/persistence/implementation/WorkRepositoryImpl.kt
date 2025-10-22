@@ -373,37 +373,55 @@ class WorkRepositoryImpl(): WorkRepository {
             val dateFmt = SimpleDateFormat("EEEE dd/MM/yyyy")
             val dayLabel = dateFmt.format(date)
 
-            // --- Related stacks ---
+            // --- Get stacks ---
             val stacks = (WorkDoneStacks innerJoin Stacks innerJoin StackCodes)
                 .select { WorkDoneStacks.workDoneId eq workId }
                 .map { row ->
-                    val stackId = row[Stacks.id].value
-                    val displayName = row[Stacks.displayName]
-                    val stackCodeDisplayName = row[StackCodes.displayName]
-                    val volume = row[Stacks.volume]
-                    StackInfoDTO(stackId, displayName, stackCodeDisplayName, volume)
+                    StackInfoDTO(
+                        id = row[Stacks.id].value,
+                        displayName = row[Stacks.displayName],
+                        stackCodeDisplayName = row[StackCodes.displayName],
+                        volume = row[Stacks.volume]
+                    )
                 }
 
             val totalVolume = stacks.sumOf { it.volume }
             val totalStacks = stacks.size
 
-            // --- Related users ---
+            // --- Get users ---
             val users = (WorkDoneUsers innerJoin AppUsers)
                 .select { WorkDoneUsers.workDoneId eq workId }
                 .map { row ->
-                    val userId = row[AppUsers.id].value
-                    val name = row[AppUsers.name]
-                    val surname = row[AppUsers.surname]
-                    val phone = row[AppUsers.phoneNumber]
-                    UserInfoDTO(userId, name, surname, phone,
-                        isActive =  row[AppUsers.isActive],
+                    UserInfoDTO(
+                        id = row[AppUsers.id].value,
+                        name = row[AppUsers.name],
+                        surname = row[AppUsers.surname],
+                        phoneNumber = row[AppUsers.phoneNumber],
+                        isActive = row[AppUsers.isActive],
                         isApproved = row[AppUsers.isApproved],
-                        0.0)
+                        personalCubes = 0.0
+                    )
                 }
 
             val totalUsers = users.size
             val perUserVolume = if (totalUsers > 0) totalVolume / totalUsers else 0.0
             val usersWithCubes = users.map { it.copy(personalCubes = perUserVolume) }
+
+            // --- Format created/updated time ---
+            val timeFormat =  SimpleDateFormat("EEEE dd/MM/yyyy HH:mm")
+            val createdAtStr = workRow[WorkDone.createdAt]?.let { timeFormat.format(Date.from(it)) }
+            val updatedAtStr = workRow[WorkDone.updatedAt]?.let { timeFormat.format(Date.from(it)) }
+
+            // --- Resolve createdBy/updatedBy names ---
+            fun resolveUserName(userId: UUID?) =
+                userId?.let {
+                    AppUsers.select { AppUsers.id eq it }
+                        .map { r -> "${r[AppUsers.name]} ${r[AppUsers.surname]}" }
+                        .firstOrNull()
+                }
+
+            val createdByName = resolveUserName(workRow[WorkDone.createdBy])
+            val updatedByName = resolveUserName(workRow[WorkDone.updatedBy])
 
             WorkSummaryDTO(
                 id = workId,
@@ -412,7 +430,11 @@ class WorkRepositoryImpl(): WorkRepository {
                 totalStacks = totalStacks,
                 totalUsers = totalUsers,
                 stacks = stacks,
-                users = usersWithCubes
+                users = usersWithCubes,
+                capturedAt = createdAtStr,
+                updatedAt = updatedAtStr,
+                capturedBy = createdByName,
+                updatedBy = updatedByName
             )
         }
 

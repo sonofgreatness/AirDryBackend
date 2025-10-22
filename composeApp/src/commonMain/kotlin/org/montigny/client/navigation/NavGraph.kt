@@ -2,7 +2,6 @@ package org.montigny.client.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.domain.synchronization.SyncSettingsRepository
 import org.montigny.client.ui.Theme.ThemeManager
@@ -24,8 +23,12 @@ import org.montigny.client.ui.users.UserFormScreen
 import org.montigny.client.ui.users.UsersScreen
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
+import org.montigny.client.ui.work.CreateOrUpdateWorkScreen
+import org.montigny.client.ui.work.WorkLandingScreen
 import org.montigny.client.ui.work.WorkScreen
-import org.montigny.client.ui.work.WorkViewModel
+import org.montigny.client.ui.work.viewModel.CreateAndUpdateWorkViewModel
+
+import org.montigny.client.ui.work.viewModel.LoadWorkViewModel
 
 @Composable
 fun NavGraph(
@@ -38,14 +41,15 @@ fun NavGraph(
     syncSettingsRepository: SyncSettingsRepository,
     themeManager: ThemeManager,
     stacksViewModel: StacksViewModel,
-    workViewModel: WorkViewModel
+    loadWorkViewModel: LoadWorkViewModel,
+    createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel
 ) {
     val currentDestination by navigator.currentDestination
      val nextDestination by navigator.nextDestination
     when (currentDestination) {
         Destination.Users -> UsersScreen(usersViewModel,navigator)
         Destination.Organizations -> OrganizationScreen(organizationViewModel,navigator)
-        Destination.Work -> WorkScreen(workViewModel)
+        Destination.Work -> WorkScreen(loadWorkViewModel,navigator)
         Destination.ManageStacksScreen-> ManageStacksScreen(stacksViewModel, navigator)
         Destination.Reports -> ReportsScreen()
         Destination.Settings -> SettingsScreen()
@@ -89,7 +93,10 @@ fun NavGraph(
             viewModel =stacksViewModel,
             navigator = navigator,
             isUpdate = true)
-
-    }//End of when
-
+        is  Destination.WorkLandingPage -> WorkLandingScreen(navigator)
+        is Destination.CreateWork-> CreateOrUpdateWorkScreen(navigator, createAndUpdateWorkViewModel)
+        is Destination.EditWork -> {
+            CreateOrUpdateWorkScreen(navigator,createAndUpdateWorkViewModel
+            ,true, workId = (currentDestination as Destination.EditWork).workId) }
+    }
 }

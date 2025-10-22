@@ -75,7 +75,7 @@ fun Route.workRoutes(
                 }
             }
         }
-        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER) {
+        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER, UserRole.ADMIN) {
             post{
                 try {
                   val user  = UserUtils.getLoggedInUser(call)
@@ -119,7 +119,7 @@ fun Route.workRoutes(
                 }
             }
         }
-        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER) {
+        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER, UserRole.ADMIN) {
             post{
                 try {
                     val user  = UserUtils.getLoggedInUser(call)
@@ -203,7 +203,7 @@ fun Route.workRoutes(
             }
         }
         authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
-            UserRole.CAPTURER,UserRole.CASUAL_WORKER) {
+            UserRole.ADMIN,UserRole.CASUAL_WORKER) {
             get {
                 try {
                     val user = UserUtils.getLoggedInUser(call)

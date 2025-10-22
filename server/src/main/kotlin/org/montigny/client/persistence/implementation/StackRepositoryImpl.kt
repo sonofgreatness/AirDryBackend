@@ -1,12 +1,15 @@
 package org.montigny.client.persistence.implementation
 
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateStackDTO
@@ -18,6 +21,7 @@ import org.montigny.client.persistence.repository.StackRepository
 import org.montigny.client.util.Constants.Companion.STACK_CODE_NOT_FOUND
 import org.montigny.client.util.Constants.Companion.STACK_NOT_FOUND
 import java.util.UUID
+import org.jetbrains.exposed.sql.or
 
 class StackRepositoryImpl() : StackRepository {
     override fun createStackCode(currentUser: CurrentUserDTO, req: CreateStackCodeDTO): UUID = transaction{
@@ -145,4 +149,69 @@ class StackRepositoryImpl() : StackRepository {
           )
       }
   }
+
+    override fun getPaginatedStacks(page: Int,pageSize: Int,query: String?):
+            PaginatedResponse<GetStackDTO> =transaction {
+        // --- Base join query ---
+        val baseQuery = Stacks
+            .innerJoin(StackCodes)
+            .slice(
+                Stacks.id,
+                Stacks.length,
+                Stacks.height,
+                Stacks.thickness,
+                Stacks.displayName,
+                Stacks.numberOfPieces,
+                Stacks.volume,
+                StackCodes.id,
+                StackCodes.displayCode,
+                StackCodes.displayName
+            )
+            .selectAll()
+
+        // --- Optional search filter ---
+        query?.takeIf { it.isNotBlank() }?.let { q ->
+            val pattern = "%${q.lowercase()}%"
+            baseQuery.andWhere {
+                (StackCodes.displayCode.lowerCase() like pattern) or
+                        (StackCodes.displayName.lowerCase() like pattern) or
+                        (Stacks.displayName.lowerCase() like pattern)
+            }
+        }
+
+        // --- Get total count before pagination ---
+        val totalCount = baseQuery.count()
+
+        // --- Apply pagination ---
+        val offset = ((page - 1) * pageSize).toLong()
+        val paginatedQuery = baseQuery
+            .limit(pageSize, offset)
+
+        // --- Map results ---
+        val stacks = paginatedQuery.map { row ->
+            GetStackDTO(
+                id = row[Stacks.id].value,
+                length = row[Stacks.length],
+                height = row[Stacks.height],
+                thickness = row[Stacks.thickness],
+                displayName = row[Stacks.displayName],
+                numberOfPieces = row[Stacks.numberOfPieces],
+                volume = row[Stacks.volume],
+                stackCode = StackEntityResponse(
+                    id = row[StackCodes.id].value,
+                    displayCode = row[StackCodes.displayCode],
+                    displayName = row[StackCodes.displayName]
+                )
+            )
+        }
+
+        // --- Build and return paginated response ---
+        PaginatedResponse(
+            items = stacks,
+            page = page,
+            pageSize = pageSize,
+            totalCount = totalCount,
+            totalPages = (totalCount / pageSize + if (totalCount % pageSize > 0) 1 else 0).toInt()
+        )
+    }
 }

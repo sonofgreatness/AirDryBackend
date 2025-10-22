@@ -1,6 +1,7 @@
 package org.montigny.client.ui.work
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,6 +28,10 @@ import org.montigny.client.dto.Work.UserInfoDTO
 import org.montigny.client.dto.Work.WorkDaySummaryDTO
 import org.montigny.client.dto.Work.WorkSummaryDTO
 import org.montigny.client.dto.WorkDataFiltersDTO
+import org.montigny.client.navigation.Destination
+import org.montigny.client.navigation.Navigator
+import org.montigny.client.ui.work.viewModel.WorkDataFiltersDTOState
+import org.montigny.client.ui.work.viewModel.LoadWorkViewModel
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import java.time.Instant
 import java.time.ZoneId
@@ -34,19 +40,19 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkScreen(
-    workViewModel: WorkViewModel
+    loadWorkViewModel: LoadWorkViewModel, navigator: Navigator
 ) {
     val scope = rememberCoroutineScope()
-    val workSummaries by workViewModel.dailyWorkSummaries.collectAsState()
-    val filtersDTO by workViewModel.filterDto.collectAsState()
+    val workSummaries by loadWorkViewModel.dailyWorkSummaries.collectAsState()
+    val filtersDTO by loadWorkViewModel.filterDto.collectAsState()
 
     var currentPage by remember { mutableStateOf(1) }
     val pageSize = DEFAULT_PAGE_SIZE
     val expandedDays = remember { mutableStateMapOf<String, Boolean>() }
 
     LaunchedEffect(Unit) {
-        workViewModel.populateDailyWorkSummaries(page = currentPage, pageSize = pageSize)
-        workViewModel.populateDepartmentsAndSections()
+        loadWorkViewModel.populateDailyWorkSummaries(page = currentPage, pageSize = pageSize)
+        loadWorkViewModel.populateDepartmentsAndSections()
     }
 
     Surface(
@@ -55,15 +61,36 @@ fun WorkScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
             HeaderSection(filtersDTO, onToggle = { includeInactive ->
-                workViewModel.onChangeFilter(
+                loadWorkViewModel.onChangeFilter(
                     WorkDataFiltersDTOState.IncludeInactiveWorkers(includeInactive),
                     ""
                 )
             })
             Spacer(Modifier.height(18.dp))
 
-            FilterSectionTopRow(filtersDTO, workViewModel)
-            FilterSectionBottomRow(filtersDTO, workViewModel)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // --- Left Column: the two rows ---
+                Column(modifier = Modifier.weight(1f)) {
+                    FilterSectionTopRow(filtersDTO, loadWorkViewModel)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FilterSectionBottomRow(filtersDTO, loadWorkViewModel)
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // --- Right Column: Clear Filters Button ---
+                Button(
+                    onClick = { loadWorkViewModel.clearAllFilters() },
+                    modifier = Modifier.height(40.dp) // fixed height
+                ) {
+                    Text("Clear All Filters")
+                }
+            }
             Spacer(Modifier.height(18.dp))
 
             if (workSummaries.isEmpty()) {
@@ -81,13 +108,14 @@ fun WorkScreen(
                             expanded = expandedDays[daySummary.dayLabel] == true,
                             onToggleExpand = { expanded ->
                                 expandedDays[daySummary.dayLabel] = expanded
-                            }
+                            },
+                            navigator
                         )
 
                         if (index >= workSummaries.lastIndex - 2) {
                             scope.launch {
                                 currentPage++
-                                workViewModel.populateDailyWorkSummaries(
+                                loadWorkViewModel.populateDailyWorkSummaries(
                                     page = currentPage,
                                     pageSize = pageSize
                                 )
@@ -127,7 +155,7 @@ private fun HeaderSection(filtersDTO: WorkDataFiltersDTO, onToggle: (Boolean) ->
 @Composable
 private fun FilterSectionTopRow(
     filtersDTO: WorkDataFiltersDTO,
-    workViewModel: WorkViewModel
+    loadWorkViewModel: LoadWorkViewModel
 ) {
     val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
     val openDialog = remember { mutableStateOf(false) }
@@ -136,8 +164,8 @@ private fun FilterSectionTopRow(
     var expandedDepartment by remember { mutableStateOf(false) }
     var expandedSection by remember { mutableStateOf(false) }
 
-    val departments by workViewModel.departments.collectAsState()
-    val sections by workViewModel.sections.collectAsState()
+    val departments by loadWorkViewModel.departments.collectAsState()
+    val sections by loadWorkViewModel.sections.collectAsState()
 
     val selectedDepartment by remember(filtersDTO, departments) {
         derivedStateOf { departments.find { it.id == filtersDTO.filterDepartmentId } }
@@ -178,7 +206,7 @@ private fun FilterSectionTopRow(
                                     .atZone(ZoneId.systemDefault())
                                     .toLocalDate()
                                 val formatted = date.format(dateFormatter)
-                                workViewModel.onChangeFilter(
+                                loadWorkViewModel.onChangeFilter(
                                     WorkDataFiltersDTOState.FilterDate,
                                     formatted
                                 )
@@ -223,7 +251,7 @@ private fun FilterSectionTopRow(
                         text = { Text(dept.displayName) },
                         onClick = {
                             expandedDepartment = false
-                            workViewModel.onChangeFilter(
+                            loadWorkViewModel.onChangeFilter(
                                 WorkDataFiltersDTOState.FilterDepartment,
                                 dept.id.toString()
                             )
@@ -256,7 +284,7 @@ private fun FilterSectionTopRow(
                         text = { Text(section.displayName) },
                         onClick = {
                             expandedSection = false
-                            workViewModel.onChangeFilter(
+                            loadWorkViewModel.onChangeFilter(
                                 WorkDataFiltersDTOState.FilterSection,
                                 section.id.toString()
                             )
@@ -269,7 +297,7 @@ private fun FilterSectionTopRow(
         OutlinedTextField(
             value = filtersDTO.filterName ?: "",
             onValueChange = {
-                workViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterName, it)
+                loadWorkViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterName, it)
             },
             label = { Text("Worker name") },
             modifier = Modifier.weight(1f)
@@ -282,7 +310,7 @@ private fun FilterSectionTopRow(
 @Composable
 private fun FilterSectionBottomRow(
     filtersDTO: WorkDataFiltersDTO,
-    workViewModel: WorkViewModel
+    loadWorkViewModel: LoadWorkViewModel
 ) {
 
     Row(
@@ -293,7 +321,7 @@ private fun FilterSectionBottomRow(
         OutlinedTextField(
             value = filtersDTO.filterSurname ?: "",
             onValueChange = {
-                workViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterSurname, it)
+                loadWorkViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterSurname, it)
             },
             label = { Text("Worker Surname") },
             modifier = Modifier.weight(1f)
@@ -302,7 +330,7 @@ private fun FilterSectionBottomRow(
         OutlinedTextField(
             value = filtersDTO.filterPhoneNumber ?: "",
             onValueChange = {
-                workViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterPhone, it)
+                loadWorkViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterPhone, it)
             },
             label = { Text("Phone number") },
             modifier = Modifier.weight(1f)
@@ -311,7 +339,7 @@ private fun FilterSectionBottomRow(
         OutlinedTextField(
             value = filtersDTO.filterSecondaryPhoneNumber?: "",
             onValueChange = {
-                workViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterSecondaryPhone, it)
+                loadWorkViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterSecondaryPhone, it)
             },
             label = { Text("Secondary phone number.") },
             modifier = Modifier.weight(1f)
@@ -327,7 +355,8 @@ private fun FilterSectionBottomRow(
 private fun WorkDaySummaryCard(
     summary: WorkDaySummaryDTO,
     expanded: Boolean,
-    onToggleExpand: (Boolean) -> Unit
+    onToggleExpand: (Boolean) -> Unit,
+    navigator: Navigator
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -353,7 +382,7 @@ private fun WorkDaySummaryCard(
                 Spacer(Modifier.height(12.dp))
                 Column(modifier = Modifier.fillMaxWidth()) {
                     summary.workList.forEach { work ->
-                        WorkSummaryItem(work)
+                        WorkSummaryItem(work, navigator = navigator)
                         Divider(modifier = Modifier.padding(vertical = 8.dp))
                     }
                 }
@@ -371,47 +400,88 @@ private fun StatInline(label: String, value: String) {
     }
 }
 
-/** ✅ WORK SUMMARY ITEM **/
+/** ✅ WORK SUMMARY ITEM — Enhanced UI **/
 @Composable
-private fun WorkSummaryItem(work: WorkSummaryDTO) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(work.workDate, style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatInline("Volume (Cubes)", String.format("%.2f m³", work.totalVolume))
-                    StatInline("Stacks", work.totalStacks.toString())
-                    StatInline("Users", work.totalUsers.toString())
+private fun WorkSummaryItem(work: WorkSummaryDTO, navigator: Navigator) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+
+            // -------------------------
+            // Header: Date & Stats
+            // -------------------------
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "📅 ${work.workDate}",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        StatInline("📦 Volume", String.format("%.2f m³", work.totalVolume))
+                        StatInline("🗂 Stacks", work.totalStacks.toString())
+                        StatInline("👷 Users", work.totalUsers.toString())
+                        work.capturedBy?.let { StatInline("✍️ Captured by", it) }
+                        work.capturedAt?.let { StatInline("⏱ Captured at", it) }
+                        Text("Edit",
+                            Modifier.clickable(onClick = {
+                                navigator.navigateTo(
+                                    Destination.EditWork(work.id.toString())
+                                )
+                            }))
+
+                    }
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        work.updatedBy?.let { StatInline("🔄 Updated by", it) }
+                        if (work.capturedAt != work.updatedAt) {
+                            work.updatedAt?.let { StatInline("⏱ Updated at", it) }
+                        }
+                    }
+
                 }
             }
-        }
 
-        Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("Stacks Worked", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-            Text("Cubes", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-        }
-        Column(modifier = Modifier.fillMaxWidth().padding(start = 6.dp)) {
-            work.stacks.forEach { stack -> StackRow(stack) }
-        }
+            // -------------------------
+            // Stacks Section
+            // -------------------------
+            SectionHeader(title = "Stacks Worked", subtitle = "Cubes")
+            Column(modifier = Modifier.fillMaxWidth().padding(start = 6.dp)) {
+                work.stacks.forEach { StackRow(it) }
+            }
 
-        Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("Workers", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-            Text("Personal Cubes", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+            // -------------------------
+            // Users Section
+            // -------------------------
+            SectionHeader(title = "Workers", subtitle = "Personal Cubes")
+            Column(modifier = Modifier.fillMaxWidth().padding(start = 6.dp)) {
+                work.users.forEach { UserRow(it) }
+            }
         }
-        Column(modifier = Modifier.fillMaxWidth().padding(start = 6.dp)) {
-            work.users.forEach { user -> UserRow(user) }
-        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, subtitle: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(title, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+        Text(subtitle, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
     }
 }
 
@@ -532,3 +602,4 @@ private fun StatusChip(label: String, status: Boolean, icon: ImageVector) {
         )
     }
 }
+

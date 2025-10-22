@@ -17,5 +17,7 @@ sealed class Destination(val route: String) {
     object CreateStack: Destination("create_stack")
     object ViewStackCodes:Destination("view_stack_codes")
     data class  EditStack(val  stackId : String):Destination("edit_stack")
-
+    object  WorkLandingPage: Destination("work_landing_page")
+    object  CreateWork: Destination("create_work")
+    data class  EditWork(val  workId : String) : Destination("edit_work/$workId")
 }

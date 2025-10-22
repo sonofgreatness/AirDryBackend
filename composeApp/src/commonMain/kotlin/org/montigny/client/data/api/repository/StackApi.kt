@@ -1,5 +1,6 @@
 package org.montigny.client.data.api.repository
 
+import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateStackDTO
@@ -22,4 +23,6 @@ interface StackApi {
 
     suspend fun  getAllStackCodes(): List<CreateStackCodeDTO>
     suspend fun  getAllStacks():List<GetStackDTO>
+    suspend  fun getPaginatedStacks(page: Int,pageSize: Int,query:String? =null): PaginatedResponse<GetStackDTO>?
+
 }

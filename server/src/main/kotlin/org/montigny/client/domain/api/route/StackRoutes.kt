@@ -20,9 +20,13 @@ import org.montigny.client.API_URL_WORK_STACK_CODE_REGISTER
 import org.montigny.client.API_URL_WORK_STACK_CODE_UPDATE
 import org.montigny.client.API_URL_WORK_STACK_DELETE_BY_ID
 import org.montigny.client.API_URL_WORK_STACK_GET_ALL
+import org.montigny.client.API_URL_WORK_STACK_GET_ALL_PAGINATED
 import org.montigny.client.API_URL_WORK_STACK_GET_BY_ID
 import org.montigny.client.API_URL_WORK_STACK_REGISTER
 import org.montigny.client.API_URL_WORK_STACK_UPDATE
+import org.montigny.client.QUERY_PAGE
+import org.montigny.client.QUERY_PAGE_SIZE
+import org.montigny.client.QUERY_STRING
 import org.montigny.client.domain.api.route.auth.UserRole
 import org.montigny.client.domain.api.route.auth.authorize
 import org.montigny.client.dto.Common.ErrorResponse
@@ -46,7 +50,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
      // ---------- CREATE STACK CODE ----------
      route(API_URL_WORK_STACK_CODE_REGISTER) {
             install(NotarizedRoute()) {
-                tags = setOf("Work")
+               tags = setOf("Stack")
                 security = mapOf("BearerAuth" to emptyList())
                 post = PostInfo.builder {
                     summary("Create StackCode")
@@ -89,7 +93,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
     // -------------------- CREATE STACK --------------------
     route(API_URL_WORK_STACK_REGISTER) {
         install(NotarizedRoute()) {
-            tags = setOf("Work")
+           tags = setOf("Stack")
             security = mapOf("BearerAuth" to emptyList())
             post = PostInfo.builder {
                 summary("Create Stack")
@@ -132,7 +136,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
     //----------- STACK CODE UPDATE--------------
     route(API_URL_WORK_STACK_CODE_UPDATE){
     install(NotarizedRoute()) {
-        tags = setOf("Work")
+       tags = setOf("Stack")
         security = mapOf("BearerAuth" to emptyList())
         post = PostInfo.builder {
                 summary("Update StackCode")
@@ -174,7 +178,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
     }
     route(API_URL_WORK_STACK_UPDATE){
         install(NotarizedRoute()) {
-            tags = setOf("Work")
+           tags = setOf("Stack")
             security = mapOf("BearerAuth" to emptyList())
             post = PostInfo.builder {
                 summary("Update Stack")
@@ -216,7 +220,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
     }
     route(API_URL_WORK_STACK_DELETE_BY_ID){
         install(NotarizedRoute()){
-            tags = setOf("Work")
+           tags = setOf("Stack")
             parameters = listOf(
                 Parameter(
                     name = "id",
@@ -255,7 +259,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
     }
     route(API_URL_WORK_STACK_CODE_DELETE_BY_ID){
         install(NotarizedRoute()){
-            tags = setOf("Work")
+           tags = setOf("Stack")
             parameters = listOf(
                 Parameter(
                     name = "id",
@@ -293,7 +297,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
     }
     route(API_URL_WORK_STACK_CODE_GET_BY_ID){
         install(NotarizedRoute()){
-            tags = setOf("Work")
+           tags = setOf("Stack")
             parameters = listOf(
                 Parameter(
                     name = "id",
@@ -332,7 +336,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
     }
     route(API_URL_WORK_STACK_GET_BY_ID){
         install(NotarizedRoute()){
-            tags = setOf("Work")
+           tags = setOf("Stack")
             parameters = listOf(
                 Parameter(
                     name = "id",
@@ -372,7 +376,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
 
     route(API_URL_WORK_STACK_GET_ALL){
         install(NotarizedRoute()){
-            tags = setOf("Work")
+           tags = setOf("Stack")
             security = mapOf("BearerAuth" to emptyList())
             get = GetInfo.builder {
                 summary("Get all stacks")
@@ -400,9 +404,61 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
         }
     }
 
+
+
+    route(API_URL_WORK_STACK_GET_ALL_PAGINATED){
+        install(NotarizedRoute()){
+           tags = setOf("Stack")
+            parameters = listOf(
+                Parameter(
+                    name = QUERY_PAGE,
+                    `in` = Parameter.Location.query,
+                    schema = TypeDefinition.INT)
+                ,Parameter(
+                    name = QUERY_PAGE_SIZE,
+                    `in` = Parameter.Location.query,
+                    schema = TypeDefinition.INT),
+                Parameter(
+                    name = QUERY_STRING,
+                    `in` = Parameter.Location.query,
+                    schema = TypeDefinition.STRING)
+            )
+            security = mapOf("BearerAuth" to emptyList())
+            get = GetInfo.builder {
+                summary("Get all stacks in pages")
+                description("Get all stacks in pages.")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<GetStackDTO>>()
+                    description("Get all stacks in pages.")
+                }
+            }
+        }
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER, UserRole.CAPTURER,
+            UserRole.CASUAL_WORKER) {
+            get{
+                try {
+
+                    val page = call.request.queryParameters[QUERY_PAGE]?.toIntOrNull() ?: 1
+                    val pageSize = call.request.queryParameters[QUERY_PAGE_SIZE]?.toIntOrNull() ?: 20
+                    val  queryString  = call.request.queryParameters[QUERY_STRING]
+
+                    val stacks  = stackService.getPaginatedStacks(page, pageSize, queryString)
+                    call.respond(HttpStatusCode.OK, stacks)
+                }catch (e: Exception){
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+
     route(API_URL_WORK_STACK_CODE_GET_ALL){
         install(NotarizedRoute()){
-            tags = setOf("Work")
+           tags = setOf("Stack")
             security = mapOf("BearerAuth" to emptyList())
             get = GetInfo.builder {
                 summary("Get all stack codes")

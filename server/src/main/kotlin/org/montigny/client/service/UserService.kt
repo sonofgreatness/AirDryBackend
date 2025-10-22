@@ -21,6 +21,9 @@ class UserService(private val userRepo: UserRepository, private val jwtProvider:
     fun getUsers(currentUser: CurrentUserDTO,page: Int,pageSize: Int) :PaginatedResponse<UserResponse>{
         return userRepo.getUsers(currentUser,page,pageSize)
     }
+    fun getCasualUsers(currentUser: CurrentUserDTO,page: Int,pageSize: Int, queryString : String? = null):PaginatedResponse<UserResponse>{
+        return  userRepo.getCasualUsers(currentUser,page,pageSize, queryString)
+    }
     fun getUserTypes():List<UserTypesDTO>{
         return userRepo.getUserTypes()
     }

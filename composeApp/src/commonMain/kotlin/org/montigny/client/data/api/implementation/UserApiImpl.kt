@@ -15,6 +15,7 @@ import org.montigny.client.dto.Auth.AuthResponse
 import org.montigny.client.dto.Common.IdResponse
 import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.Common.SimpleResponse
+import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.dto.User.UserTypesDTO
@@ -111,6 +112,21 @@ class UserApiImpl(private val client: HttpClient,
             ApiResponse.Success
         else
             ApiResponse.Error(code = response.status.value, message = "Failed to delete user: ${response.bodyAsText()}")
+    }
+
+    override suspend fun getCasualUsers(
+        page: Int,
+        pageSize: Int,
+        queryString: String?
+    ): PaginatedResponse<UserResponse>? {
+   val resp : PaginatedResponse<UserResponse>?     = client.get("$API_BASE_URL$API_URL_USER_GET_ALL_CASUALS"){
+            url {
+                parameters.append(QUERY_PAGE, page.toString())
+                parameters.append(QUERY_PAGE_SIZE, pageSize.toString())
+                queryString?.let { parameters.append(QUERY_STRING, it) }
+            }
+        }.body()
+        return  resp
     }
 
 }

@@ -3,19 +3,13 @@ package org.montigny.client.persistence.implementation
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.domain.api.route.auth.UserRole
-import org.montigny.client.dto.User.CurrentUserDTO
-import org.montigny.client.dto.User.NamedEntityResponse
-import org.montigny.client.dto.User.UpdateUserDTO
-import org.montigny.client.dto.User.UserRegisterRequest
-import org.montigny.client.dto.User.UserResponse
-import org.montigny.client.dto.User.UserTypesDTO
+import org.montigny.client.dto.Common.PaginatedResponse
+import org.montigny.client.dto.User.*
 import org.montigny.client.persistence.*
 import org.montigny.client.persistence.repository.PasswordHasher
 import org.montigny.client.persistence.repository.UserRepository
 import org.montigny.client.util.Constants
-import org.montigny.client.util.UserUtils
 import org.montigny.client.util.UserUtils.isSuperUser
 import java.time.Instant
 import java.util.*
@@ -180,6 +174,101 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             totalPages = (totalCount / pageSize + if (totalCount % pageSize > 0) 1 else 0).toInt()
         )
     }
+
+
+   override fun getCasualUsers(currentUser: CurrentUserDTO,page: Int,pageSize: Int,
+                               queryString : String?)
+   :PaginatedResponse<UserResponse> = transaction {
+       val currentOrgId = currentUser.organizationId
+       val isSuperUser = isSuperUser(currentUser)
+
+       val baseQuery = AppUsers
+           .join(UserTypes, JoinType.LEFT, additionalConstraint = { AppUsers.userTypeId eq UserTypes.id })
+           .join(Organizations, JoinType.LEFT, additionalConstraint = { AppUsers.organizationId eq Organizations.id })
+           .join(Departments, JoinType.LEFT, additionalConstraint = { AppUsers.departmentId eq Departments.id })
+           .join(Sections, JoinType.LEFT, additionalConstraint = { AppUsers.sectionId eq Sections.id })
+           .slice(
+               AppUsers.id,
+               AppUsers.name,
+               AppUsers.surname,
+               AppUsers.phoneNumber,
+               AppUsers.secondaryPhone,
+               AppUsers.email,
+               AppUsers.isActive,
+               AppUsers.isApproved,
+               AppUsers.userTypeId,
+               UserTypes.displayname,
+               AppUsers.organizationId,
+               Organizations.displayname,
+               AppUsers.departmentId,
+               Departments.displayname,
+               AppUsers.sectionId,
+               Sections.displayname
+           )
+           .selectAll()
+
+       if (!isSuperUser && currentOrgId != null) {
+           baseQuery.andWhere { AppUsers.organizationId eq currentOrgId }
+       }
+       // --- Filter to only "Casual Worker" user type ---
+       val casualUserType = UserTypes
+           .select { UserTypes.displayname like "%${UserRole.CASUAL_WORKER.displayName}%" }
+           .limit(1)
+           .firstOrNull()
+
+       casualUserType?.let {
+           baseQuery.andWhere { AppUsers.userTypeId eq it[UserTypes.id] }
+       }
+       // --- Optional search filter ---
+       queryString?.takeIf { it.isNotBlank() }?.let { q ->
+           val pattern = "%${q.lowercase()}%"
+           baseQuery.andWhere {
+               (AppUsers.name.lowerCase() like pattern) or
+                       (AppUsers.surname.lowerCase() like pattern) or
+                       (AppUsers.phoneNumber.lowerCase() like pattern) or
+                       (AppUsers.secondaryPhone.lowerCase() like pattern) or
+                       (AppUsers.email.lowerCase() like pattern)
+           }
+       }
+       val totalCount = baseQuery.count()
+       val paginatedQuery = baseQuery.limit(pageSize, offset = ((page - 1) * pageSize).toLong())
+
+       val users = paginatedQuery.map { row ->
+           UserResponse(
+               id = row[AppUsers.id].value,
+               name = row[AppUsers.name],
+               surname = row[AppUsers.surname],
+               phoneNumber = row[AppUsers.phoneNumber],
+               secondaryPhoneNumber = row[AppUsers.secondaryPhone],
+               email = row[AppUsers.email],
+               isActive = row[AppUsers.isActive],
+               isApproved = row[AppUsers.isApproved],
+               userType = row[AppUsers.userTypeId]?.value?.let {
+                   NamedEntityResponse(it, row[UserTypes.displayname])
+               },
+               organization = row[AppUsers.organizationId]?.value?.let {
+                   NamedEntityResponse(it, row[Organizations.displayname])
+               },
+               department = row[AppUsers.departmentId]?.value?.let {
+                   NamedEntityResponse(it, row[Departments.displayname])
+               },
+               section = row[AppUsers.sectionId]?.value?.let {
+                   NamedEntityResponse(it, row[Sections.displayname])
+               }
+           )
+       }
+       PaginatedResponse(
+           items = users,
+           page = page,
+           pageSize = pageSize,
+           totalCount = totalCount,
+           totalPages = (totalCount / pageSize + if (totalCount % pageSize > 0) 1 else 0).toInt()
+       )
+   }
+
+
+
+
     override  fun getUserTypes():List<UserTypesDTO> = transaction {
          UserTypes.select{
              UserTypes.displayname neq(UserRole.SUPER_USER.displayName)

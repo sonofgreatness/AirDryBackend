@@ -14,6 +14,7 @@ interface UserRepository {
     fun findById(id: UUID): UserRegisterRequest?
     fun findByPhone(phone: String): UserRegisterRequest?
     fun getUsers(currentUser: CurrentUserDTO,page: Int,pageSize: Int) :PaginatedResponse<UserResponse>
+    fun getCasualUsers(currentUser: CurrentUserDTO,page: Int,pageSize: Int, queryString : String? = null) :PaginatedResponse<UserResponse>
     fun getUserTypes():List<UserTypesDTO>
     fun updateUser(id: UUID, req: UpdateUserDTO): Int
     fun authenticateByPhoneAndPassword(email: String, password: String): UserRegisterRequest?

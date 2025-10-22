@@ -7,7 +7,6 @@ import org.koin.compose.koinInject
 import org.koin.core.context.startKoin
 import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionManager
-import org.montigny.client.database.dao.StackRepository
 import org.montigny.client.di.appModule
 import org.montigny.client.di.databaseModule
 import org.montigny.client.domain.synchronization.SyncSettingsRepository
@@ -17,7 +16,8 @@ import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
 import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
-import org.montigny.client.ui.work.WorkViewModel
+import org.montigny.client.ui.work.viewModel.CreateAndUpdateWorkViewModel
+import org.montigny.client.ui.work.viewModel.LoadWorkViewModel
 import org.montigny.client.util.ConnectivityObserver
 
 object Main {
@@ -40,18 +40,17 @@ object Main {
             val appWorkerManager: AppWorkerManager = koinInject()
             val themeManager: ThemeManager = koinInject()
             val stacksViewModel: StacksViewModel = koinInject()
-            val workViewModel: WorkViewModel = koinInject()
+            val loadWorkViewModel: LoadWorkViewModel = koinInject()
+            val createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel = koinInject()
             LaunchedEffect(Unit) {
                 appWorkerManager.startAllWorkers()
             }
-
             App(
                 sessionManager, authViewModel, usersViewModel,
                 offlineSessionManager, connectivityObserver,
                 organizationViewModel, organizationDepartmentsAndSectionsViewModel,
                 syncSettingsRepository, themeManager, stacksViewModel,
-                workViewModel
-            )
+                loadWorkViewModel, createAndUpdateWorkViewModel)
         }
     }
 }

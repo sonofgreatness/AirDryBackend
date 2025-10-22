@@ -1,5 +1,6 @@
 package org.montigny.client.service
 
+import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateStackDTO
@@ -28,4 +29,8 @@ class StackService (val stackRepo: StackRepository){
 
     fun  getAllStackCodes(): List<CreateStackCodeDTO>  =stackRepo.getAllStackCodes()
     fun  getAllStacks():List<GetStackDTO>  =stackRepo.getAllStacks()
+    fun getPaginatedStacks(page: Int,pageSize: Int,query: String?):
+            PaginatedResponse<GetStackDTO>  {
+    return stackRepo.getPaginatedStacks(page,pageSize,query)
+    }
 }

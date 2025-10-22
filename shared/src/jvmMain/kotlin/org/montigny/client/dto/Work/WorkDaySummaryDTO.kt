@@ -21,8 +21,14 @@ data class WorkSummaryDTO(
     val totalStacks: Int,
     val totalUsers: Int,
     val stacks: List<StackInfoDTO>,
-    val users: List<UserInfoDTO>
-)
+    val users: List<UserInfoDTO>,
+    //NEW
+    val  capturedAt : String?=null,
+    val updatedAt : String?=null,
+    val  capturedBy: String?=null,
+    val updatedBy: String?=null,
+//END  OF NEW
+    )
 
 @Serializable
 data class StackInfoDTO(
