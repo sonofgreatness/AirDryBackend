@@ -50,6 +50,7 @@ fun WorkScreen(
 
     var currentPage by remember { mutableStateOf(1) }
     val pageSize = DEFAULT_PAGE_SIZE
+
     val expandedDays = remember { mutableStateMapOf<String, Boolean>() }
 
     LaunchedEffect(Unit) {

@@ -12,7 +12,6 @@ import org.montigny.client.data.api.repository.WorkApi
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.dto.Work.WorkDaySummaryDTO
 import org.montigny.client.dto.WorkDataFiltersDTO
-import org.montigny.client.navigation.Navigator
 import org.montigny.client.util.ConnectivityObserver
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
@@ -76,8 +75,6 @@ class LoadUserWorkViewModel(
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-
-            println ("calling popluate dailyWorkSummaries")
             val currentFilters = _filterDto.value.copy(
                 includeInactiveWorkers = true,
                 filterUserId = _user.value?.id?.toString()?.toUUID()

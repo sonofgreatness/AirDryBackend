@@ -2,10 +2,12 @@ package org.montigny.client.persistence.implementation
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.montigny.client.domain.api.route.auth.UserRole
 import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.User.*
+import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.persistence.*
 import org.montigny.client.persistence.repository.PasswordHasher
 import org.montigny.client.persistence.repository.UserRepository
@@ -569,6 +571,109 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
     }
 
 
+    override fun getUsersFilteredWithDTO(
+        currentUser: CurrentUserDTO,
+        page: Int,
+        pageSize: Int,
+        filters: WorkDataFiltersDTO
+    ): PaginatedResponse<UserResponse> = transaction {
+
+        val currentOrgId = currentUser.organizationId
+        val isSuperUser = isSuperUser(currentUser)
+
+        // Base query with joins (identical to the first function)
+        val baseQuery = AppUsers
+            .join(UserTypes, JoinType.LEFT, additionalConstraint = { AppUsers.userTypeId eq UserTypes.id })
+            .join(Organizations, JoinType.LEFT, additionalConstraint = { AppUsers.organizationId eq Organizations.id })
+            .join(Departments, JoinType.LEFT, additionalConstraint = { AppUsers.departmentId eq Departments.id })
+            .join(Sections, JoinType.LEFT, additionalConstraint = { AppUsers.sectionId eq Sections.id })
+            .slice(
+                AppUsers.id,
+                AppUsers.name,
+                AppUsers.surname,
+                AppUsers.phoneNumber,
+                AppUsers.secondaryPhone,
+                AppUsers.email,
+                AppUsers.isActive,
+                AppUsers.isApproved,
+                AppUsers.userTypeId,
+                UserTypes.displayname,
+                AppUsers.organizationId,
+                Organizations.displayname,
+                AppUsers.departmentId,
+                Departments.displayname,
+                AppUsers.sectionId,
+                Sections.displayname
+            )
+            .selectAll()
+
+        // Restrict to current organization if not superuser
+        if (!isSuperUser && currentOrgId != null) {
+            baseQuery.andWhere { AppUsers.organizationId eq currentOrgId }
+        }
+        filters.filterDepartmentId?.let { uuid ->
+            baseQuery.andWhere { AppUsers.departmentId eq uuid }
+        }
+        filters.filterSectionId?.let { uuid ->
+            baseQuery.andWhere { AppUsers.sectionId eq uuid }
+        }
+
+        // 2. Name, Surname, Phone (String-based filters, case-insensitive, LIKE)
+        filters.filterName?.takeIf { it.isNotBlank() }?.let { query ->
+            baseQuery.andWhere { AppUsers.name.lowerCase() like "%${query.lowercase()}%" }
+        }
+        filters.filterSurname?.takeIf { it.isNotBlank() }?.let { query ->
+            baseQuery.andWhere { AppUsers.surname.lowerCase() like "%${query.lowercase()}%" }
+        }
+        filters.filterPhoneNumber?.takeIf { it.isNotBlank() }?.let { query ->
+            // Assuming partial match for phone numbers is acceptable
+            baseQuery.andWhere { AppUsers.phoneNumber like "%$query%" }
+        }
+        filters.filterSecondaryPhoneNumber?.takeIf { it.isNotBlank() }?.let { query ->
+            // Assuming partial match for secondary phone numbers is acceptable
+            baseQuery.andWhere { AppUsers.secondaryPhone like "%$query%" }
+        }
+        if (!filters.includeInactiveWorkers) {
+            // If we DON'T include inactive workers, filter for only active workers
+            baseQuery.andWhere { AppUsers.isActive eq true or AppUsers.isApproved}
+        }
+        val totalCount = baseQuery.count()
+
+        val paginatedQuery = baseQuery.limit(pageSize, offset = ((page - 1) * pageSize).toLong())
+
+        val users = paginatedQuery.map { row ->
+            UserResponse(
+                id = row[AppUsers.id].value,
+                name = row[AppUsers.name],
+                surname = row[AppUsers.surname],
+                phoneNumber = row[AppUsers.phoneNumber],
+                secondaryPhoneNumber = row[AppUsers.secondaryPhone],
+                email = row[AppUsers.email],
+                isActive = row[AppUsers.isActive],
+                isApproved = row[AppUsers.isApproved],
+                userType = row[AppUsers.userTypeId]?.value?.let {
+                    NamedEntityResponse(it, row[UserTypes.displayname])
+                },
+                organization = row[AppUsers.organizationId]?.value?.let {
+                    NamedEntityResponse(it, row[Organizations.displayname])
+                },
+                department = row[AppUsers.departmentId]?.value?.let {
+                    NamedEntityResponse(it, row[Departments.displayname])
+                },
+                section = row[AppUsers.sectionId]?.value?.let {
+                    NamedEntityResponse(it, row[Sections.displayname])
+                }
+            )
+        }
+        // --- Return Paginated Response ---
+        PaginatedResponse(
+            items = users,
+            page = page,
+            pageSize = pageSize,
+            totalCount = totalCount,
+            totalPages = (totalCount / pageSize + if (totalCount % pageSize > 0) 1 else 0).toInt()
+        )
+    }
     override fun getUserUnPaginated(currentUserDTO: CurrentUserDTO):List<UserRegisterRequest> =transaction{
         val currentOrgId = currentUserDTO.organizationId
         AppUsers.select {

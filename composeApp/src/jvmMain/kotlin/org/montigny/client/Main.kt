@@ -15,6 +15,7 @@ import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAn
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
 import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
+import org.montigny.client.ui.users.viewModels.FilterUsersViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.ui.work.viewModel.CreateAndUpdateWorkViewModel
 import org.montigny.client.ui.work.viewModel.LoadUserWorkViewModel
@@ -44,6 +45,7 @@ object Main {
             val loadWorkViewModel: LoadWorkViewModel = koinInject()
             val createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel = koinInject()
             val  loadUserWorkViewModel : LoadUserWorkViewModel = koinInject()
+            val  filterUsersViewModel: FilterUsersViewModel = koinInject()
             LaunchedEffect(Unit) {
                 appWorkerManager.startAllWorkers()
             }
@@ -53,7 +55,7 @@ object Main {
                 organizationViewModel, organizationDepartmentsAndSectionsViewModel,
                 syncSettingsRepository, themeManager, stacksViewModel,
                 loadWorkViewModel, createAndUpdateWorkViewModel,
-                loadUserWorkViewModel)
+                loadUserWorkViewModel,filterUsersViewModel)
         }
     }
 }

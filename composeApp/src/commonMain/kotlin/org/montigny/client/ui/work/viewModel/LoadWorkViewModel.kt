@@ -46,23 +46,7 @@ ViewModel(){
     private val _totalPages = MutableStateFlow(1)
     val totalPages: StateFlow<Int> = _totalPages
 
-    fun populateDailyWorkSummaries(page: Int = DEFAULT_PAGE, pageSize: Int = DEFAULT_PAGE_SIZE) {
-        if (page > _totalPages.value) {
-            return
-        }
-        viewModelScope.launch {
-            println("getDailyWorkSummaries called with date ${filterDto.value.filterDate}")
-            val resp = workApi.getDailyWorkSummaries(page, pageSize, filterDto.value)
-            resp?.let {
-                _totalPages.value = it.totalPages
-                if (page <= 1) {
-                    _dailyWorkSummaries.value = it.items
-                } else {
-                    _dailyWorkSummaries.value += it.items
-                }
-            }
-        }
-    }
+
     fun clearAllFilters(){
         _filterDto.value = WorkDataFiltersDTO()
         _totalPages.value = DEFAULT_PAGE
@@ -107,6 +91,23 @@ ViewModel(){
         }
     }
 
+    fun populateDailyWorkSummaries(page: Int = DEFAULT_PAGE, pageSize: Int = DEFAULT_PAGE_SIZE) {
+        if (page > _totalPages.value) {
+            return
+        }
+        viewModelScope.launch {
+            println("getDailyWorkSummaries called with date ${filterDto.value.filterDate}")
+            val resp = workApi.getDailyWorkSummaries(page, pageSize, filterDto.value)
+            resp?.let {
+                _totalPages.value = it.totalPages
+                if (page <= 1) {
+                    _dailyWorkSummaries.value = it.items
+                } else {
+                    _dailyWorkSummaries.value += it.items
+                }
+            }
+        }
+    }
 
     fun populateDepartmentsAndSections(){
         populateDepartments()

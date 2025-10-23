@@ -15,6 +15,8 @@ import org.montigny.client.dto.Organization.CreateSectDTO
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.util.ConnectivityObserver
+import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE
+import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import org.montigny.client.util.UtilityFunctions.Companion.toUUID
 import org.montigny.client.util.ViewModel
 import org.montigny.client.util.stateClasses.ApiResponse
@@ -22,6 +24,7 @@ import org.montigny.client.util.stateClasses.UiState
 import org.montigny.client.util.stateClasses.UserRegisterDTOState
 import org.slf4j.Logger
 import java.util.UUID
+import kotlin.collections.plus
 import kotlin.jvm.Throws
 
 class UserViewModel(private val userRepository: UserRepository,
@@ -76,6 +79,8 @@ val isOnlineLoggedIn : StateFlow<Boolean> =  sessionManager.isLoggedInFlow
 private val _errorMessage = MutableStateFlow<String?>(null)
 val errorMessage: StateFlow<String?> = _errorMessage
 
+private val _totalPages = MutableStateFlow(1)
+val totalPages: StateFlow<Int> = _totalPages
 
 fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
 
@@ -246,7 +251,7 @@ private fun synchronizeUserDataInternal(isNetworkAvailable: Boolean =false,isOnl
                     syncManager.synchronizeAllAppData()
                     syncManager.downLoadDepartmentsAndSections()
                 }
-                populateAUserLists()
+                populateAUserAndUserTypeLists()
                 populateDepartmentsAndSections()
             } catch (e: Exception) {
                 logger.error("Sync failed: ${e.message}")
@@ -255,22 +260,58 @@ private fun synchronizeUserDataInternal(isNetworkAvailable: Boolean =false,isOnl
             }
         }
     }
-fun populateAUserLists(){
+fun populateAUserAndUserTypeLists(){
         populateUserTypes()
         populateUsers()
 }
-private fun populateUsers(){
+fun  populateUsersExternal(page: Int, pageSize: Int) = populateUsers()
+
+private fun populateUsers(page:Int = DEFAULT_PAGE, pageSize:Int = DEFAULT_PAGE_SIZE){
     viewModelScope.launch {
         try {
             logger.info("Populating users ")
-            pickUserDataSource(isNetworkAvailable.value, isOnlineLoggedIn.value)
+            pickUserDataSource(isNetworkAvailable.value, isOnlineLoggedIn.value,page, pageSize)
         }catch (e: Exception) {
             logger.error("failed to populate users Error ${e.message}")
         }
     }
 }
+private suspend fun pickUserDataSource(isNetworkAvailable: Boolean = false,
+                                       isOnlineLoggedIn: Boolean, page: Int,pageSize: Int) {
+        try {
+            if (isNetworkAvailable && isOnlineLoggedIn) {
+                getPagedListOnline(page, pageSize)
 
-private fun populateUserTypes() {
+            } else {
+                getPagedListOffline()
+            }
+        }catch (e: Exception){
+            logger.error("failed to select users Error pickDataSource ${e.message}")
+        }
+    }
+
+
+    private suspend fun getPagedListOnline(page: Int, pageSize: Int) {
+        println ("getting users online")
+        if (page > _totalPages.value) {
+            return
+        }
+        val resp = userApi.getUsers(page, pageSize)
+        resp?.let {
+            _totalPages.value = it.totalPages
+            if (page <= 1) {
+                _users.value = it.items
+            } else {
+                _users.value += it.items
+            }
+        }
+    }
+
+    private suspend fun getPagedListOffline() {
+        val users: List<UserResponse> = userRepository.selectAllUsers() ?: emptyList()
+        _users.value = users
+    }
+    private fun populateUserTypes() {
         viewModelScope.launch {
             try {
                pickDataSource(isNetworkAvailable.value, isOnlineLoggedIn.value)
@@ -295,20 +336,7 @@ private suspend fun pickDataSource(isNetworkAvailable: Boolean = false, isOnline
               _useTypes.value = userTypes
         }
    }
-private suspend fun pickUserDataSource(isNetworkAvailable: Boolean = false, isOnlineLoggedIn: Boolean) {
-      try {
-          if (isNetworkAvailable && isOnlineLoggedIn) {
-              val users: List<UserResponse> = userApi.getUsers().items
-              _users.value = users
 
-          } else {
-              val users: List<UserResponse> = userRepository.selectAllUsers() ?: emptyList()
-              _users.value = users
-          }
-      }catch (e: Exception){
-          logger.error("failed to select users Error pickDataSource ${e.message}")
-      }
-    }
 fun populateDepartmentsAndSections(){
     populateDepartments()
 }
@@ -366,7 +394,6 @@ fun createUser(user: UserRegisterRequest=_createUser.value!!) {
        viewModelScope.launch {
            pickUserCreateUploadSource(isNetworkAvailable.value, user=user,isOnlineLoggedIn.value)
        }
-
     }
 private  suspend  fun pickUserCreateUploadSource(isNetworkAvailable: Boolean = false,
                                                      user: UserRegisterRequest, isOnlineLoggedIn: Boolean) {

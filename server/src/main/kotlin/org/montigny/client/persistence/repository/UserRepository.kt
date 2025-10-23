@@ -6,6 +6,7 @@ import org.montigny.client.dto.User.UpdateUserDTO
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.dto.User.UserTypesDTO
+import org.montigny.client.dto.WorkDataFiltersDTO
 import java.util.*
 
 interface UserRepository {
@@ -28,6 +29,13 @@ interface UserRepository {
         pageSize: Int,
         filters: MutableMap<String, String>
     ):PaginatedResponse<UserResponse>
+
+    fun getUsersFilteredWithDTO(
+        currentUser: CurrentUserDTO,
+        page: Int,
+        pageSize: Int,filters: WorkDataFiltersDTO
+    ): PaginatedResponse<UserResponse>
+
     fun getUserUnPaginated(currentUserDTO: CurrentUserDTO):List<UserRegisterRequest>
 
 

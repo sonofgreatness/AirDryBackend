@@ -8,6 +8,7 @@ import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.dto.User.UserTypesDTO
 import org.montigny.client.domain.api.route.auth.UserRole
+import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.persistence.repository.UserRepository
 import java.util.UUID
 
@@ -59,7 +60,13 @@ class UserService(private val userRepo: UserRepository, private val jwtProvider:
     fun findUserResponseById(id: UUID): UserResponse? = userRepo.findUserResponseById(id)
     fun getUserUnPaginated(currentUserDTO: CurrentUserDTO):List<UserRegisterRequest> = userRepo.getUserUnPaginated(currentUserDTO)
 
-
+    fun getUsersFilteredWithDTO(
+        currentUser: CurrentUserDTO,
+        page: Int,
+        pageSize: Int,
+        filters: WorkDataFiltersDTO
+    ): PaginatedResponse<UserResponse>
+    = userRepo.getUsersFilteredWithDTO(currentUser,page,pageSize,filters)
 
 }
 

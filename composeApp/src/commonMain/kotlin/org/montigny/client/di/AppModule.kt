@@ -28,6 +28,7 @@ import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToExcelUseCase
 import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToPdfUseCase
 import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
+import org.montigny.client.ui.users.viewModels.FilterUsersViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.ui.work.viewModel.CreateAndUpdateWorkViewModel
 import org.montigny.client.ui.work.viewModel.LoadUserWorkViewModel
@@ -110,5 +111,10 @@ single<CreateAndUpdateWorkViewModel>{
 
 single<LoadUserWorkViewModel>{
     LoadUserWorkViewModel(get(), get(), get(), get())
+}
+single<FilterUsersViewModel>
+{
+    FilterUsersViewModel(get(), get()
+    ,get(), get(), get(),get())
 }
 }

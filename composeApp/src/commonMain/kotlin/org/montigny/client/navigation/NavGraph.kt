@@ -18,10 +18,12 @@ import org.montigny.client.ui.settings.stacks.ManageStacksScreen
 import org.montigny.client.ui.settings.stacks.ViewStackCodesScreen
 import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.EditUserFormScreen
+import org.montigny.client.ui.users.FilterUsersScreen
 import org.montigny.client.ui.users.LoginScreen
 import org.montigny.client.ui.users.UserFormScreen
 import org.montigny.client.ui.users.UsersScreen
 import org.montigny.client.ui.users.viewModels.AuthViewModel
+import org.montigny.client.ui.users.viewModels.FilterUsersViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.ui.work.CreateOrUpdateWorkScreen
 import org.montigny.client.ui.work.UserWorkScreen
@@ -46,6 +48,7 @@ fun NavGraph(
     loadWorkViewModel: LoadWorkViewModel,
     createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel,
     loadUserWorkViewModel: LoadUserWorkViewModel,
+    filterUsersViewModel: FilterUsersViewModel,
 ) {
     val currentDestination by navigator.currentDestination
      val nextDestination by navigator.nextDestination
@@ -112,5 +115,7 @@ fun NavGraph(
                     navigator.navigateTo(Destination.Work)
             }
         )
+        is Destination.FilterUsers -> FilterUsersScreen(navigator,
+            filterUsersViewModel, usersViewModel)
     }
 }

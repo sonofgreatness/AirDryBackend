@@ -377,7 +377,7 @@ fun Route.workRoutes(
                 summary("Get All Work Summaries between dates")
                 description("Get All Work Summaries between dates")
                 request {
-                    requestType<CreateStackCodeDTO>()
+                    requestType<WorkDataFiltersDTO>()
                     examples(
                         "application/json" to MediaType.Example(
                             value = Json.encodeToJsonElement(
@@ -395,8 +395,7 @@ fun Route.workRoutes(
             }
         }
         authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
-            UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) {
-            post {
+            UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) { post {
                 try {
                     val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
                     val pageSize = call.request.queryParameters[PAGE_SIZE]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
@@ -428,7 +427,7 @@ fun Route.workRoutes(
                 summary("Get All Work Summaries between dates by user id")
                 description("Get All Work Summaries between dates user id")
                 request {
-                    requestType<CreateStackCodeDTO>()
+                    requestType<WorkDataFiltersDTO>()
                     examples(
                         "application/json" to MediaType.Example(
                             value = Json.encodeToJsonElement(
@@ -467,5 +466,4 @@ fun Route.workRoutes(
             }
         }
     }
-
 }

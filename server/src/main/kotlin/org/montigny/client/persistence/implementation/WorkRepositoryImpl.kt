@@ -637,10 +637,6 @@ class WorkRepositoryImpl(): WorkRepository {
             : PaginatedResponse<WorkDaySummaryDTO>
 
            = transaction {
-
-       // --------------------------------------------------------
-       // STEP 1 — Validate and parse date range
-       // --------------------------------------------------------
        val startDate = filters.filterDate?.takeIf { it.isNotBlank() }
            ?.let { LocalDate.parse(it).atStartOfDay(ZoneOffset.UTC).toInstant() }
 
@@ -650,19 +646,9 @@ class WorkRepositoryImpl(): WorkRepository {
        if (startDate != null && endDate != null && startDate > endDate) {
            throw IllegalStateException("Start date cannot be after end date.")
        }
-
-       // --------------------------------------------------------
-       // STEP 2 — Build user filter conditions (same as sister function)
-       // --------------------------------------------------------
        val userConditions = mutableListOf<Op<Boolean>>()
-
        filters.filterUserId?.let { userConditions += (AppUsers.id eq it) }
-
        val combinedUserCondition = userConditions.reduceOrNull { acc, op -> acc and op } ?: Op.TRUE
-
-       // --------------------------------------------------------
-       // STEP 3 — Find WorkDone IDs matching user filters
-       // --------------------------------------------------------
        val filteredWorkDoneIds = (WorkDoneUsers innerJoin AppUsers)
            .slice(WorkDoneUsers.workDoneId)
            .select(combinedUserCondition)

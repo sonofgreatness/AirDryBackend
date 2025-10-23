@@ -24,5 +24,4 @@ interface StackApi {
     suspend fun  getAllStackCodes(): List<CreateStackCodeDTO>
     suspend fun  getAllStacks():List<GetStackDTO>
     suspend  fun getPaginatedStacks(page: Int,pageSize: Int,query:String? =null): PaginatedResponse<GetStackDTO>?
-
 }

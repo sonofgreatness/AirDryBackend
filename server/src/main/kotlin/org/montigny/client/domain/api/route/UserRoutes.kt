@@ -15,35 +15,19 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
-import org.montigny.client.API_HEALTH
-import org.montigny.client.API_URL_ADMIN_REGISTER
-import org.montigny.client.API_URL_USERS_UNPAGED
-import org.montigny.client.API_URL_USERTYPES_GET_ALL
-import org.montigny.client.API_URL_USER_CURRENT
-import org.montigny.client.API_URL_USER_DELETE
-import org.montigny.client.API_URL_USER_GET_ALL
-import org.montigny.client.API_URL_USER_GET_ALL_CASUALS
-import org.montigny.client.API_URL_USER_LOGIN
-import org.montigny.client.API_URL_USER_REGISTER
-import org.montigny.client.API_URL_USER_UPDATE
-import org.montigny.client.API_USER_GET_BY_ID
-import org.montigny.client.API_USER_RESPONSE_GET_BY_ID
-import org.montigny.client.API_USER_SEARCH
-import org.montigny.client.SERVER_OK_TEXT
+import org.montigny.client.*
+import org.montigny.client.domain.api.route.auth.UserRole
+import org.montigny.client.domain.api.route.auth.authorize
 import org.montigny.client.dto.Auth.AuthRequest
 import org.montigny.client.dto.Auth.AuthResponse
 import org.montigny.client.dto.Common.ErrorResponse
 import org.montigny.client.dto.Common.IdResponse
 import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.Common.SimpleResponse
-import org.montigny.client.dto.User.CurrentUserDTO
-import org.montigny.client.dto.User.UpdateUserDTO
-import org.montigny.client.dto.User.UserRegisterRequest
-import org.montigny.client.dto.User.UserResponse
-import org.montigny.client.dto.User.UserTypesDTO
-import org.montigny.client.domain.api.route.auth.UserRole
-import org.montigny.client.domain.api.route.auth.authorize
+import org.montigny.client.dto.User.*
+import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.service.UserService
+import org.montigny.client.util.ApiExamples.Companion.exampleFilters
 import org.montigny.client.util.ApiExamples.Companion.exampleLogin
 import org.montigny.client.util.ApiExamples.Companion.exampleUdateUser
 import org.montigny.client.util.ApiExamples.Companion.exampleUser
@@ -57,7 +41,6 @@ import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION_TYPE
 import org.montigny.client.util.Constants.Companion.UPDATED_USER_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.UPDATE_USER_DESCRIPTION
-
 import org.montigny.client.util.UserUtils
 import java.util.*
 
@@ -245,9 +228,6 @@ fun Route.userRoutes(userService: UserService) {
            }
        }
    }
-
-
-
     //==================GET ALL CASUAL USERS================
     route(API_URL_USER_GET_ALL_CASUALS) {
         install(NotarizedRoute()) {
@@ -364,11 +344,11 @@ fun Route.userRoutes(userService: UserService) {
                 val req = call.receive<AuthRequest>()
                 val token = userService.login(req.username, req.password)
                 call.respond(HttpStatusCode.OK, AuthResponse(token))
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid credentials", 401))
             } catch (e: IllegalStateException) {
                 call.respond(HttpStatusCode.Forbidden, ErrorResponse(e.message ?: "User not active or approved", 403))
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Unexpected server error", 500))
             }
         }
@@ -432,11 +412,11 @@ fun Route.userRoutes(userService: UserService) {
                     try {
                         val currentUser = UserUtils.getLoggedInUser(call)
                         call.respond(HttpStatusCode.OK, currentUser)
-                    }catch (e: IllegalArgumentException) {
+                    }catch (_: IllegalArgumentException) {
                         call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid credentials", 401))
                     } catch (e: IllegalStateException) {
                         call.respond(HttpStatusCode.Forbidden, ErrorResponse(e.message ?: "User not active or approved", 403))
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Unexpected server error", 500))
                     }
 
@@ -693,5 +673,57 @@ fun Route.userRoutes(userService: UserService) {
          call.respond(HttpStatusCode.OK, SimpleResponse(SERVER_OK_TEXT))
      }
  }
+
+    route(API_URL_USER_GET_FILTERED){
+        install(NotarizedRoute()){
+            tags = setOf("User")
+            security = mapOf("BearerAuth" to emptyList())
+            parameters = listOf(
+                Parameter(name = PAGE, `in` = Parameter.Location.query, schema = TypeDefinition.INT),
+                Parameter(name = PAGE_SIZE, `in` = Parameter.Location.query, schema = TypeDefinition.INT)
+            )
+            post = PostInfo.builder {
+                summary("Get filtered users")
+                description("Get filtered users")
+                request {
+                    requestType<WorkDataFiltersDTO>()
+                    examples(
+                        "application/json" to MediaType.Example(
+                            value = Json.encodeToJsonElement(
+                                WorkDataFiltersDTO.serializer(),
+                                exampleFilters)
+                        )
+                    )
+                    description("Get filtered users")
+                }
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<UserResponse>>()
+                    description("Get filtered users")
+                }
+            }
+        }
+        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
+            UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) {
+            post {
+                try {
+                    val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
+                    val pageSize = call.request.queryParameters[PAGE_SIZE]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+                    val user = UserUtils.getLoggedInUser(call)
+                    val filters = call.receive<WorkDataFiltersDTO>()
+                    val resp = userService.getUsersFilteredWithDTO(user, page = page, pageSize = pageSize, filters = filters)
+                    resp?.let {
+                        call.respond(HttpStatusCode.OK, it)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
 }
 

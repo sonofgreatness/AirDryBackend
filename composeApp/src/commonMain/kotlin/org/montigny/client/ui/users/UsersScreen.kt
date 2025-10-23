@@ -1,19 +1,18 @@
 package org.montigny.client.ui.users
 
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
-import androidx.compose.material.TabRowDefaults.Divider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Group
@@ -36,11 +35,10 @@ import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.Navigator
 import org.montigny.client.ui.Theme.Danger
-import org.montigny.client.ui.Theme.Neutral
 import org.montigny.client.ui.Theme.TextMuted
 import org.montigny.client.ui.organizations.DashboardCard
 import org.montigny.client.ui.users.viewModels.UserViewModel
-import org.montigny.client.util.UtilityFunctions.Companion.toStringCustom
+import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import java.util.UUID
 
 
@@ -54,10 +52,17 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
     val isOnlineLoggedIn by userViewModel.isOnlineLoggedIn.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    println("Initial isSyncing ${isSyncing}")
+    val totalPages by userViewModel.totalPages.collectAsState()
     var userToDelete by remember { mutableStateOf<UUID?>(null) }
 
+    var currentPage by remember { mutableStateOf(1) }
+    val pageSize = DEFAULT_PAGE_SIZE
+    val scope = rememberCoroutineScope()
 
+    LaunchedEffect(currentPage) {
+        currentPage = 1
+        userViewModel.populateUsersExternal(currentPage, pageSize)
+    }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = Modifier.fillMaxSize()
@@ -69,77 +74,117 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-        // ------- DASHBOARD REGION -------
-        Surface(
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp,
-            shape = MaterialTheme.shapes.medium,
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+            // ------- DASHBOARD REGION -------
+            Surface(
+                tonalElevation = 6.dp,
+                shadowElevation = 8.dp,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface
             ) {
-                val totalUsers = users.size
-                val approvedUsers = users.count { it.isApproved }
-                val notApproved = users.count { !it.isApproved }
-
-                DashboardCard("Total Users", totalUsers,Icons.Outlined.Group)
-                DashboardCard("Approved Users", approvedUsers,Icons.Outlined.Done)
-                DashboardCard("Not Approved", notApproved,Icons.Outlined.MoodBad)
-            }
-        }
-        // ------- ACTION REGION -------
-        Surface(
-            tonalElevation = 4.dp,
-            shape = MaterialTheme.shapes.small,
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(
-                    onClick = {
-                        if(isNetworkAvailable && !isOnlineLoggedIn){
-                            navigator.navigateTo(Destination.Login, Destination.Users)
-                        }
-                        println(" at button click isSyncing ${isSyncing}")
-                        userViewModel.synchronizeUserData()
-                        println(" after button click isSyncing ${isSyncing}")
-                              },
-                    enabled = !isSyncing,
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    if (isSyncing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
+                    val totalUsers = users.size
+                    val approvedUsers = users.count { it.isApproved }
+                    val notApproved = users.count { !it.isApproved }
+
+                    DashboardCard("Total Users", totalUsers, Icons.Outlined.Group)
+                    DashboardCard("Approved Users", approvedUsers, Icons.Outlined.Done)
+                    DashboardCard("Not Approved", notApproved, Icons.Outlined.MoodBad)
+                }
+            }
+            // ------- ACTION REGION -------
+            Surface(
+                tonalElevation = 4.dp,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = {
+                            if (isNetworkAvailable && !isOnlineLoggedIn) {
+                                navigator.navigateTo(Destination.Login, Destination.Users)
+                            }
+                            println(" at button click isSyncing ${isSyncing}")
+                            userViewModel.synchronizeUserData()
+                            println(" after button click isSyncing ${isSyncing}")
+                        },
+                        enabled = !isSyncing,
+                    ) {
+                        if (isSyncing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Syncing")
+                        } else {
+                            Icon(
+                                Icons.Default.Refresh, contentDescription = "Sync Users",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Sync")
+                        }
+                    }
+                    Button(
+                        onClick = { navigator.navigateTo(Destination.CreateAccount) }
+                    ) {
+                        Icon(
+                            Icons.Default.Add, contentDescription = "Create User",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Syncing")
-                    } else {
-                        Icon(Icons.Default.Refresh, contentDescription = "Sync Users",
-                            tint = MaterialTheme.colorScheme.onPrimary)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Sync")
+                        Text("Create")
                     }
                 }
-                Button(
-                    onClick = { navigator.navigateTo(Destination.CreateAccount) }
+            }
+
+            if (isNetworkAvailable && isOnlineLoggedIn) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left Divider
+                Divider(
+                    modifier = Modifier
+                        .weight(1f) // Takes up remaining space
+                        .padding(end = 8.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    thickness = 1.dp
+                )
+
+                // Search IconButton
+                IconButton(
+                    onClick = {navigator.navigateTo(Destination.FilterUsers)}
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Create User",
-                            tint = MaterialTheme.colorScheme.onPrimary)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Create")
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = "Search Users",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
+
+                // Right Divider
+                Divider(
+                    modifier = Modifier
+                        .weight(1f) // Takes up remaining space
+                        .padding(start = 8.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    thickness = 1.dp
+                )
             }
         }
         // ------- LIST REGION -------
@@ -166,7 +211,7 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                             .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(users, key = { it.id.toString() }) { user ->
+                        itemsIndexed(users) {index, user ->
                             UserRow(
                                 user = user,
                                 onEdit = {
@@ -182,6 +227,23 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                                 onDelete = { userToDelete = user.id },
                                 isDeleting = isDeleting_
                             )
+                            val hasMorePages = currentPage < totalPages
+                            if (index >= users.lastIndex - 2 && hasMorePages) {
+                                scope.launch {
+                                    currentPage++
+                                    userViewModel.populateUsersExternal(
+                                        page = currentPage,
+                                        pageSize = pageSize
+                                    )
+                                }
+                            }
+                        }
+                        item{
+                            if (currentPage < totalPages) {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(16.dp))
+                            } else {
+                                Text("End of Records", modifier = Modifier.fillMaxWidth().padding(16.dp), style = MaterialTheme.typography.labelMedium)
+                            }
                         }
                     }
                 }
@@ -228,9 +290,6 @@ if (!errorMessage.isNullOrEmpty()) {
     }
 }
 }
-
-
-
 @Composable
 fun UserRow(
     user: UserResponse,

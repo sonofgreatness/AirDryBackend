@@ -19,6 +19,7 @@ import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.dto.User.UserTypesDTO
+import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.util.stateClasses.ApiResponse
 import java.util.*
 import kotlin.time.Clock
@@ -62,8 +63,8 @@ class UserApiImpl(private val client: HttpClient,
        }.body()
        return response
    }
-    override suspend fun getUsers(page: Int, pageSize: Int) :PaginatedResponse<UserResponse>{
-        val response : PaginatedResponse<UserResponse> = client.get("$API_BASE_URL$API_URL_USER_GET_ALL"){
+    override suspend fun getUsers(page: Int, pageSize: Int) :PaginatedResponse<UserResponse>?{
+        val response : PaginatedResponse<UserResponse>? = client.get("$API_BASE_URL$API_URL_USER_GET_ALL"){
             contentType(ContentType.Application.Json)
         }.body()
         return response
@@ -133,5 +134,22 @@ class UserApiImpl(private val client: HttpClient,
         }.body()
         return  resp
     }
-
+    override  suspend  fun  getFilteredUsers (page: Int,
+        pageSize: Int,filters: WorkDataFiltersDTO
+    ) : PaginatedResponse<UserResponse>?{
+        try {
+            val resp = client.post("$API_BASE_URL$API_URL_USER_GET_FILTERED"){
+                contentType(ContentType.Application.Json)
+                url {
+                    parameters.append(PAGE, page.toString())
+                    parameters.append(PAGE_SIZE, pageSize.toString())
+                }
+                setBody(filters)
+            }
+            return resp.body()
+        }catch (e: Exception){
+            e.printStackTrace()
+            return null
+        }
+    }
 }

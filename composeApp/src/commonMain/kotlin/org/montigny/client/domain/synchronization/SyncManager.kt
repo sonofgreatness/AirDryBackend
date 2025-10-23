@@ -56,8 +56,9 @@ class SyncManager(private val userApi : UserApi,
         downloadAndInsertUsers()
         downloadAndInsertUserTypes()
         downloadAndInsertOrganizationsInternal()
-        downloadAndInsertStacks()
         downloadAndInsertStackCodes()
+        downloadAndInsertStacks()
+
     }
 
     private suspend fun pushCachedUpdates() {
@@ -227,7 +228,7 @@ class SyncManager(private val userApi : UserApi,
         userRepository.deleteUnCachedUsers()
         deleteUnCachedOrganizations()
         stackRepository.deleteUnCachedStackCodes()
-        stackRepository.deleteUnCachedStackCodes()
+        stackRepository.deleteUnCachedStacks()
     }
 
    private suspend fun  downloadAndInsertUsers(){

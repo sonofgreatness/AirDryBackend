@@ -94,7 +94,6 @@ class WorkApiImpl (
                                              pageSize: Int,filters: WorkDataFiltersDTO)
             : PaginatedResponse<WorkDaySummaryDTO>?{
        try{
-           println("Get DailyWorkSummaries between dates for  user")
            val  resp  = client.post("$API_BASE_URL$API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY_BETWEEN_DATES_BY_USER"){
                contentType(ContentType.Application.Json)
                url {
@@ -103,11 +102,9 @@ class WorkApiImpl (
                }
                setBody(filters)
            }
-           println("resp: ${resp.bodyAsText()}")
            return resp.body()
        }catch(e: Exception){
            e.printStackTrace()
-           println("failed to get workSummaries  between dates for user ${e.message}")
            return  null
        }
     }

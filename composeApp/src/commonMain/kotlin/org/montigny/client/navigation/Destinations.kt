@@ -21,4 +21,7 @@ sealed class Destination(val route: String) {
     object  CreateWork: Destination("create_work")
     data class  EditWork(val  workId : String) : Destination("edit_work/$workId")
     data class  ViewUserWork(val  userId : String) : Destination("view_work/$userId")
+    object  FilterUsers: Destination("filter_users")
+
+
 }
