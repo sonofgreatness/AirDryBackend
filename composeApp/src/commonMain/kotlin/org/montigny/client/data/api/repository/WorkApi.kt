@@ -17,4 +17,8 @@ interface WorkApi {
     suspend  fun  createWork(req : CreateWorkDoneDTO): ApiResponse
     suspend fun getWorkById(id : UUID): CreateWorkDoneDTO?
    suspend  fun updateWork (  req:CreateWorkDoneDTO):ApiResponse
+
+    suspend  fun getDailyWorkSummariesBetweenDates(page: Int, pageSize: Int,filters: WorkDataFiltersDTO): PaginatedResponse<WorkDaySummaryDTO>?
+    suspend fun  getDailyWorkSummariesByUser(page: Int, pageSize: Int,filters: WorkDataFiltersDTO)
+            : PaginatedResponse<WorkDaySummaryDTO>?
 }

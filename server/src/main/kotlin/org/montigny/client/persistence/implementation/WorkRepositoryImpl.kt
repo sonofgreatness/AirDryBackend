@@ -33,6 +33,8 @@ import org.montigny.client.persistence.StackCodes
 import java.text.SimpleDateFormat
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.between
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.lowerCase
@@ -466,4 +468,311 @@ class WorkRepositoryImpl(): WorkRepository {
     }
 
 
+
+
+    override fun getDailyWorkSummariesBetweenDates(
+        currentUserDTO: CurrentUserDTO,
+        page: Int,
+        pageSize: Int,
+        filters: WorkDataFiltersDTO
+    ): PaginatedResponse<WorkDaySummaryDTO> = transaction {
+
+        // --------------------------------------------------------
+        // STEP 1 — Validate and parse date range
+        // --------------------------------------------------------
+        val startDate = filters.filterDate?.takeIf { it.isNotBlank() }
+            ?.let { LocalDate.parse(it).atStartOfDay(ZoneOffset.UTC).toInstant() }
+
+        val endDate = filters.filterDateEndDate?.takeIf { it.isNotBlank() }
+            ?.let { LocalDate.parse(it).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() }
+
+        if (startDate != null && endDate != null && startDate > endDate) {
+            throw IllegalStateException("Start date cannot be after end date.")
+        }
+
+        // --------------------------------------------------------
+        // STEP 2 — Build user filter conditions (same as sister function)
+        // --------------------------------------------------------
+        val userConditions = mutableListOf<Op<Boolean>>()
+
+        if (!filters.includeInactiveWorkers) {
+            userConditions += (AppUsers.isActive eq true) and (AppUsers.isApproved eq true)
+        }
+
+        filters.filterDepartmentId?.let { userConditions += (AppUsers.departmentId eq it) }
+        filters.filterSectionId?.let { userConditions += (AppUsers.sectionId eq it) }
+        filters.filterName?.takeIf { it.isNotBlank() }?.let {
+            userConditions += AppUsers.name.lowerCase() like "%${it.lowercase()}%"
+        }
+        filters.filterSurname?.takeIf { it.isNotBlank() }?.let {
+            userConditions += AppUsers.surname.lowerCase() like "%${it.lowercase()}%"
+        }
+        filters.filterPhoneNumber?.takeIf { it.isNotBlank() }
+            ?.let { userConditions += AppUsers.phoneNumber like "%$it%" }
+        filters.filterSecondaryPhoneNumber?.takeIf { it.isNotBlank() }
+            ?.let { userConditions += AppUsers.secondaryPhone like "%$it%" }
+
+        val combinedUserCondition = userConditions.reduceOrNull { acc, op -> acc and op } ?: Op.TRUE
+
+        // --------------------------------------------------------
+        // STEP 3 — Find WorkDone IDs matching user filters
+        // --------------------------------------------------------
+        val filteredWorkDoneIds = (WorkDoneUsers innerJoin AppUsers)
+            .slice(WorkDoneUsers.workDoneId)
+            .select(combinedUserCondition)
+            .map { it[WorkDoneUsers.workDoneId].value }
+            .toSet()
+
+        if (filteredWorkDoneIds.isEmpty()) {
+            return@transaction PaginatedResponse(emptyList(), page, pageSize, 0, 1)
+        }
+
+        // --------------------------------------------------------
+        // STEP 4 — Date range filter logic
+        // --------------------------------------------------------
+        val dateFilter: Op<Boolean> = when {
+            startDate != null && endDate != null ->
+                WorkDone.workDate.between(startDate, endDate)
+            startDate != null ->
+                WorkDone.workDate greaterEq startDate
+            endDate != null ->
+                WorkDone.workDate less endDate
+            else -> Op.TRUE
+        }
+
+        val filteredQuery = WorkDone
+            .select { (WorkDone.id inList filteredWorkDoneIds) and dateFilter }
+            .orderBy(WorkDone.workDate to SortOrder.DESC)
+
+        // --------------------------------------------------------
+        // STEP 5 — Pagination (same as sister function)
+        // --------------------------------------------------------
+        val totalCount = filteredQuery.count()
+        val totalPages = if (totalCount == 0L) 1 else ((totalCount + pageSize - 1) / pageSize).toInt()
+        val pagedRows = filteredQuery
+            .limit(pageSize, offset = ((page - 1) * pageSize).toLong())
+            .toList()
+
+        // --------------------------------------------------------
+        // STEP 6 — Transform into WorkSummaryDTO (copy-paste of existing logic)
+        // --------------------------------------------------------
+        val summaries = pagedRows.map { workRow ->
+            val workId = workRow[WorkDone.id].value
+            val workDateInstant = workRow[WorkDone.workDate]
+            val dateStr = SimpleDateFormat("EEEE dd/MM/yyyy").format(Date.from(workDateInstant))
+
+            val stacks = (WorkDoneStacks innerJoin Stacks innerJoin StackCodes)
+                .select { WorkDoneStacks.workDoneId eq workId }
+                .map { row ->
+                    StackInfoDTO(
+                        id = row[Stacks.id].value,
+                        displayName = row[Stacks.displayName],
+                        stackCodeDisplayName = row[StackCodes.displayName],
+                        volume = row[Stacks.volume]
+                    )
+                }
+
+            val totalVolume = stacks.sumOf { it.volume }
+            val totalStacks = stacks.size
+
+            val users = (WorkDoneUsers innerJoin AppUsers)
+                .select { WorkDoneUsers.workDoneId eq workId }
+                .map { row ->
+                    UserInfoDTO(
+                        id = row[AppUsers.id].value,
+                        name = row[AppUsers.name],
+                        surname = row[AppUsers.surname],
+                        phoneNumber = row[AppUsers.phoneNumber],
+                        isActive = row[AppUsers.isActive],
+                        isApproved = row[AppUsers.isApproved],
+                        personalCubes = 0.0
+                    )
+                }
+
+            val totalUsers = users.size
+            val perUserVolume = if (totalUsers > 0) totalVolume / totalUsers else 0.0
+            val usersWithCubes = users.map { it.copy(personalCubes = perUserVolume) }
+
+            WorkSummaryDTO(
+                id = workId,
+                workDate = dateStr,
+                totalVolume = totalVolume,
+                totalStacks = totalStacks,
+                totalUsers = totalUsers,
+                stacks = stacks,
+                users = usersWithCubes,
+                capturedAt = null,
+                updatedAt = null,
+                capturedBy = null,
+                updatedBy = null
+            )
+        }
+
+        // --------------------------------------------------------
+        // STEP 7 — Group into WorkDaySummaryDTO
+        // --------------------------------------------------------
+        val groupedByDay = summaries.groupBy { it.workDate }.map { (day, works) ->
+            WorkDaySummaryDTO(
+                dayLabel = day,
+                totalVolume = works.sumOf { it.totalVolume },
+                totalStacks = works.sumOf { it.totalStacks },
+                totalUsers = works.flatMap { it.users }.distinctBy { it.id }.size,
+                workList = works
+            )
+        }
+
+        PaginatedResponse(
+            items = groupedByDay,
+            page = page,
+            pageSize = pageSize,
+            totalCount = totalCount,
+            totalPages = totalPages
+        )
+    }
+
+
+
+   override fun  getDailyWorkSummariesByUser(currentUserDTO: CurrentUserDTO, page: Int,
+                                     pageSize: Int,filters: WorkDataFiltersDTO)
+            : PaginatedResponse<WorkDaySummaryDTO>
+
+           = transaction {
+
+       // --------------------------------------------------------
+       // STEP 1 — Validate and parse date range
+       // --------------------------------------------------------
+       val startDate = filters.filterDate?.takeIf { it.isNotBlank() }
+           ?.let { LocalDate.parse(it).atStartOfDay(ZoneOffset.UTC).toInstant() }
+
+       val endDate = filters.filterDateEndDate?.takeIf { it.isNotBlank() }
+           ?.let { LocalDate.parse(it).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() }
+
+       if (startDate != null && endDate != null && startDate > endDate) {
+           throw IllegalStateException("Start date cannot be after end date.")
+       }
+
+       // --------------------------------------------------------
+       // STEP 2 — Build user filter conditions (same as sister function)
+       // --------------------------------------------------------
+       val userConditions = mutableListOf<Op<Boolean>>()
+
+       filters.filterUserId?.let { userConditions += (AppUsers.id eq it) }
+
+       val combinedUserCondition = userConditions.reduceOrNull { acc, op -> acc and op } ?: Op.TRUE
+
+       // --------------------------------------------------------
+       // STEP 3 — Find WorkDone IDs matching user filters
+       // --------------------------------------------------------
+       val filteredWorkDoneIds = (WorkDoneUsers innerJoin AppUsers)
+           .slice(WorkDoneUsers.workDoneId)
+           .select(combinedUserCondition)
+           .map { it[WorkDoneUsers.workDoneId].value }
+           .toSet()
+
+       if (filteredWorkDoneIds.isEmpty()) {
+           return@transaction PaginatedResponse(emptyList(), page, pageSize, 0, 1)
+       }
+
+       // --------------------------------------------------------
+       // STEP 4 — Date range filter logic
+       // --------------------------------------------------------
+       val dateFilter: Op<Boolean> = when {
+           startDate != null && endDate != null ->
+               WorkDone.workDate.between(startDate, endDate)
+           startDate != null ->
+               WorkDone.workDate greaterEq startDate
+           endDate != null ->
+               WorkDone.workDate less endDate
+           else -> Op.TRUE
+       }
+
+       val filteredQuery = WorkDone
+           .select { (WorkDone.id inList filteredWorkDoneIds) and dateFilter }
+           .orderBy(WorkDone.workDate to SortOrder.DESC)
+
+       // --------------------------------------------------------
+       // STEP 5 — Pagination (same as sister function)
+       // --------------------------------------------------------
+       val totalCount = filteredQuery.count()
+       val totalPages = if (totalCount == 0L) 1 else ((totalCount + pageSize - 1) / pageSize).toInt()
+       val pagedRows = filteredQuery
+           .limit(pageSize, offset = ((page - 1) * pageSize).toLong())
+           .toList()
+
+       // --------------------------------------------------------
+       // STEP 6 — Transform into WorkSummaryDTO (copy-paste of existing logic)
+       // --------------------------------------------------------
+       val summaries = pagedRows.map { workRow ->
+           val workId = workRow[WorkDone.id].value
+           val workDateInstant = workRow[WorkDone.workDate]
+           val dateStr = SimpleDateFormat("EEEE dd/MM/yyyy").format(Date.from(workDateInstant))
+
+           val stacks = (WorkDoneStacks innerJoin Stacks innerJoin StackCodes)
+               .select { WorkDoneStacks.workDoneId eq workId }
+               .map { row ->
+                   StackInfoDTO(
+                       id = row[Stacks.id].value,
+                       displayName = row[Stacks.displayName],
+                       stackCodeDisplayName = row[StackCodes.displayName],
+                       volume = row[Stacks.volume]
+                   )
+               }
+
+           val totalVolume = stacks.sumOf { it.volume }
+           val totalStacks = stacks.size
+
+           val users = (WorkDoneUsers innerJoin AppUsers)
+               .select { WorkDoneUsers.workDoneId eq workId }
+               .map { row ->
+                   UserInfoDTO(
+                       id = row[AppUsers.id].value,
+                       name = row[AppUsers.name],
+                       surname = row[AppUsers.surname],
+                       phoneNumber = row[AppUsers.phoneNumber],
+                       isActive = row[AppUsers.isActive],
+                       isApproved = row[AppUsers.isApproved],
+                       personalCubes = 0.0
+                   )
+               }
+
+           val totalUsers = users.size
+           val perUserVolume = if (totalUsers > 0) totalVolume / totalUsers else 0.0
+           val usersWithCubes = users.map { it.copy(personalCubes = perUserVolume) }
+
+           WorkSummaryDTO(
+               id = workId,
+               workDate = dateStr,
+               totalVolume = totalVolume,
+               totalStacks = totalStacks,
+               totalUsers = totalUsers,
+               stacks = stacks,
+               users = usersWithCubes,
+               capturedAt = null,
+               updatedAt = null,
+               capturedBy = null,
+               updatedBy = null
+           )
+       }
+
+       // --------------------------------------------------------
+       // STEP 7 — Group into WorkDaySummaryDTO
+       // --------------------------------------------------------
+       val groupedByDay = summaries.groupBy { it.workDate }.map { (day, works) ->
+           WorkDaySummaryDTO(
+               dayLabel = day,
+               totalVolume = works.sumOf { it.totalVolume },
+               totalStacks = works.sumOf { it.totalStacks },
+               totalUsers = works.flatMap { it.users }.distinctBy { it.id }.size,
+               workList = works
+           )
+       }
+
+       PaginatedResponse(
+           items = groupedByDay,
+           page = page,
+           pageSize = pageSize,
+           totalCount = totalCount,
+           totalPages = totalPages
+       )
+   }
 }

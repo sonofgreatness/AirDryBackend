@@ -27,6 +27,7 @@ import org.montigny.client.API_URL_USER_LOGIN
 import org.montigny.client.API_URL_USER_REGISTER
 import org.montigny.client.API_URL_USER_UPDATE
 import org.montigny.client.API_USER_GET_BY_ID
+import org.montigny.client.API_USER_RESPONSE_GET_BY_ID
 import org.montigny.client.API_USER_SEARCH
 import org.montigny.client.SERVER_OK_TEXT
 import org.montigny.client.dto.Auth.AuthRequest
@@ -515,9 +516,8 @@ fun Route.userRoutes(userService: UserService) {
         }
     }
 
-    //=== Get user by id endpoint
-    route(API_USER_GET_BY_ID) {
-  install(NotarizedRoute()){
+    route(API_USER_RESPONSE_GET_BY_ID) {
+      install(NotarizedRoute()){
       tags = setOf("User")
       parameters = listOf(Parameter(name = "id",
           `in` = Parameter.Location.path,
@@ -528,12 +528,76 @@ fun Route.userRoutes(userService: UserService) {
           description("Get Users")
           response {
               responseCode(HttpStatusCode.OK)
-              responseType<UserRegisterRequest>()
+              responseType<UserResponse>()
               description("users  with matching id")
           }
-
       }
   }
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+            get {
+                try {
+                    val idParam = call.parameters["id"]
+                        ?: return@get call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponse("Missing id", 400)
+                        )
+
+                    val userId = try {
+                        UUID.fromString(idParam)
+                    } catch (e: IllegalArgumentException) {
+                        return@get call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponse("Invalid UUID format", 400)
+                        )
+                    }
+                    val user = userService.findUserResponseById(userId)
+                        ?: return@get call.respond(
+                            HttpStatusCode.NotFound,
+                            ErrorResponse("User not found", 404)
+                        )
+
+                    call.respond(HttpStatusCode.OK, user)
+                } catch (e: IllegalStateException) {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        ErrorResponse("$ERROR_EXCEPTION : ${e.message}", 400)
+                    )
+                } catch (e: IllegalArgumentException) {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        ErrorResponse("$ERROR_EXCEPTION : ${e.message}", 400)
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("$ERROR_EXCEPTION : ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+
+
+    //=== Get user by id endpoint
+    route(API_USER_GET_BY_ID) {
+        install(NotarizedRoute()){
+            tags = setOf("User")
+            parameters = listOf(Parameter(name = "id",
+                `in` = Parameter.Location.path,
+                schema = TypeDefinition.STRING))
+            security = mapOf(BEARER_AUTH_TAG to emptyList())
+            get = GetInfo.builder {
+                summary("Get Users")
+                description("Get Users")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<UserRegisterRequest>()
+                    description("users  with matching id")
+                }
+
+            }
+        }
         authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
             get {
                 try {
@@ -579,8 +643,6 @@ fun Route.userRoutes(userService: UserService) {
             }
         }
     }
-
-
 
     route(API_URL_USERS_UNPAGED){
         install(NotarizedRoute()){

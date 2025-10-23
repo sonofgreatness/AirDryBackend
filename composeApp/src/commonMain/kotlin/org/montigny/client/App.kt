@@ -32,6 +32,7 @@ import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.ui.work.viewModel.CreateAndUpdateWorkViewModel
+import org.montigny.client.ui.work.viewModel.LoadUserWorkViewModel
 import org.montigny.client.ui.work.viewModel.LoadWorkViewModel
 import org.montigny.client.util.ConnectivityObserver
 
@@ -46,6 +47,7 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
         stacksViewModel: StacksViewModel,
         loadWorkViewModel: LoadWorkViewModel,
         createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel,
+        loadUserWorkViewModel: LoadUserWorkViewModel
 ) {
 
     val isOffLineLoggedIn by offlineSessionManager.isLoggedInFlow.collectAsState(initial = false)
@@ -131,7 +133,8 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                 NavGraph(navigator, authViewModel, sessionManager,
                     usersViewModel,organizationViewModel, organizationViewModelWithDpt,
                     syncSettingsRepository,themeManager, stacksViewModel,
-                    loadWorkViewModel, createAndUpdateWorkViewModel)
+                    loadWorkViewModel, createAndUpdateWorkViewModel,
+                    loadUserWorkViewModel)
             }
         }
     }

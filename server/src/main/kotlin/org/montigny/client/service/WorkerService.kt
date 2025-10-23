@@ -3,6 +3,7 @@ package org.montigny.client.service
 import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.dto.Work.CreateWorkDoneDTO
+import org.montigny.client.dto.Work.WorkDaySummaryDTO
 import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.persistence.repository.WorkRepository
 import java.util.*
@@ -22,4 +23,29 @@ class WorkerService
     fun getDailyWorkSummaries(currentUserDTO: CurrentUserDTO,
                               page: Int,pageSize: Int, filters: WorkDataFiltersDTO) =
         workRepo.getDailyWorkSummaries(currentUserDTO, page, pageSize, filters)
+
+    fun getDailyWorkSummariesBetweenDates(
+        currentUserDTO: CurrentUserDTO,
+        page: Int,
+        pageSize: Int,
+        filters: WorkDataFiltersDTO
+    ): PaginatedResponse<WorkDaySummaryDTO> = workRepo.getDailyWorkSummariesBetweenDates(
+        currentUserDTO,
+        page,
+        pageSize,
+        filters
+    )
+
+    fun getDailyWorkSummariesByUser(
+        currentUserDTO: CurrentUserDTO,
+        page: Int,
+        pageSize: Int,
+        filters: WorkDataFiltersDTO
+    ) = workRepo.getDailyWorkSummariesByUser(
+        currentUserDTO,
+        page,
+        pageSize,
+        filters)
+
+
 }

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import org.montigny.client.dto.Work.StackInfoDTO
 import org.montigny.client.dto.Work.UserInfoDTO
@@ -54,7 +56,6 @@ fun WorkScreen(
         loadWorkViewModel.populateDailyWorkSummaries(page = currentPage, pageSize = pageSize)
         loadWorkViewModel.populateDepartmentsAndSections()
     }
-
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -304,20 +305,16 @@ private fun FilterSectionTopRow(
         )
     }
 }
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterSectionBottomRow(
     filtersDTO: WorkDataFiltersDTO,
     loadWorkViewModel: LoadWorkViewModel
 ) {
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-
         OutlinedTextField(
             value = filtersDTO.filterSurname ?: "",
             onValueChange = {
@@ -326,7 +323,6 @@ private fun FilterSectionBottomRow(
             label = { Text("Worker Surname") },
             modifier = Modifier.weight(1f)
         )
-
         OutlinedTextField(
             value = filtersDTO.filterPhoneNumber ?: "",
             onValueChange = {
@@ -335,7 +331,6 @@ private fun FilterSectionBottomRow(
             label = { Text("Phone number") },
             modifier = Modifier.weight(1f)
         )
-
         OutlinedTextField(
             value = filtersDTO.filterSecondaryPhoneNumber?: "",
             onValueChange = {
@@ -346,9 +341,6 @@ private fun FilterSectionBottomRow(
         )
     }
 }
-
-
-
 /** ✅ DAY SUMMARY CARD **/
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -377,7 +369,6 @@ private fun WorkDaySummaryCard(
                     Text(if (expanded) "Collapse" else "Expand")
                 }
             }
-
             if (expanded) {
                 Spacer(Modifier.height(12.dp))
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -390,10 +381,9 @@ private fun WorkDaySummaryCard(
         }
     }
 }
-
 /** ✅ INLINE STAT DISPLAY **/
 @Composable
-private fun StatInline(label: String, value: String) {
+fun StatInline(label: String, value: String) {
     Column(horizontalAlignment = Alignment.Start, modifier = Modifier.padding(end = 8.dp)) {
         Text(label, style = MaterialTheme.typography.labelSmall)
         Text(value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
@@ -430,13 +420,6 @@ private fun WorkSummaryItem(work: WorkSummaryDTO, navigator: Navigator) {
                         StatInline("👷 Users", work.totalUsers.toString())
                         work.capturedBy?.let { StatInline("✍️ Captured by", it) }
                         work.capturedAt?.let { StatInline("⏱ Captured at", it) }
-                        Text("Edit",
-                            Modifier.clickable(onClick = {
-                                navigator.navigateTo(
-                                    Destination.EditWork(work.id.toString())
-                                )
-                            }))
-
                     }
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -447,7 +430,20 @@ private fun WorkSummaryItem(work: WorkSummaryDTO, navigator: Navigator) {
                             work.updatedAt?.let { StatInline("⏱ Updated at", it) }
                         }
                     }
-
+                    IconButton(
+                        onClick = {
+                            navigator.navigateTo(
+                                Destination.EditWork(work.id.toString())
+                            )
+                        },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Work Entry",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 
@@ -468,14 +464,14 @@ private fun WorkSummaryItem(work: WorkSummaryDTO, navigator: Navigator) {
             // -------------------------
             SectionHeader(title = "Workers", subtitle = "Personal Cubes")
             Column(modifier = Modifier.fillMaxWidth().padding(start = 6.dp)) {
-                work.users.forEach { UserRow(it) }
+                work.users.forEach { UserRow(it, navigator) }
             }
         }
     }
 }
 
 @Composable
-private fun SectionHeader(title: String, subtitle: String) {
+fun SectionHeader(title: String, subtitle: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
@@ -487,7 +483,7 @@ private fun SectionHeader(title: String, subtitle: String) {
 
 /** ✅ STACK ROW **/
 @Composable
-private fun StackRow(stack: StackInfoDTO) {
+fun StackRow(stack: StackInfoDTO) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
             Text(stack.displayName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
@@ -498,11 +494,14 @@ private fun StackRow(stack: StackInfoDTO) {
 }
 
 @Composable
-private fun UserRow(user: UserInfoDTO) {
+private fun UserRow(user: UserInfoDTO, navigator: Navigator) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 6.dp).clickable{
+                navigator.navigateTo(Destination.ViewUserWork(user.id.toString())
+                , Destination.Work)
+            },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -575,7 +574,7 @@ private fun UserRow(user: UserInfoDTO) {
 }
 
 @Composable
-private fun StatusChip(label: String, status: Boolean, icon: ImageVector) {
+fun StatusChip(label: String, status: Boolean, icon: ImageVector) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.MoodBad
@@ -55,6 +56,7 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
     val coroutineScope = rememberCoroutineScope()
     println("Initial isSyncing ${isSyncing}")
     var userToDelete by remember { mutableStateOf<UUID?>(null) }
+
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -171,6 +173,12 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                                     userViewModel.resetUpdateUserState()
                                     navigator.navigateTo(Destination.EditUser(user.id.toString()))
                                 },
+                                {
+                                    navigator.navigateTo(
+                                        Destination.ViewUserWork(user.id.toString()),
+                                        Destination.Users
+                                    )
+                                },
                                 onDelete = { userToDelete = user.id },
                                 isDeleting = isDeleting_
                             )
@@ -227,6 +235,7 @@ if (!errorMessage.isNullOrEmpty()) {
 fun UserRow(
     user: UserResponse,
     onEdit: (userId: String) -> Unit,
+    moveToWork: (userId: String) -> Unit,
     onDelete: (userId: UUID) -> Unit,
     isDeleting: Boolean
 ) {
@@ -253,6 +262,14 @@ fun UserRow(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+
+                //only show when online
+                OutlinedButton(onClick = { moveToWork(user.id.toString()) }) {
+                    Icon(Icons.Default.Work, contentDescription = "View work")
+                    Spacer(Modifier.width(4.dp))
+                    Text("View work")
+                }
+                //
                 OutlinedButton(onClick = { onEdit(user.id.toString()) }) {
                     Icon(Icons.Default.Edit, contentDescription = "Edit")
                     Spacer(Modifier.width(4.dp))

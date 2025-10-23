@@ -30,10 +30,12 @@ import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.ui.work.viewModel.CreateAndUpdateWorkViewModel
+import org.montigny.client.ui.work.viewModel.LoadUserWorkViewModel
 import org.montigny.client.ui.work.viewModel.LoadWorkViewModel
 import org.montigny.client.util.ConnectivityObserver
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.math.sin
 
 val appModule = module {
     single <Settings>{Settings() }
@@ -103,6 +105,10 @@ get(),get(), get())}
 single<CreateAndUpdateWorkViewModel>{
     CreateAndUpdateWorkViewModel(get(),get(), get()
     ,get(), get(), get())
+
 }
 
+single<LoadUserWorkViewModel>{
+    LoadUserWorkViewModel(get(), get(), get(), get())
+}
 }

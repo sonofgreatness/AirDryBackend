@@ -12,7 +12,9 @@ interface UserRepository {
     fun createUser(currentUserDTO: CurrentUserDTO, req: UserRegisterRequest): UUID
     fun createAdminUser(req: UserRegisterRequest): UUID
     fun findById(id: UUID): UserRegisterRequest?
+    fun  findUserResponseById(id: UUID): UserResponse?
     fun findByPhone(phone: String): UserRegisterRequest?
+
     fun getUsers(currentUser: CurrentUserDTO,page: Int,pageSize: Int) :PaginatedResponse<UserResponse>
     fun getCasualUsers(currentUser: CurrentUserDTO,page: Int,pageSize: Int, queryString : String? = null) :PaginatedResponse<UserResponse>
     fun getUserTypes():List<UserTypesDTO>

@@ -24,9 +24,11 @@ import org.montigny.client.ui.users.UsersScreen
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.ui.work.CreateOrUpdateWorkScreen
+import org.montigny.client.ui.work.UserWorkScreen
 import org.montigny.client.ui.work.WorkLandingScreen
 import org.montigny.client.ui.work.WorkScreen
 import org.montigny.client.ui.work.viewModel.CreateAndUpdateWorkViewModel
+import org.montigny.client.ui.work.viewModel.LoadUserWorkViewModel
 
 import org.montigny.client.ui.work.viewModel.LoadWorkViewModel
 
@@ -42,7 +44,8 @@ fun NavGraph(
     themeManager: ThemeManager,
     stacksViewModel: StacksViewModel,
     loadWorkViewModel: LoadWorkViewModel,
-    createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel
+    createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel,
+    loadUserWorkViewModel: LoadUserWorkViewModel,
 ) {
     val currentDestination by navigator.currentDestination
      val nextDestination by navigator.nextDestination
@@ -98,5 +101,16 @@ fun NavGraph(
         is Destination.EditWork -> {
             CreateOrUpdateWorkScreen(navigator,createAndUpdateWorkViewModel
             ,true, workId = (currentDestination as Destination.EditWork).workId) }
+        is Destination.ViewUserWork -> UserWorkScreen(
+            userId = (currentDestination as Destination.ViewUserWork).userId,
+            navigator = navigator,
+            loadUserWorkViewModel,
+            {
+                if (nextDestination != null )
+                    navigator.navigateTo(nextDestination!!)
+                else
+                    navigator.navigateTo(Destination.Work)
+            }
+        )
     }
 }

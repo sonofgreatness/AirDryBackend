@@ -25,8 +25,8 @@ class LoadWorkViewModel(
     private  val organizationApi: OrganizationApi,
     private  val organizationRepository: OrganizationRepository,
     private val logger : Logger,
-    private  val connectivityObserver: ConnectivityObserver,
-    private val sessionManager: SessionManager
+    connectivityObserver: ConnectivityObserver,
+    sessionManager: SessionManager
 ):
 ViewModel(){
     private val _dailyWorkSummaries = MutableStateFlow<List<WorkDaySummaryDTO>>(emptyList())
@@ -43,12 +43,18 @@ ViewModel(){
     val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
     val isOnlineLoggedIn : StateFlow<Boolean> =  sessionManager.isLoggedInFlow
 
+    private val _totalPages = MutableStateFlow(1)
+    val totalPages: StateFlow<Int> = _totalPages
+
     fun populateDailyWorkSummaries(page: Int = DEFAULT_PAGE, pageSize: Int = DEFAULT_PAGE_SIZE) {
+        if (page > _totalPages.value) {
+            return
+        }
         viewModelScope.launch {
             println("getDailyWorkSummaries called with date ${filterDto.value.filterDate}")
             val resp = workApi.getDailyWorkSummaries(page, pageSize, filterDto.value)
             resp?.let {
-                // Append items on subsequent pages
+                _totalPages.value = it.totalPages
                 if (page <= 1) {
                     _dailyWorkSummaries.value = it.items
                 } else {
@@ -57,8 +63,11 @@ ViewModel(){
             }
         }
     }
-    fun clearAllFilters(){_filterDto.value = WorkDataFiltersDTO()
-    populateDailyWorkSummaries()}
+    fun clearAllFilters(){
+        _filterDto.value = WorkDataFiltersDTO()
+        _totalPages.value = DEFAULT_PAGE
+        populateDailyWorkSummaries()
+    }
     fun onChangeFilter(state : WorkDataFiltersDTOState, newValue: String) {
         when(state) {
             is WorkDataFiltersDTOState.IncludeInactiveWorkers -> {

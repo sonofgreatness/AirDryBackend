@@ -1,12 +1,10 @@
 package org.montigny.client.domain.api.route
-import io.bkbn.kompendium.core.metadata.DeleteInfo
 import io.bkbn.kompendium.core.metadata.GetInfo
 import io.bkbn.kompendium.core.metadata.PostInfo
 import io.bkbn.kompendium.core.plugin.NotarizedRoute
 import io.bkbn.kompendium.json.schema.definition.TypeDefinition
 import io.bkbn.kompendium.oas.payload.MediaType
 import io.bkbn.kompendium.oas.payload.Parameter
-import io.ktor.client.request.request
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -17,6 +15,8 @@ import io.ktor.server.routing.route
 import org.montigny.client.API_URL_WORK_WORK_DELETE_BY_ID
 import org.montigny.client.API_URL_WORK_WORK_GET_ALL
 import org.montigny.client.API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY
+import org.montigny.client.API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY_BETWEEN_DATES
+import org.montigny.client.API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY_BETWEEN_DATES_BY_USER
 import org.montigny.client.API_URL_WORK_WORK_GET_BY_ID
 import org.montigny.client.API_URL_WORK_WORK_GET_BY_USER_ID
 import org.montigny.client.API_URL_WORK_WORK_REGISTER
@@ -28,7 +28,6 @@ import org.montigny.client.domain.api.route.auth.authorize
 import org.montigny.client.dto.Common.ErrorResponse
 import org.montigny.client.dto.Common.IdResponse
 import org.montigny.client.dto.Common.SimpleResponse
-import org.montigny.client.dto.User.CurrentUserDTO
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateWorkDTOStringAsDate
 import org.montigny.client.dto.Work.CreateWorkDoneDTO
@@ -40,7 +39,6 @@ import org.montigny.client.util.ApiExamples.Companion.exampleCreateWorkDoneDTO
 import org.montigny.client.util.ApiExamples.Companion.exampleFilters
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import org.montigny.client.util.Constants.Companion.DELETED_SUCCESS_DESCRIPTION
-import org.montigny.client.util.Constants.Companion.GET_USERS_DESCRIPTION_TYPE
 import org.montigny.client.util.Constants.Companion.UPDATED_SUCCESS_DESCRIPTION
 import org.montigny.client.util.UserUtils
 import org.montigny.client.util.UtilityFunctions.Companion.toUUID
@@ -275,7 +273,6 @@ fun Route.workRoutes(
             }
         }
     }
-
     //---------GET ALL WORK_DONE-----
     route(API_URL_WORK_WORK_GET_ALL){
         install(NotarizedRoute()){
@@ -316,7 +313,6 @@ fun Route.workRoutes(
             }
         }
     }
-
     route(API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY){
         install(NotarizedRoute()){
             tags = setOf("Work")
@@ -337,7 +333,7 @@ fun Route.workRoutes(
                                 exampleFilters)
                         )
                     )
-                    description("Registers a new work object")
+                    description("Get All Work Summaries")
 
                 }
                 response {
@@ -351,11 +347,113 @@ fun Route.workRoutes(
             UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) {
             post {
                 try {
-                    val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
-                    val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+                    val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
+                    val pageSize = call.request.queryParameters[PAGE_SIZE]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
                     val user = UserUtils.getLoggedInUser(call)
                     val filters = call.receive<WorkDataFiltersDTO>()
                     val resp = workService.getDailyWorkSummaries(user, page = page, pageSize = pageSize, filters = filters)
+                    resp?.let {
+                        call.respond(HttpStatusCode.OK, it)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+    route(API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY_BETWEEN_DATES){
+        install(NotarizedRoute()){
+            tags = setOf("Work")
+            security = mapOf("BearerAuth" to emptyList())
+            parameters = listOf(
+                Parameter(name = PAGE, `in` = Parameter.Location.query, schema = TypeDefinition.INT),
+                Parameter(name = PAGE_SIZE, `in` = Parameter.Location.query, schema = TypeDefinition.INT)
+            )
+            post = PostInfo.builder {
+                summary("Get All Work Summaries between dates")
+                description("Get All Work Summaries between dates")
+                request {
+                    requestType<CreateStackCodeDTO>()
+                    examples(
+                        "application/json" to MediaType.Example(
+                            value = Json.encodeToJsonElement(
+                                WorkDataFiltersDTO.serializer(),
+                                exampleFilters)
+                        )
+                    )
+                    description("Get All Work Summaries between dates")
+                }
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<WorkDaySummaryDTO>>()
+                    description("Get All Work Summaries between dates")
+                }
+            }
+        }
+        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
+            UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) {
+            post {
+                try {
+                    val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
+                    val pageSize = call.request.queryParameters[PAGE_SIZE]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+                    val user = UserUtils.getLoggedInUser(call)
+                    val filters = call.receive<WorkDataFiltersDTO>()
+                    val resp = workService.getDailyWorkSummariesBetweenDates(user, page = page, pageSize = pageSize, filters = filters)
+                    resp?.let {
+                        call.respond(HttpStatusCode.OK, it)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+    route(API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY_BETWEEN_DATES_BY_USER){
+        install(NotarizedRoute()){
+            tags = setOf("Work")
+            security = mapOf("BearerAuth" to emptyList())
+            parameters = listOf(
+                Parameter(name = PAGE, `in` = Parameter.Location.query, schema = TypeDefinition.INT),
+                Parameter(name = PAGE_SIZE, `in` = Parameter.Location.query, schema = TypeDefinition.INT)
+            )
+            post = PostInfo.builder {
+                summary("Get All Work Summaries between dates by user id")
+                description("Get All Work Summaries between dates user id")
+                request {
+                    requestType<CreateStackCodeDTO>()
+                    examples(
+                        "application/json" to MediaType.Example(
+                            value = Json.encodeToJsonElement(
+                                WorkDataFiltersDTO.serializer(),
+                                exampleFilters)
+                        )
+                    )
+                    description("Get All Work Summaries between dates user id")
+                }
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<WorkDaySummaryDTO>>()
+                    description("Get All Work Summaries between dates user id")
+                }
+            }
+        }
+        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
+            UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) {
+            post {
+                try {
+                    val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
+                    val pageSize = call.request.queryParameters[PAGE_SIZE]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+                    val user = UserUtils.getLoggedInUser(call)
+                    val filters = call.receive<WorkDataFiltersDTO>()
+                    val resp = workService.getDailyWorkSummariesByUser(user, page = page, pageSize = pageSize, filters = filters)
                     resp?.let {
                         call.respond(HttpStatusCode.OK, it)
                     }

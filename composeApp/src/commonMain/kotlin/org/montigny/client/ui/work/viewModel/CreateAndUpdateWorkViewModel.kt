@@ -178,9 +178,6 @@ class CreateAndUpdateWorkViewModel(
     fun updateWork(workId: String, dto: CreateWorkDoneDTO) {
         viewModelScope.launch {
             try {
-                // Note: Assuming your API has a dedicated update endpoint or handles updates via the createWork endpoint
-                // If there's a specific updateWorkApi.updateWork(workId.toUUID(), dto), use that instead.
-                // For now, we'll assume a new WorkApi function `updateWork` is available.
                 when (val resp = workApi.updateWork( dto.copy(id = workId.toUUID()))) { // <--- ASSUME THIS NEW API FUNCTION
                     is ApiResponse.Error -> {
                         _uiEvents.send(WorkUiEvent.ShowSnackbar(resp.message ?: "Failed to update work."))

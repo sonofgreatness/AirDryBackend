@@ -89,6 +89,60 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
         }.singleOrNull()
     }
 
+   override fun  findUserResponseById(id: UUID): UserResponse?= transaction {
+       val baseQuery = AppUsers
+           .join(UserTypes, JoinType.LEFT, additionalConstraint = { AppUsers.userTypeId eq UserTypes.id })
+           .join(Organizations, JoinType.LEFT, additionalConstraint = { AppUsers.organizationId eq Organizations.id })
+           .join(Departments, JoinType.LEFT, additionalConstraint = { AppUsers.departmentId eq Departments.id })
+           .join(Sections, JoinType.LEFT, additionalConstraint = { AppUsers.sectionId eq Sections.id })
+           .slice(
+               AppUsers.id,
+               AppUsers.name,
+               AppUsers.surname,
+               AppUsers.phoneNumber,
+               AppUsers.secondaryPhone,
+               AppUsers.email,
+               AppUsers.isActive,
+               AppUsers.isApproved,
+               AppUsers.userTypeId,
+               UserTypes.displayname,
+               AppUsers.organizationId,
+               Organizations.displayname,
+               AppUsers.departmentId,
+               Departments.displayname,
+               AppUsers.sectionId,
+               Sections.displayname
+           )
+           .select{
+               AppUsers.id  eq id
+           }.firstOrNull()
+       baseQuery?.let {
+           row ->
+           UserResponse(
+               id = row[AppUsers.id].value,
+               name = row[AppUsers.name],
+               surname = row[AppUsers.surname],
+               phoneNumber = row[AppUsers.phoneNumber],
+               secondaryPhoneNumber = row[AppUsers.secondaryPhone],
+               email = row[AppUsers.email],
+               isActive = row[AppUsers.isActive],
+               isApproved = row[AppUsers.isApproved],
+               userType = row[AppUsers.userTypeId]?.value?.let {
+                   NamedEntityResponse(it, row[UserTypes.displayname])
+               },
+               organization = row[AppUsers.organizationId]?.value?.let {
+                   NamedEntityResponse(it, row[Organizations.displayname])
+               },
+               department = row[AppUsers.departmentId]?.value?.let {
+                   NamedEntityResponse(it, row[Departments.displayname])
+               },
+               section = row[AppUsers.sectionId]?.value?.let {
+                   NamedEntityResponse(it, row[Sections.displayname])
+               }
+           )
+       }
+   }
+
     override fun findByPhone(phone: String): UserRegisterRequest? = transaction {
         val row = AppUsers.select { AppUsers.phoneNumber eq phone }.singleOrNull() ?: return@transaction null
         UserRegisterRequest(

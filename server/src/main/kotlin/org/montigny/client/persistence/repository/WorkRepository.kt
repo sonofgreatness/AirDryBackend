@@ -16,4 +16,12 @@ interface WorkRepository {
     fun  getAllWork(currentUserDTO: CurrentUserDTO, page: Int,pageSize: Int): PaginatedResponse<CreateWorkDoneDTO>
     fun  getDailyWorkSummaries(currentUserDTO: CurrentUserDTO, page: Int,
                                pageSize: Int, filters: WorkDataFiltersDTO): PaginatedResponse<WorkDaySummaryDTO>
+
+
+  fun getDailyWorkSummariesBetweenDates(currentUserDTO: CurrentUserDTO, page: Int,
+                            pageSize: Int,filters: WorkDataFiltersDTO): PaginatedResponse<WorkDaySummaryDTO>
+
+  fun  getDailyWorkSummariesByUser(currentUserDTO: CurrentUserDTO, page: Int,
+                                   pageSize: Int,filters: WorkDataFiltersDTO)
+  : PaginatedResponse<WorkDaySummaryDTO>
 }

@@ -17,6 +17,7 @@ import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.ui.work.viewModel.CreateAndUpdateWorkViewModel
+import org.montigny.client.ui.work.viewModel.LoadUserWorkViewModel
 import org.montigny.client.ui.work.viewModel.LoadWorkViewModel
 import org.montigny.client.util.ConnectivityObserver
 
@@ -42,6 +43,7 @@ object Main {
             val stacksViewModel: StacksViewModel = koinInject()
             val loadWorkViewModel: LoadWorkViewModel = koinInject()
             val createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel = koinInject()
+            val  loadUserWorkViewModel : LoadUserWorkViewModel = koinInject()
             LaunchedEffect(Unit) {
                 appWorkerManager.startAllWorkers()
             }
@@ -50,7 +52,8 @@ object Main {
                 offlineSessionManager, connectivityObserver,
                 organizationViewModel, organizationDepartmentsAndSectionsViewModel,
                 syncSettingsRepository, themeManager, stacksViewModel,
-                loadWorkViewModel, createAndUpdateWorkViewModel)
+                loadWorkViewModel, createAndUpdateWorkViewModel,
+                loadUserWorkViewModel)
         }
     }
 }

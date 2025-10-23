@@ -1,27 +1,18 @@
 package org.montigny.client.data.api.implementation
 
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.get
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
-import io.ktor.client.statement.request
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
-import io.ktor.http.isSuccess
-import org.montigny.client.API_BASE_URL
-import org.montigny.client.API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY
-import org.montigny.client.API_URL_WORK_WORK_REGISTER
-import org.montigny.client.API_URL_WORK_WORK_UPDATE
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import org.montigny.client.*
 import org.montigny.client.data.api.repository.WorkApi
 import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.Work.CreateWorkDoneDTO
 import org.montigny.client.dto.Work.WorkDaySummaryDTO
 import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.util.stateClasses.ApiResponse
-import java.util.UUID
+import java.util.*
 
 class WorkApiImpl (
     private  val client: HttpClient
@@ -77,5 +68,47 @@ class WorkApiImpl (
         else
             ApiResponse.Error(HttpStatusCode.InternalServerError.value,
                 "Failed to update work ${resp.bodyAsText()}")
+    }
+
+   override suspend  fun getDailyWorkSummariesBetweenDates(page: Int, pageSize: Int,filters: WorkDataFiltersDTO): PaginatedResponse<WorkDaySummaryDTO>?
+    {
+        try{
+            println("Get DailyWorkSummaries between dates")
+            val  resp  = client.post("$API_BASE_URL$API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY_BETWEEN_DATES"){
+                contentType(ContentType.Application.Json)
+                url {
+                    parameters.append(PAGE, page.toString())
+                    parameters.append(PAGE_SIZE, pageSize.toString())
+                }
+                setBody(filters)
+            }
+            println("resp: ${resp.bodyAsText()}")
+            return resp.body()
+        }catch(e: Exception){
+            e.printStackTrace()
+            println("failed to get workSummaries  between dates${e.message}")
+            return  null
+        }
+    }
+   override suspend fun  getDailyWorkSummariesByUser(page: Int,
+                                             pageSize: Int,filters: WorkDataFiltersDTO)
+            : PaginatedResponse<WorkDaySummaryDTO>?{
+       try{
+           println("Get DailyWorkSummaries between dates for  user")
+           val  resp  = client.post("$API_BASE_URL$API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY_BETWEEN_DATES_BY_USER"){
+               contentType(ContentType.Application.Json)
+               url {
+                   parameters.append(PAGE, page.toString())
+                   parameters.append(PAGE_SIZE, pageSize.toString())
+               }
+               setBody(filters)
+           }
+           println("resp: ${resp.bodyAsText()}")
+           return resp.body()
+       }catch(e: Exception){
+           e.printStackTrace()
+           println("failed to get workSummaries  between dates for user ${e.message}")
+           return  null
+       }
     }
 }

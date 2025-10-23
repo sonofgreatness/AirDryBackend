@@ -17,6 +17,7 @@ interface UserApi {
 
     suspend fun getUserTypes():List<UserTypesDTO>
     suspend fun findById(id: UUID): UserRegisterRequest?
+    suspend fun findUserResponseById(id: UUID): UserResponse?
     suspend fun getUsers(page: Int=1,pageSize: Int=10) :PaginatedResponse<UserResponse>
     suspend fun createUser(user: UserRegisterRequest) : ApiResponse
     suspend fun  getUsersUnPaged() : List<UserRegisterRequest>
