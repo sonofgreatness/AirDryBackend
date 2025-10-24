@@ -1,14 +1,19 @@
 package org.montigny.client.util
 
 import org.montigny.client.dto.Auth.AuthRequest
+import org.montigny.client.dto.CreateWeeklyApprovalDTO
+import org.montigny.client.dto.UpdateWeeklyApprovalDTO
 import org.montigny.client.dto.User.UpdateUserDTO
 import org.montigny.client.dto.User.UserRegisterRequest
+import org.montigny.client.dto.WeeklyApprovalDTO
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateStackDTO
 import org.montigny.client.dto.Work.CreateWorkDoneDTO
 import org.montigny.client.dto.WorkDataFiltersDTO
+import java.time.DayOfWeek
 
 import java.time.Instant
+import java.time.LocalDate
 import java.util.Date
 import java.util.UUID
 
@@ -82,6 +87,31 @@ class ApiExamples {
         )
         val exampleFilters  = WorkDataFiltersDTO()
 
+
+
+        val exampleCreateWeeklyApprovalDTO = CreateWeeklyApprovalDTO(
+            organizationId = UUID.randomUUID(),
+            weekStartDate = LocalDate.now().with(DayOfWeek.MONDAY).toString(),
+            weekEndDate = LocalDate.now().with(DayOfWeek.SUNDAY).toString(),
+            notes = "Initial weekly approval example."
+        )
+
+        val exampleUpdateWeeklyApprovalDTO = UpdateWeeklyApprovalDTO(
+            id = UUID.randomUUID(),
+            status = "APPROVED",
+            notes = "Updated approval notes."
+        )
+
+        val exampleWeeklyApprovalDTO = WeeklyApprovalDTO(
+            id = UUID.randomUUID(),
+            organizationId = UUID.randomUUID(),
+            weekStartDate = LocalDate.now().with(DayOfWeek.MONDAY).toString(),
+            weekEndDate = LocalDate.now().with(DayOfWeek.SUNDAY).toString(),
+            approvedById = UUID.randomUUID(),
+            approvedAt = Instant.now().toString(),
+            status = "APPROVED",
+            notes = "Example weekly approval record."
+        )
     }
 
 }

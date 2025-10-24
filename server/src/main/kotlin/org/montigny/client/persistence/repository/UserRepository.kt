@@ -29,20 +29,10 @@ interface UserRepository {
         pageSize: Int,
         filters: MutableMap<String, String>
     ):PaginatedResponse<UserResponse>
-
     fun getUsersFilteredWithDTO(
         currentUser: CurrentUserDTO,
         page: Int,
         pageSize: Int,filters: WorkDataFiltersDTO
     ): PaginatedResponse<UserResponse>
-
     fun getUserUnPaginated(currentUserDTO: CurrentUserDTO):List<UserRegisterRequest>
-
-
-
-
-
-
-
-
 }

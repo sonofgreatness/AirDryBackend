@@ -2,7 +2,9 @@ package org.montigny.client.persistence
 
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.javatime.date
 import org.montigny.client.persistence.converters.timestamptz
+import java.time.LocalDate
 
 open class BaseTable(name: String) : UUIDTable(name) {
     val createdAt = timestamptz("created_at").clientDefault { java.time.Instant.now() }
@@ -71,6 +73,43 @@ object WorkDoneUsers : BaseTable("work_done_user") {
 object WorkDoneStacks : BaseTable("work_done_stack") {
     val workDoneId = reference("work_done_id", WorkDone, onDelete = ReferenceOption.CASCADE)
     val stackId = reference("stack_id", Stacks, onDelete = ReferenceOption.RESTRICT)
+}
+/**
+ * Enum representing possible approval states for a weekly record batch.
+ */
+enum class ApprovalStatus { PENDING, APPROVED, REVOKED }
 
+/**
+ * Tracks weekly approvals per organization.
+ * Ensures a single unique approval record per organization per week.
+ */
+object WeeklyApprovals : BaseTable("weekly_approval") {
+    val organizationId = reference(
+        name = "organization_id",
+        foreign = Organizations,
+        onDelete = ReferenceOption.CASCADE
+    )
+
+    val weekStartDate = date("week_start_date") // typically Monday
+    val weekEndDate = date("week_end_date")     // typically Sunday
+
+    val approvedById = reference(
+        name = "approved_by_id",
+        foreign = AppUsers,
+        onDelete = ReferenceOption.SET_NULL
+    ).nullable()
+
+    val approvedAt = timestamptz("approved_at").nullable()
+    val status = enumerationByName(
+        name = "status",
+        length = 20,
+        klass = ApprovalStatus::class
+    ).default(ApprovalStatus.PENDING)
+    val notes = text("notes").nullable()
+
+    // Enforce a unique approval record per organization per week.
+    init {
+        uniqueIndex("unique_org_week", organizationId, weekStartDate)
+    }
 }
 

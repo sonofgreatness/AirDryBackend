@@ -22,6 +22,7 @@ import org.montigny.client.persistence.Sections
 import org.montigny.client.persistence.Sections.departmentId
 import org.montigny.client.persistence.repository.OrganizationRepository
 import org.montigny.client.util.Constants
+import org.montigny.client.util.UserUtils.checkIfBelongsToOrganization
 import org.montigny.client.util.UserUtils.isSuperUser
 import java.time.Instant
 import java.util.UUID
@@ -296,15 +297,7 @@ class OrganizationRepositoryImpl(): OrganizationRepository {
     }
 }
 
-    private fun checkIfBelongsToOrganization(
-        currentUser: CurrentUserDTO,
-        orgId: UUID
-    ) {
-        val currentUserOrgId = currentUser.organizationId
-        if (currentUserOrgId != orgId) {
-            throw IllegalArgumentException(Constants.ORGANIZATION_MISMATCH_VALIDATION_ERROR)
-        }
-    }
+
 
 }
 

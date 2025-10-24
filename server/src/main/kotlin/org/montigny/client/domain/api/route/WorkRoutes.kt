@@ -12,6 +12,9 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 import io.ktor.server.routing.route
+import org.montigny.client.API_URL_WORK_WEEKLY_GET_ALL
+import org.montigny.client.API_URL_WORK_WEEKLY_GET_BY_ID
+import org.montigny.client.API_URL_WORK_WEEKLY_GET_LATEST
 import org.montigny.client.API_URL_WORK_WORK_DELETE_BY_ID
 import org.montigny.client.API_URL_WORK_WORK_GET_ALL
 import org.montigny.client.API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY
@@ -21,6 +24,8 @@ import org.montigny.client.API_URL_WORK_WORK_GET_BY_ID
 import org.montigny.client.API_URL_WORK_WORK_GET_BY_USER_ID
 import org.montigny.client.API_URL_WORK_WORK_REGISTER
 import org.montigny.client.API_URL_WORK_WORK_UPDATE
+import org.montigny.client.API_URL_WORK_WORK_WEEKLY_APPROVAL_REGISTER
+import org.montigny.client.API_URL_WORK_WORK_WEEKLY_APPROVAL_UPDATE
 import org.montigny.client.PAGE
 import org.montigny.client.PAGE_SIZE
 import org.montigny.client.domain.api.route.auth.UserRole
@@ -28,6 +33,9 @@ import org.montigny.client.domain.api.route.auth.authorize
 import org.montigny.client.dto.Common.ErrorResponse
 import org.montigny.client.dto.Common.IdResponse
 import org.montigny.client.dto.Common.SimpleResponse
+import org.montigny.client.dto.CreateWeeklyApprovalDTO
+import org.montigny.client.dto.UpdateWeeklyApprovalDTO
+import org.montigny.client.dto.WeeklyApprovalDTO
 import org.montigny.client.dto.Work.CreateStackCodeDTO
 import org.montigny.client.dto.Work.CreateWorkDTOStringAsDate
 import org.montigny.client.dto.Work.CreateWorkDoneDTO
@@ -35,8 +43,10 @@ import org.montigny.client.dto.Work.WorkDaySummaryDTO
 import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.service.UserService
 import org.montigny.client.service.WorkerService
+import org.montigny.client.util.ApiExamples.Companion.exampleCreateWeeklyApprovalDTO
 import org.montigny.client.util.ApiExamples.Companion.exampleCreateWorkDoneDTO
 import org.montigny.client.util.ApiExamples.Companion.exampleFilters
+import org.montigny.client.util.ApiExamples.Companion.exampleUpdateWeeklyApprovalDTO
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import org.montigny.client.util.Constants.Companion.DELETED_SUCCESS_DESCRIPTION
 import org.montigny.client.util.Constants.Companion.UPDATED_SUCCESS_DESCRIPTION
@@ -296,8 +306,8 @@ fun Route.workRoutes(
             UserRole.CAPTURER,UserRole.CASUAL_WORKER) {
             get {
                 try {
-                    val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
-                    val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+                    val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
+                    val pageSize = call.request.queryParameters[PAGE_SIZE]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
                     val user = UserUtils.getLoggedInUser(call)
                     val resp = workService.getAllWork(user, page = page, pageSize = pageSize)
                     resp?.let {
@@ -466,4 +476,213 @@ fun Route.workRoutes(
             }
         }
     }
+   //====
+    route (API_URL_WORK_WORK_WEEKLY_APPROVAL_REGISTER){
+        install(NotarizedRoute())
+        {
+            tags = setOf("Work")
+            security = mapOf("BearerAuth" to emptyList())
+            post = PostInfo.builder {
+                summary("Create Weekly Approval")
+                description("Create Weekly Approval")
+                request {
+                    requestType<CreateWeeklyApprovalDTO>()
+                    examples(
+                        "application/json" to MediaType.Example(
+                            value = Json.encodeToJsonElement(
+                                CreateWeeklyApprovalDTO.serializer(),
+                                exampleCreateWeeklyApprovalDTO)
+                        )
+                    )
+                    description("Create Weekly Approval")
+                }
+                response {
+                    responseCode(HttpStatusCode.Created)
+                    responseType<IdResponse>()
+                    description("returns UUID")
+                }
+            }
+        }
+        authorize(userService,UserRole.SUPER_USER,UserRole.ADMIN){
+            post {
+                try {
+                    val user = UserUtils.getLoggedInUser(call)
+                    val dto = call.receive<CreateWeeklyApprovalDTO>()
+                    val id  = workService.createWeeklyApproval(user, dto)
+                    id.let {
+                        call.respond(HttpStatusCode.Created, IdResponse(it.toString()))
+                    }
+                }catch (e: Exception){
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+    route(API_URL_WORK_WORK_WEEKLY_APPROVAL_UPDATE){
+        install(NotarizedRoute())
+        {
+            tags = setOf("Work")
+            security = mapOf("BearerAuth" to emptyList())
+            post = PostInfo.builder {
+                summary("Update Weekly Approval")
+                description("Update Weekly Approval")
+                request {
+                    requestType<UpdateWeeklyApprovalDTO>()
+                    examples(
+                        "application/json" to MediaType.Example(
+                            value = Json.encodeToJsonElement(
+                                UpdateWeeklyApprovalDTO.serializer(),
+                                exampleUpdateWeeklyApprovalDTO)
+                        )
+                    )
+                    description("Update Weekly Approval")
+                }
+                response {
+                    responseCode(HttpStatusCode.Created)
+                    responseType<SimpleResponse>()
+                    description(UPDATED_SUCCESS_DESCRIPTION)
+                }
+            }
+        }
+        authorize(userService,UserRole.SUPER_USER,UserRole.ADMIN){
+            post {
+                try {
+                    val user = UserUtils.getLoggedInUser(call)
+                    val dto = call.receive<UpdateWeeklyApprovalDTO>()
+                    val id  = workService.updateWeeklyApproval(user, dto)
+                    id.let {
+                        call.respond(HttpStatusCode.Created, SimpleResponse("$UPDATED_SUCCESS_DESCRIPTION, records affected :$id"))
+                    }
+                }catch (e: Exception){
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+    //============GET WEEKLY_APPROVAL_BY_ID=========
+    route(API_URL_WORK_WEEKLY_GET_BY_ID){
+      install(NotarizedRoute()){
+          tags = setOf("Work")
+          security = mapOf("BearerAuth" to emptyList())
+          parameters = listOf(
+              Parameter(
+                  name = "id",
+                  `in` = Parameter.Location.path,
+                  schema = TypeDefinition.STRING))
+
+          get = GetInfo.builder {
+              summary("Get Weekly Approval By Id")
+              description("Get Weekly Approval By Id")
+              response {
+                  responseCode(HttpStatusCode.OK)
+                  responseType<WeeklyApprovalDTO>()
+                  description("Get Weekly Approval By Id")
+              }
+          }
+        }
+        authorize(userService,UserRole.ADMIN,UserRole.SUPER_USER){
+            get{
+                try {
+                    val user = UserUtils.getLoggedInUser(call)
+                    val id = call.parameters["id"]
+                        ?: return@get call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponse("Missing id", 400))
+
+                    val resp = workService.getWeeklyApprovalById(user, id.toUUID())
+                    resp?.let {
+                        call.respond(HttpStatusCode.OK, resp)
+                    }
+                }catch (e: Exception){
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+    //==============GET LATEST WEEKLY APPROVAL======
+    route(API_URL_WORK_WEEKLY_GET_LATEST){
+        install(NotarizedRoute()){
+            tags = setOf("Work")
+            security = mapOf("BearerAuth" to emptyList())
+            get = GetInfo.builder {
+                summary("Get Latest Weekly Approval")
+                description("Get Latest  Weekly Approval")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<WeeklyApprovalDTO>()
+                    description("Get Latest Weekly Approval")
+                }
+            }
+        }
+        authorize(userService,UserRole.ADMIN,UserRole.SUPER_USER){
+            get{
+                try {
+                    val user = UserUtils.getLoggedInUser(call)
+                    val resp = workService.getLatestWeeklyApproval(user)
+                    resp?.let {
+                        call.respond(HttpStatusCode.OK, resp)
+                    }
+                }catch (e: Exception){
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+    //=============GET ALL WEEKLY_APPROVAL==========
+    route(API_URL_WORK_WEEKLY_GET_ALL){
+        install(NotarizedRoute()){
+            tags = setOf("Work")
+            security = mapOf("BearerAuth" to emptyList())
+            parameters = listOf(
+                Parameter(name = PAGE, `in` = Parameter.Location.query, schema = TypeDefinition.INT),
+                Parameter(name = PAGE_SIZE, `in` = Parameter.Location.query, schema = TypeDefinition.INT)
+            )
+            get = GetInfo.builder {
+                summary("Get All Weekly Approval")
+                description("Get All Weekly Approval")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<List<WeeklyApprovalDTO>>()
+                    description("Get All Weekly Approval")
+                }
+            }
+        }
+        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
+            UserRole.CAPTURER,UserRole.CASUAL_WORKER) {
+            get {
+                try {
+                    val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
+                    val pageSize = call.request.queryParameters[PAGE_SIZE]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+                    val user = UserUtils.getLoggedInUser(call)
+                    val resp = workService.getWeeklyApprovals(user, page = page, pageSize = pageSize)
+                    resp?.let {
+                        call.respond(HttpStatusCode.OK, it)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+
 }

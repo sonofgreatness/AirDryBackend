@@ -1,46 +1,31 @@
 package org.montigny.client.persistence.implementation
 
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.Op
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
-import org.montigny.client.dto.Common.PaginatedResponse
-import org.montigny.client.dto.User.CurrentUserDTO
-import org.montigny.client.dto.Work.CreateWorkDoneDTO
-import org.montigny.client.dto.Work.StackInfoDTO
-import org.montigny.client.dto.Work.UserInfoDTO
-import org.montigny.client.persistence.AppUsers
-import org.montigny.client.persistence.Stacks
-import org.montigny.client.persistence.WorkDone
-import org.montigny.client.persistence.WorkDoneStacks
-import org.montigny.client.persistence.WorkDoneUsers
-import org.montigny.client.persistence.repository.WorkRepository
-import org.montigny.client.util.UserUtils
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.Date
-import java.util.UUID
-import org.montigny.client.dto.Work.WorkDaySummaryDTO
-import org.montigny.client.dto.Work.WorkSummaryDTO
-import org.montigny.client.persistence.StackCodes
-import java.text.SimpleDateFormat
-import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.between
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.lowerCase
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.montigny.client.dto.Common.PaginatedResponse
+import org.montigny.client.dto.CreateWeeklyApprovalDTO
+import org.montigny.client.dto.UpdateWeeklyApprovalDTO
+import org.montigny.client.dto.User.CurrentUserDTO
+import org.montigny.client.dto.WeeklyApprovalDTO
+import org.montigny.client.dto.Work.*
 import org.montigny.client.dto.WorkDataFiltersDTO
+import org.montigny.client.persistence.*
+import org.montigny.client.persistence.repository.WorkRepository
+import org.montigny.client.util.Constants
+import org.montigny.client.util.UserUtils
+import org.montigny.client.util.UserUtils.checkIfBelongsToOrganization
+import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
+import java.util.*
 
 class WorkRepositoryImpl(): WorkRepository {
     override fun createWork(
@@ -466,10 +451,6 @@ class WorkRepositoryImpl(): WorkRepository {
             totalPages = totalPages
         )
     }
-
-
-
-
     override fun getDailyWorkSummariesBetweenDates(
         currentUserDTO: CurrentUserDTO,
         page: Int,
@@ -761,4 +742,134 @@ class WorkRepositoryImpl(): WorkRepository {
            totalPages = totalPages
        )
    }
+
+
+    // --------------------------------------------
+    // 🆕 Weekly Approvals Implementation
+    // --------------------------------------------
+
+    override fun createWeeklyApproval(user: CurrentUserDTO, req: CreateWeeklyApprovalDTO): UUID {
+        return transaction {
+             checkIfBelongsToOrganization(user,req.organizationId)
+            val existing = WeeklyApprovals.select {
+                (WeeklyApprovals.organizationId eq req.organizationId) and
+                        (WeeklyApprovals.weekStartDate eq LocalDate.parse(req.weekStartDate))
+            }.firstOrNull()
+
+            if (existing != null) {
+                error("Weekly approval for this organization and week already exists.")
+            }
+
+            val newId = UUID.randomUUID()
+            WeeklyApprovals.insert {
+                it[id] = newId
+                if (user.organizationId==null){
+                     it[organizationId] = req.organizationId}
+                else{
+                  it[organizationId] = user.organizationId!!
+                }
+                it[weekStartDate] = LocalDate.parse(req.weekStartDate)
+                it[weekEndDate] = LocalDate.parse(req.weekEndDate)
+                it[status] = ApprovalStatus.PENDING
+                it[notes] = req.notes
+                it[createdAt] = Instant.now()
+                it[updatedAt] = Instant.now()
+                it[createdBy] = user.id
+            }
+            newId
+        }
+    }
+
+    override fun updateWeeklyApproval(user: CurrentUserDTO, req: UpdateWeeklyApprovalDTO): Int {
+        return transaction {
+            WeeklyApprovals.update({ WeeklyApprovals.id eq req.id }) {
+                it[status] = ApprovalStatus.valueOf(req.status.uppercase())
+                it[approvedById] = user.id
+                it[approvedAt] = Instant.now()
+                it[notes] = req.notes
+                it[updatedAt] = Instant.now()
+                it[updatedBy] = user.id
+            }
+        }
+    }
+    override fun getWeeklyApprovalById(user: CurrentUserDTO, id: UUID): WeeklyApprovalDTO? {
+        return transaction {
+            WeeklyApprovals.select { WeeklyApprovals.id eq id }
+                .map { row ->
+                    WeeklyApprovalDTO(
+                        id = row[WeeklyApprovals.id].value,
+                        organizationId = row[WeeklyApprovals.organizationId].value,
+                        weekStartDate = row[WeeklyApprovals.weekStartDate].toString(),
+                        weekEndDate = row[WeeklyApprovals.weekEndDate].toString(),
+                        approvedById = row[WeeklyApprovals.approvedById]?.value,
+                        approvedAt = row[WeeklyApprovals.approvedAt]?.toString(),
+                        status = row[WeeklyApprovals.status].name,
+                        notes = row[WeeklyApprovals.notes]
+                    )
+                }.firstOrNull()
+        }
+    }
+
+    override fun getWeeklyApprovals(
+        user: CurrentUserDTO,
+        page: Int,
+        pageSize: Int,
+        organizationId: UUID?
+    ): PaginatedResponse<WeeklyApprovalDTO> {
+        return transaction {
+            val baseQuery = WeeklyApprovals.selectAll()
+                .apply {
+                    if (organizationId != null) this.andWhere { WeeklyApprovals.organizationId eq organizationId }
+                    else
+                        this.andWhere { WeeklyApprovals.organizationId eq user.organizationId }
+                }
+            val totalCount = baseQuery.count()
+            val totalPages = if (totalCount == 0L) 0 else ((totalCount - 1) / pageSize + 1).toInt()
+
+            val items = baseQuery
+                .orderBy(WeeklyApprovals.weekStartDate, SortOrder.DESC)
+                .limit(pageSize, offset = ((page - 1) * pageSize).toLong())
+                .map { row ->
+                    WeeklyApprovalDTO(
+                        id = row[WeeklyApprovals.id].value,
+                        organizationId = row[WeeklyApprovals.organizationId].value,
+                        weekStartDate = row[WeeklyApprovals.weekStartDate].toString(),
+                        weekEndDate = row[WeeklyApprovals.weekEndDate].toString(),
+                        approvedById = row[WeeklyApprovals.approvedById]?.value,
+                        approvedAt = row[WeeklyApprovals.approvedAt]?.toString(),
+                        status = row[WeeklyApprovals.status].name,
+                        notes = row[WeeklyApprovals.notes]
+                    )
+                }
+
+            PaginatedResponse(
+                items = items,
+                page = page,
+                pageSize = pageSize,
+                totalCount = totalCount,
+                totalPages = totalPages
+            )
+        }
+    }
+
+    override fun getLatestWeeklyApproval(user: CurrentUserDTO): WeeklyApprovalDTO? {
+        return transaction {
+            WeeklyApprovals.select { WeeklyApprovals.organizationId eq user.organizationId }
+                .orderBy(WeeklyApprovals.weekStartDate, SortOrder.DESC)
+                .limit(1)
+                .map { row ->
+                    WeeklyApprovalDTO(
+                        id = row[WeeklyApprovals.id].value,
+                        organizationId = row[WeeklyApprovals.organizationId].value,
+                        weekStartDate = row[WeeklyApprovals.weekStartDate].toString(),
+                        weekEndDate = row[WeeklyApprovals.weekEndDate].toString(),
+                        approvedById = row[WeeklyApprovals.approvedById]?.value,
+                        approvedAt = row[WeeklyApprovals.approvedAt]?.toString(),
+                        status = row[WeeklyApprovals.status].name,
+                        notes = row[WeeklyApprovals.notes]
+                    )
+                }.firstOrNull()
+        }
+    }
+
 }

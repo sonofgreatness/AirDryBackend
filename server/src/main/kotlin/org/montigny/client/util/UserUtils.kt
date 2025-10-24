@@ -171,5 +171,14 @@ object UserUtils {
         }
         return (adminUserTypeId != null && userRow[AppUsers.userTypeId]?.value == adminUserTypeId)
     }
+    fun checkIfBelongsToOrganization(
+        currentUser: CurrentUserDTO,
+        orgId: UUID
+    ) {
+        val currentUserOrgId = currentUser.organizationId
+        if (currentUserOrgId != orgId) {
+            throw IllegalArgumentException(Constants.ORGANIZATION_MISMATCH_VALIDATION_ERROR)
+        }
+    }
 
 }

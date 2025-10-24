@@ -1,7 +1,10 @@
 package org.montigny.client.service
 
 import org.montigny.client.dto.Common.PaginatedResponse
+import org.montigny.client.dto.CreateWeeklyApprovalDTO
+import org.montigny.client.dto.UpdateWeeklyApprovalDTO
 import org.montigny.client.dto.User.CurrentUserDTO
+import org.montigny.client.dto.WeeklyApprovalDTO
 import org.montigny.client.dto.Work.CreateWorkDoneDTO
 import org.montigny.client.dto.Work.WorkDaySummaryDTO
 import org.montigny.client.dto.WorkDataFiltersDTO
@@ -46,6 +49,22 @@ class WorkerService
         page,
         pageSize,
         filters)
-
+    fun createWeeklyApproval(user: CurrentUserDTO, req: CreateWeeklyApprovalDTO): UUID
+    =workRepo.createWeeklyApproval(user, req)
+    fun updateWeeklyApproval(user: CurrentUserDTO, req: UpdateWeeklyApprovalDTO): Int
+    = workRepo.updateWeeklyApproval(user, req)
+    fun getWeeklyApprovalById(user: CurrentUserDTO, id: UUID): WeeklyApprovalDTO?
+    = workRepo.getWeeklyApprovalById(user, id)
+    fun getWeeklyApprovals(
+        user: CurrentUserDTO,
+        page: Int,
+        pageSize: Int,
+        organizationId: UUID? = null
+    ): PaginatedResponse<WeeklyApprovalDTO>
+    = workRepo.getWeeklyApprovals(user, page, pageSize, organizationId)
+    fun getLatestWeeklyApproval(
+        user: CurrentUserDTO
+    ): WeeklyApprovalDTO?
+    = workRepo.getLatestWeeklyApproval(user)
 
 }
