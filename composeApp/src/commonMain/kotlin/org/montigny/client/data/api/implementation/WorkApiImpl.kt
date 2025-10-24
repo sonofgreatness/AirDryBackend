@@ -26,12 +26,11 @@ class WorkApiImpl (
         filters: WorkDataFiltersDTO
     ): PaginatedResponse<WorkDaySummaryDTO>? {
         try{
-            println("Get DailyWorkSummaries")
         val  resp  = client.post("$API_BASE_URL$API_URL_WORK_WORK_GET_ALL_DAILY_SUMMARY"){
             contentType(ContentType.Application.Json)
             url {
-                parameters.append("page", page.toString())
-                parameters.append("pageSize", pageSize.toString())
+                parameters.append(PAGE, page.toString())
+                parameters.append(PAGE_SIZE, pageSize.toString())
             }
             setBody(filters)
         }
@@ -142,7 +141,7 @@ class WorkApiImpl (
     }
    override suspend fun getWeeklyApprovals(page: Int, pageSize: Int): PaginatedResponse<WeeklyApprovalDTO>?{
        try{
-           val  resp  = client.post("$API_BASE_URL$API_URL_WORK_WEEKLY_GET_ALL"){
+           val  resp  = client.get("$API_BASE_URL$API_URL_WORK_WEEKLY_GET_ALL"){
                contentType(ContentType.Application.Json)
                url {
                    parameters.append(PAGE, page.toString())

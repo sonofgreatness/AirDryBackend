@@ -25,7 +25,6 @@ interface WorkApi {
     suspend fun  getDailyWorkSummariesByUser(page: Int, pageSize: Int,filters: WorkDataFiltersDTO)
             : PaginatedResponse<WorkDaySummaryDTO>?
 
-
     suspend fun createWeeklyApproval(req: CreateWeeklyApprovalDTO): ApiResponse
     suspend fun updateWeeklyApproval(req: UpdateWeeklyApprovalDTO): ApiResponse
     suspend fun getWeeklyApprovalById(id: UUID): WeeklyApprovalDTO?

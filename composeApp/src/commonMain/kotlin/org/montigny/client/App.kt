@@ -27,6 +27,7 @@ import org.montigny.client.ui.Theme.ThemeManager
 import org.montigny.client.ui.Theme.TimberTheme
 import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
+import org.montigny.client.ui.reports.viewModel.WeekApprovalsViewModel
 import org.montigny.client.ui.settings.SettingsNavItem
 import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
@@ -49,7 +50,8 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
         loadWorkViewModel: LoadWorkViewModel,
         createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel,
         loadUserWorkViewModel: LoadUserWorkViewModel,
-        filterUsersViewModel: FilterUsersViewModel
+        filterUsersViewModel: FilterUsersViewModel,
+        weekApprovalsViewModel: WeekApprovalsViewModel
 ) {
 
     val isOffLineLoggedIn by offlineSessionManager.isLoggedInFlow.collectAsState(initial = false)
@@ -137,7 +139,8 @@ fun App(sessionManager: SessionManager, authViewModel: AuthViewModel,
                     syncSettingsRepository,themeManager, stacksViewModel,
                     loadWorkViewModel, createAndUpdateWorkViewModel,
                     loadUserWorkViewModel,
-                    filterUsersViewModel)
+                    filterUsersViewModel,
+                    weekApprovalsViewModel)
             }
         }
     }

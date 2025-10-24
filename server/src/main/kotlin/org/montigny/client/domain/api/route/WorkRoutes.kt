@@ -663,8 +663,7 @@ fun Route.workRoutes(
                 }
             }
         }
-        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
-            UserRole.CAPTURER,UserRole.CASUAL_WORKER) {
+        authorize(userService,UserRole.SUPER_USER,UserRole.ADMIN) {
             get {
                 try {
                     val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1

@@ -48,7 +48,6 @@ fun WorkScreen(
     val workSummaries by loadWorkViewModel.dailyWorkSummaries.collectAsState()
     val filtersDTO by loadWorkViewModel.filterDto.collectAsState()
 
-    val currentPage by loadWorkViewModel.currentPage.collectAsState()
     val pageSize = DEFAULT_PAGE_SIZE
 
     val expandedDays = remember { mutableStateMapOf<String, Boolean>() }
@@ -69,22 +68,18 @@ fun WorkScreen(
                 )
             })
             Spacer(Modifier.height(18.dp))
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp, horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // --- Left Column: the two rows ---
                 Column(modifier = Modifier.weight(1f)) {
                     FilterSectionTopRow(filtersDTO, loadWorkViewModel)
                     Spacer(modifier = Modifier.height(6.dp))
                     FilterSectionBottomRow(filtersDTO, loadWorkViewModel)
                 }
-
                 Spacer(modifier = Modifier.width(12.dp))
-
                 // --- Right Column: Clear Filters Button ---
                 Button(
                     onClick = { loadWorkViewModel.clearAllFilters() },

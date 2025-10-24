@@ -24,6 +24,7 @@ import org.montigny.client.domain.synchronization.SyncSettingsRepository
 import org.montigny.client.ui.Theme.ThemeManager
 import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
+import org.montigny.client.ui.reports.viewModel.WeekApprovalsViewModel
 import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToExcelUseCase
 import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToPdfUseCase
 import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
@@ -117,4 +118,6 @@ single<FilterUsersViewModel>
     FilterUsersViewModel(get(), get()
     ,get(), get(), get(),get())
 }
+single<WeekApprovalsViewModel>{WeekApprovalsViewModel(get(), get()
+,get())}
 }
