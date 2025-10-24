@@ -42,21 +42,20 @@ fun UserWorkScreen(
     val totalPages by viewModel.totalPages.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    var currentPage by remember { mutableStateOf(1) }
+    val currentPage by viewModel.currentPage.collectAsState()
     val pageSize = DEFAULT_PAGE_SIZE
     val expandedDays = remember { mutableStateMapOf<String, Boolean>() }
 
 
     // Initial load and filter on user change
     LaunchedEffect(userId) {
-        currentPage = 1 // Reset page on user change
         viewModel.loadUser(userId)
     }
 
     // Once user data is loaded, fetch summaries
     LaunchedEffect(user) {
         if (user != null && dailySummaries.isEmpty()) {
-            viewModel.populateDailyWorkSummaries(page = currentPage, pageSize = pageSize)
+            viewModel.populateDailyWorkSummaries(pageSize = pageSize)
         }
     }
     LaunchedEffect(viewModel.snackbarEvent) {
@@ -127,12 +126,7 @@ fun UserWorkScreen(
 
                         val hasMorePages = currentPage < totalPages
                         if (index >= dailySummaries.lastIndex - 2 && hasMorePages) {
-                            scope.launch {
-                                currentPage++
-                                viewModel.populateDailyWorkSummaries(
-                                    page = currentPage,
-                                    pageSize = pageSize
-                                )
+                            scope.launch { viewModel.loadNextPage(pageSize = pageSize)
                             }
                         }
                     }

@@ -3,29 +3,16 @@ package org.montigny.client.ui.users
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.MoodBad
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -39,7 +26,7 @@ import org.montigny.client.ui.Theme.TextMuted
 import org.montigny.client.ui.organizations.DashboardCard
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
-import java.util.UUID
+import java.util.*
 
 
 @Composable
@@ -55,13 +42,12 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
     val totalPages by userViewModel.totalPages.collectAsState()
     var userToDelete by remember { mutableStateOf<UUID?>(null) }
 
-    var currentPage by remember { mutableStateOf(1) }
+    val currentPage by  userViewModel.currentPage.collectAsState()
     val pageSize = DEFAULT_PAGE_SIZE
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(currentPage) {
-        currentPage = 1
-        userViewModel.populateUsersExternal(currentPage, pageSize)
+        userViewModel.populateUsersExternal(pageSize)
     }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -116,10 +102,7 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                             if (isNetworkAvailable && !isOnlineLoggedIn) {
                                 navigator.navigateTo(Destination.Login, Destination.Users)
                             }
-                            println(" at button click isSyncing ${isSyncing}")
-                            userViewModel.synchronizeUserData()
-                            println(" after button click isSyncing ${isSyncing}")
-                        },
+                            userViewModel.synchronizeUserData()},
                         enabled = !isSyncing,
                     ) {
                         if (isSyncing) {
@@ -229,12 +212,7 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                             )
                             val hasMorePages = currentPage < totalPages
                             if (index >= users.lastIndex - 2 && hasMorePages) {
-                                scope.launch {
-                                    currentPage++
-                                    userViewModel.populateUsersExternal(
-                                        page = currentPage,
-                                        pageSize = pageSize
-                                    )
+                                scope.launch {userViewModel.loadNextPage(pageSize = pageSize)
                                 }
                             }
                         }
@@ -298,47 +276,94 @@ fun UserRow(
     onDelete: (userId: UUID) -> Unit,
     isDeleting: Boolean
 ) {
+    val isUserActive = user.isActive ?: false
+    val isUserApproved = user.isApproved ?: false
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(6.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // --- User Info Column ---
             Column(Modifier.weight(1f)) {
+                // 1. Name and Surname
                 Text(
                     "${user.name} ${user.surname}",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // 2. Contact and Role
                 Text("📧 ${user.email}", style = MaterialTheme.typography.bodySmall, color = TextMuted)
                 Text("📱 ${user.phoneNumber}", style = MaterialTheme.typography.bodySmall, color = TextMuted)
-                Text("Role: ${user.userType?.displayName ?: "NONE"}", style = MaterialTheme.typography.bodySmall)
+                Text("Role: ${user.userType?.displayName ?: "NONE"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 3. Status Icons Row (Cleaner Feel)
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // isActive Status
+                    StatusPill(
+                        isSet = isUserActive,
+                        label = "Active",
+                        activeIcon = Icons.Default.CheckCircle,
+                        inactiveIcon = Icons.Default.Cancel
+                    )
+
+                    // isApproved Status
+                    StatusPill(
+                        isSet = isUserApproved,
+                        label = "Approved",
+                        activeIcon = Icons.Default.VerifiedUser,
+                        inactiveIcon = Icons.Default.HourglassEmpty
+                    )
+                }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-
-                //only show when online
-                OutlinedButton(onClick = { moveToWork(user.id.toString()) }) {
-                    Icon(Icons.Default.Work, contentDescription = "View work")
+            // --- Action Buttons Column ---
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // View Work Button
+                Button(
+                    onClick = { moveToWork(user.id.toString()) },
+                    shape = MaterialTheme.shapes.small,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                    Icon(Icons.Default.Work, contentDescription = "View work", Modifier.size(20.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("View work")
+                    Text("Work")
                 }
-                //
-                OutlinedButton(onClick = { onEdit(user.id.toString()) }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+
+                // Edit Button
+                OutlinedButton(
+                    onClick = { onEdit(user.id.toString()) },
+                    shape = MaterialTheme.shapes.small,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit", Modifier.size(20.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("Edit")
                 }
 
+                // Delete Button
                 Button(
                     onClick = { onDelete(user.id!!) },
                     colors = ButtonDefaults.buttonColors(containerColor = Danger),
-                    enabled = !isDeleting
+                    enabled = !isDeleting,
+                    shape = MaterialTheme.shapes.small,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                 ) {
                     if (isDeleting) {
                         CircularProgressIndicator(
@@ -347,13 +372,47 @@ fun UserRow(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete"
-                        ,tint = MaterialTheme.colorScheme.onPrimary)
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
                         Spacer(Modifier.width(4.dp))
                         Text("Delete")
                     }
                 }
             }
         }
+    }
+}
+
+// Helper Composable for clean status display (Pill/Chip)
+@Composable
+private fun StatusPill(
+    isSet: Boolean,
+    label: String,
+    activeIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    inactiveIcon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    val color = if (isSet) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+    val icon = if (isSet) activeIcon else inactiveIcon
+    val text = if (isSet) label else "Not $label"
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            icon,
+            contentDescription = label,
+            tint = color,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+            color = color
+        )
     }
 }

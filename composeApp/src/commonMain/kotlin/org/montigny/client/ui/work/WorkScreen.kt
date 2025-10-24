@@ -48,13 +48,13 @@ fun WorkScreen(
     val workSummaries by loadWorkViewModel.dailyWorkSummaries.collectAsState()
     val filtersDTO by loadWorkViewModel.filterDto.collectAsState()
 
-    var currentPage by remember { mutableStateOf(1) }
+    val currentPage by loadWorkViewModel.currentPage.collectAsState()
     val pageSize = DEFAULT_PAGE_SIZE
 
     val expandedDays = remember { mutableStateMapOf<String, Boolean>() }
 
     LaunchedEffect(Unit) {
-        loadWorkViewModel.populateDailyWorkSummaries(page = currentPage, pageSize = pageSize)
+        loadWorkViewModel.populateDailyWorkSummaries(pageSize = pageSize)
         loadWorkViewModel.populateDepartmentsAndSections()
     }
     Surface(
@@ -116,9 +116,7 @@ fun WorkScreen(
 
                         if (index >= workSummaries.lastIndex - 2) {
                             scope.launch {
-                                currentPage++
-                                loadWorkViewModel.populateDailyWorkSummaries(
-                                    page = currentPage,
+                                loadWorkViewModel.loadNextPage(
                                     pageSize = pageSize
                                 )
                             }

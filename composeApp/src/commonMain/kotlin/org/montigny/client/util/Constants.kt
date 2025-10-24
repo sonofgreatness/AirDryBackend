@@ -9,7 +9,7 @@ class Constants {
         const val USER_FOUND_NOT_ERROR = "User not found"
         const val NULL_PLACEHOLDER = "null"
         const val DEFAULT_PAGE = 1
-        const val DEFAULT_PAGE_SIZE = 2
+        const val DEFAULT_PAGE_SIZE = 20
 
     }
 }

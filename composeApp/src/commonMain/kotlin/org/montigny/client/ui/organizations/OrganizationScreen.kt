@@ -41,6 +41,9 @@ fun OrganizationScreen(viewModel: OrganizationViewModel, navigator: Navigator) {
     val isOnlineLoggedIn by  viewModel.isOnlineLoggedIn.collectAsState()
     var orgToDelete by remember { mutableStateOf<UUID?>(null) }
 
+    LaunchedEffect(isNetworkAvailable) {
+    viewModel.synchronizeOrganizations()
+    }
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = Modifier.fillMaxSize()

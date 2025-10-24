@@ -47,11 +47,20 @@ ViewModel(){
     val totalPages: StateFlow<Int> = _totalPages
 
 
+
+    private val _currentPage = MutableStateFlow(DEFAULT_PAGE)
+    val currentPage: StateFlow<Int> = _currentPage
+
+
     fun clearAllFilters(){
+        println("clear filters called")
         _filterDto.value = WorkDataFiltersDTO()
         _totalPages.value = DEFAULT_PAGE
+        _currentPage.value = DEFAULT_PAGE // <-- RESET CURRENT PAGE
         populateDailyWorkSummaries()
     }
+
+
     fun onChangeFilter(state : WorkDataFiltersDTOState, newValue: String) {
         when(state) {
             is WorkDataFiltersDTOState.IncludeInactiveWorkers -> {
@@ -91,7 +100,14 @@ ViewModel(){
         }
     }
 
-    fun populateDailyWorkSummaries(page: Int = DEFAULT_PAGE, pageSize: Int = DEFAULT_PAGE_SIZE) {
+    fun loadNextPage(pageSize: Int = DEFAULT_PAGE_SIZE) {
+        if (_currentPage.value < _totalPages.value) {
+            _currentPage.value++
+            populateDailyWorkSummaries(pageSize)
+        }
+    }
+    fun populateDailyWorkSummaries(pageSize: Int = DEFAULT_PAGE_SIZE) {
+       val page  = _currentPage.value
         if (page > _totalPages.value) {
             return
         }

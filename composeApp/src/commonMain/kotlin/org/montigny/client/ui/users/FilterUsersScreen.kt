@@ -9,11 +9,11 @@ import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.Navigator
+import org.montigny.client.ui.Theme.White
 import org.montigny.client.ui.users.viewModels.FilterUsersViewModel
 import org.montigny.client.ui.users.viewModels.UserViewModel
 import org.montigny.client.ui.work.viewModel.WorkDataFiltersDTOState
@@ -35,7 +36,7 @@ fun FilterUsersScreen(
     userViewModel: UserViewModel,
 ) {
     val filtersDTO by viewModel.filterDto.collectAsState()
-    var currentPage by remember { mutableStateOf(1) }
+    val currentPage by  viewModel.currentPage.collectAsState()
     val pageSize = DEFAULT_PAGE_SIZE
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -53,6 +54,11 @@ fun FilterUsersScreen(
                 duration = SnackbarDuration.Short
             )
         }
+    }
+
+    LaunchedEffect(viewModel){
+        viewModel.populateUsers(pageSize = pageSize)
+        viewModel.populateDepartmentsAndSections()
     }
 
     Scaffold(
@@ -76,12 +82,38 @@ fun FilterUsersScreen(
                 .padding(horizontal = 20.dp, vertical = 8.dp)
         ) {
 
-            Column(modifier = Modifier.weight(1f)) {
-                FilterSectionTopRowUser(filtersDTO, viewModel)
-                Spacer(modifier = Modifier.height(6.dp))
-                FilterSectionBottomRowUser(filtersDTO, viewModel)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
 
-
+                    FilterSectionTopRowUser(filtersDTO, viewModel, onToggle = { includeInactive ->
+                        viewModel.onChangeFilter(
+                            WorkDataFiltersDTOState.IncludeInactiveWorkers(includeInactive),
+                            ""
+                        )
+                    })
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FilterSectionBottomRowUser(filtersDTO, viewModel)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                // --- Right Column: Clear Filters Button ---
+                Button(
+                    onClick = { viewModel.clearAllFilters() },
+                    modifier = Modifier.height(40.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        contentColor = White
+                    )
+                ) {
+                    Text(color = White,
+                       text = "Clear All Filters")
+                }
+            }
                 Spacer(modifier = Modifier.width(12.dp))
                 // ------- LIST REGION -------
                 Surface(
@@ -125,12 +157,7 @@ fun FilterUsersScreen(
                                 )
                                 val hasMorePages = currentPage < totalPages
                                 if (index >= users.lastIndex - 2 && hasMorePages) {
-                                    scope.launch {
-                                        currentPage++
-                                        viewModel.populateUsers(
-                                            page = currentPage,
-                                            pageSize = pageSize
-                                        )
+                                    scope.launch { viewModel.loadNextPage(pageSize)
                                     }
                                 }
                             }
@@ -147,15 +174,10 @@ fun FilterUsersScreen(
                             }
                         }
                     }
-                }
             }
         }//column
 
     }//scaffold
-
-
-
-
     // Deletion confirmation dialog
     if (userToDelete != null) {
         AlertDialog(
@@ -203,8 +225,8 @@ fun FilterUsersScreen(
 @Composable
  fun  FilterSectionTopRowUser(
      filtersDTO: WorkDataFiltersDTO,
-     viewModel: FilterUsersViewModel){
-    val openDialog = remember { mutableStateOf(false) }
+     viewModel: FilterUsersViewModel,
+     onToggle: (Boolean) -> Unit){
     var expandedDepartment by remember { mutableStateOf(false) }
     var expandedSection by remember { mutableStateOf(false) }
 
@@ -222,23 +244,20 @@ fun FilterUsersScreen(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // === Date Picker ===
-        OutlinedTextField(
-            value = filtersDTO.filterDate ?: "",
-            onValueChange = {},
-            label = { androidx.compose.material3.Text("Date") },
-            readOnly = true,
-            modifier = Modifier.weight(1f),
-            trailingIcon = {
-                IconButton(onClick = { openDialog.value = true }) {
-                    Icon(
-                        imageVector = Icons.Default.DateRange,
-                        contentDescription = "Pick date"
-                    )
-                }
-            }
-        )
 
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(if(filtersDTO.includeInactiveWorkers)
+                "Status : Inactive"
+                  else
+                    "Status : Active"
+                , style = MaterialTheme.typography.labelMedium)
+            Spacer(Modifier.width(8.dp))
+            Switch(
+                checked = filtersDTO.includeInactiveWorkers,
+                onCheckedChange = { onToggle(it) },
+            )
+        }
         // === Department Dropdown ===
         ExposedDropdownMenuBox(
             expanded = expandedDepartment,

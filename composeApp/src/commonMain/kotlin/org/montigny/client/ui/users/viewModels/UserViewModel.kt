@@ -81,6 +81,10 @@ val errorMessage: StateFlow<String?> = _errorMessage
 
 private val _totalPages = MutableStateFlow(1)
 val totalPages: StateFlow<Int> = _totalPages
+private val _currentPage = MutableStateFlow(DEFAULT_PAGE)
+val currentPage: StateFlow<Int> = _currentPage
+
+
 
 fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
 
@@ -264,23 +268,29 @@ fun populateAUserAndUserTypeLists(){
         populateUserTypes()
         populateUsers()
 }
-fun  populateUsersExternal(page: Int, pageSize: Int) = populateUsers()
+fun  populateUsersExternal(pageSize: Int) = populateUsers(pageSize)
 
-private fun populateUsers(page:Int = DEFAULT_PAGE, pageSize:Int = DEFAULT_PAGE_SIZE){
+fun loadNextPage(pageSize: Int = DEFAULT_PAGE_SIZE) {
+        if (_currentPage.value < _totalPages.value) {
+            _currentPage.value++
+            populateUsers(pageSize)
+        }
+}
+private fun populateUsers(pageSize:Int = DEFAULT_PAGE_SIZE){
     viewModelScope.launch {
         try {
             logger.info("Populating users ")
-            pickUserDataSource(isNetworkAvailable.value, isOnlineLoggedIn.value,page, pageSize)
+            pickUserDataSource(isNetworkAvailable.value, isOnlineLoggedIn.value, pageSize)
         }catch (e: Exception) {
             logger.error("failed to populate users Error ${e.message}")
         }
     }
 }
 private suspend fun pickUserDataSource(isNetworkAvailable: Boolean = false,
-                                       isOnlineLoggedIn: Boolean, page: Int,pageSize: Int) {
+                                       isOnlineLoggedIn: Boolean,pageSize: Int) {
         try {
             if (isNetworkAvailable && isOnlineLoggedIn) {
-                getPagedListOnline(page, pageSize)
+                getPagedListOnline(pageSize)
 
             } else {
                 getPagedListOffline()
@@ -290,9 +300,8 @@ private suspend fun pickUserDataSource(isNetworkAvailable: Boolean = false,
         }
     }
 
-
-    private suspend fun getPagedListOnline(page: Int, pageSize: Int) {
-        println ("getting users online")
+private suspend fun getPagedListOnline(pageSize: Int) {
+        val page  = _currentPage.value
         if (page > _totalPages.value) {
             return
         }
@@ -305,9 +314,9 @@ private suspend fun pickUserDataSource(isNetworkAvailable: Boolean = false,
                 _users.value += it.items
             }
         }
-    }
+}
 
-    private suspend fun getPagedListOffline() {
+private suspend fun getPagedListOffline() {
         val users: List<UserResponse> = userRepository.selectAllUsers() ?: emptyList()
         _users.value = users
     }

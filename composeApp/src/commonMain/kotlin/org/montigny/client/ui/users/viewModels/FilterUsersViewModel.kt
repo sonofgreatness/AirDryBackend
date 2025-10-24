@@ -51,13 +51,20 @@ class FilterUsersViewModel(
     private val _snackbarEvent = Channel<String>()
     val snackbarEvent = _snackbarEvent.receiveAsFlow() // Use Flow for observing
 
+    private val _currentPage = MutableStateFlow(DEFAULT_PAGE)
+    val currentPage: StateFlow<Int> = _currentPage
+
 
     fun clearAllFilters(){
+        println("clear filters called")
         _filterDto.value = WorkDataFiltersDTO()
         _totalPages.value = DEFAULT_PAGE
+        _currentPage.value = DEFAULT_PAGE // <-- RESET CURRENT PAGE
         populateUsers()
     }
     fun onChangeFilter(state : WorkDataFiltersDTOState, newValue: String) {
+        _currentPage.value = DEFAULT_PAGE
+        _totalPages.value = DEFAULT_PAGE
         when(state) {
             is WorkDataFiltersDTOState.IncludeInactiveWorkers -> {
                 _filterDto.value = _filterDto.value.copy(includeInactiveWorkers = state.newValue)
@@ -94,7 +101,14 @@ class FilterUsersViewModel(
             }
         }
     }
-    fun populateUsers(page: Int = DEFAULT_PAGE, pageSize: Int = DEFAULT_PAGE_SIZE){
+    fun loadNextPage(pageSize: Int = DEFAULT_PAGE_SIZE) {
+        if (_currentPage.value < _totalPages.value) {
+            _currentPage.value++
+            populateUsers(pageSize)
+        }
+    }
+    fun populateUsers(pageSize: Int = DEFAULT_PAGE_SIZE){
+        val page = _currentPage.value
         if (page > _totalPages.value) {
             return
         }
@@ -105,12 +119,15 @@ class FilterUsersViewModel(
               if(!isOnlineLoggedIn.value)
                   _snackbarEvent.send("Please login to continue!")
             val resp = userApi.getFilteredUsers(page, pageSize, filterDto.value)
-            resp?.let {
-                _totalPages.value = it.totalPages
-                if (page <= 1)
+              resp?.let {
+                 _totalPages.value = it.totalPages
+                if (page <= 1) {
+                    println("less than 1 $page")
                     _users.value = it.items
-                 else
+                }else {
+                    println("less than more than $page")
                     _users.value += it.items
+                }
             }
             }catch(e: Exception){
                 logger.error(e.toString())
@@ -118,6 +135,38 @@ class FilterUsersViewModel(
             }
         }
     }
+
+
+
+    fun populateDepartmentsAndSections(){
+        populateDepartments()
+    }
+    private fun populateDepartments(){
+        viewModelScope.launch {
+            try {
+                logger.info("Populating departments")
+                pickDepartmentDataSource(isNetworkAvailable.value,isOnlineLoggedIn.value)
+            }catch (e: Exception) {
+                _snackbarEvent.send("failed to populate departments!")
+                logger.error("failed to populate departments Error ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun pickDepartmentDataSource(isNetworkAvailable: Boolean = false,isOnlineLoggedIn: Boolean) {
+        try{
+            if (isNetworkAvailable &&isOnlineLoggedIn){
+                val departmentsVariable : List<CreateOrgDTO> =organizationApi.getAllDept()
+                _departments.value = departmentsVariable
+            }else{
+                val  departmentsVariable : List<CreateOrgDTO> = organizationRepository.getAllDepartments()
+                _departments.value = departmentsVariable
+            }
+        }catch (e: Exception){
+            logger.error("failed to populate departments pickDepartmentDataSourceError ${e.message}")
+        }
+    }
+
     private  fun  populateSections(departmentId:UUID){
         viewModelScope.launch {
             try{

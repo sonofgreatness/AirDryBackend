@@ -53,6 +53,24 @@ class LoadUserWorkViewModel(
     private val _snackbarEvent = Channel<String>()
     val snackbarEvent = _snackbarEvent.receiveAsFlow() // Use Flow for observing
     // ------------------------------------------------------------------
+
+
+    private val _currentPage = MutableStateFlow(DEFAULT_PAGE)
+    val currentPage: StateFlow<Int> = _currentPage
+
+
+
+    fun clearDateFilters() {
+        _startDate.value = null
+        _endDate.value = null
+        _filterDto.value = _filterDto.value.copy(
+            filterDate = null,
+            filterDateEndDate = null
+        )
+        _totalPages.value = DEFAULT_PAGE
+        _currentPage.value = DEFAULT_PAGE
+        populateDailyWorkSummaries()
+    }
     fun loadUser(userId : String) {
         viewModelScope.launch {
         try {
@@ -68,22 +86,23 @@ class LoadUserWorkViewModel(
         }
      }
     }
-
-    fun populateDailyWorkSummaries(page: Int = DEFAULT_PAGE, pageSize: Int = DEFAULT_PAGE_SIZE) {
+    fun loadNextPage(pageSize: Int = DEFAULT_PAGE_SIZE) {
+        if (_currentPage.value < _totalPages.value) {
+            _currentPage.value++
+            populateDailyWorkSummaries(pageSize)
+        }
+    }
+    fun populateDailyWorkSummaries(pageSize: Int = DEFAULT_PAGE_SIZE) {
+        val page = _currentPage.value
         if (page > _totalPages.value) {
             return
         }
-
         viewModelScope.launch(Dispatchers.IO) {
             val currentFilters = _filterDto.value.copy(
                 includeInactiveWorkers = true,
                 filterUserId = _user.value?.id?.toString()?.toUUID()
             )
-
             val resp = workApi.getDailyWorkSummariesByUser(page, pageSize, currentFilters)
-            println("filters:   ${currentFilters.filterDate} ${currentFilters.filterDateEndDate} ${currentFilters.filterUserId}")
-            println("resp ==:$resp")
-            println ("_daily work summaries ${dailyWorkSummaries.value}")
             resp?.let {
                 _totalPages.value = it.totalPages
                 if (page <= 1) {
@@ -94,16 +113,7 @@ class LoadUserWorkViewModel(
             }
         }
     }
-    fun clearDateFilters() {
-        _startDate.value = null
-        _endDate.value = null
-        _filterDto.value = _filterDto.value.copy(
-            filterDate = null,
-            filterDateEndDate = null
-        )
-        _totalPages.value = 1
-        populateDailyWorkSummaries(page = DEFAULT_PAGE)
-    }
+
     fun onStartDateChangeListener(newValue: String) {
         _startDate.value = newValue
     }
@@ -112,27 +122,20 @@ class LoadUserWorkViewModel(
     }
     fun submitDateFilter(startDate: String?, endDate: String?) {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-        viewModelScope.launch { // Launch in viewModelScope to use send()
-            // 1. Initial Validation: Check date format and logical order
+        viewModelScope.launch {
             try {
                 val start = startDate?.takeIf { it.isNotBlank() }?.let { LocalDate.parse(it, formatter) }
                 val end = endDate?.takeIf { it.isNotBlank() }?.let { LocalDate.parse(it, formatter) }
-
                 if (start != null && end != null && start.isAfter(end)) {
-                    // Send the error message to the UI
                     _snackbarEvent.send("Start Date cannot be after End Date. 🛑")
                     return@launch
                 }
-                // 2. Update Filter DTO
                 _filterDto.value = _filterDto.value.copy(
                     filterDate = startDate, filterDateEndDate = endDate
                 )
                 _totalPages.value = 1
-                populateDailyWorkSummaries(page = DEFAULT_PAGE)
-
+                populateDailyWorkSummaries()
             } catch (e: DateTimeParseException) {
-                // Send the error message to the UI
                 _snackbarEvent.send("Invalid date format. Please use YYYY-MM-DD. 📅")
             }
         }
