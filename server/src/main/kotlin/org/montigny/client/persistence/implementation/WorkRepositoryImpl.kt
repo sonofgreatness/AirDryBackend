@@ -368,7 +368,8 @@ class WorkRepositoryImpl(): WorkRepository {
                         id = row[Stacks.id].value,
                         displayName = row[Stacks.displayName],
                         stackCodeDisplayName = row[StackCodes.displayName],
-                        volume = row[Stacks.volume]
+                        volume = row[Stacks.volume],
+                        stackCode = row[StackCodes.displayCode]
                     )
                 }
 
@@ -549,7 +550,8 @@ class WorkRepositoryImpl(): WorkRepository {
                         id = row[Stacks.id].value,
                         displayName = row[Stacks.displayName],
                         stackCodeDisplayName = row[StackCodes.displayName],
-                        volume = row[Stacks.volume]
+                        volume = row[Stacks.volume],
+                        stackCode = row[StackCodes.displayCode]
                     )
                 }
 
@@ -681,8 +683,8 @@ class WorkRepositoryImpl(): WorkRepository {
                        id = row[Stacks.id].value,
                        displayName = row[Stacks.displayName],
                        stackCodeDisplayName = row[StackCodes.displayName],
-                       volume = row[Stacks.volume]
-                   )
+                       volume = row[Stacks.volume],
+                       stackCode = row[StackCodes.displayCode])
                }
 
            val totalVolume = stacks.sumOf { it.volume }

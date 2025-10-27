@@ -2,6 +2,9 @@ package org.montigny.client.dto.Work
 
 import kotlinx.serialization.Serializable
 import org.montigny.client.dto.Common.UUIDSerializer
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 import java.util.UUID
 
 @Serializable
@@ -29,7 +32,25 @@ data class GetStackDTO(
             stackCodeId = this.stackCode.id
         )
     }
-}
+    fun printDimensionsAndVolume(): String {
+        val safeDisplayName = displayName.ifBlank { "Unnamed Stack" }
+        val safeStackCode = stackCode.displayName.ifBlank { "N/A" }
+
+        try{
+            val symbols = DecimalFormatSymbols(Locale.US)
+            val dfDim = DecimalFormat("0.000", symbols)
+            val dfVol = DecimalFormat("0.00", symbols)
+            // --- REPLACEMENT FOR buildString: Triple-quoted string literal ---
+            val result = "Stack:$safeDisplayName  Dms:${dfDim.format(length)}×${dfDim.format(height)}×${dfDim.format(thickness)} \n Pieces: $numberOfPieces   Cubes: ${dfVol.format(volume)}m³".trim()
+            return result
+
+        }catch (e:Exception){
+            println("failed to build string at GetStackDTO.printDimensionsAndVolume: ${e.message}")
+            println("${length.toDouble()} ${thickness.toDouble()} ${height.toDouble()}")
+        return stackCode.displayName
+        }
+    }
+    }
 @Serializable
 data class StackEntityResponse(
     @Serializable(with = UUIDSerializer::class)

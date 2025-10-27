@@ -10,8 +10,10 @@ import org.montigny.client.ui.organizations.OrganizationScreen
 import org.montigny.client.ui.organizations.ViewOrgWithDepartmentsAndSectionsScreen
 import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
+import org.montigny.client.ui.reports.GenerateReportsScreen
 import org.montigny.client.ui.reports.ReportsScreen
 import org.montigny.client.ui.reports.WeeklyApprovalScreen
+import org.montigny.client.ui.reports.viewModel.GenerateReportsViewModel
 import org.montigny.client.ui.reports.viewModel.WeekApprovalsViewModel
 import org.montigny.client.ui.settings.MainSettingsScreen
 import org.montigny.client.ui.settings.SettingsScreen
@@ -51,7 +53,8 @@ fun NavGraph(
     createAndUpdateWorkViewModel: CreateAndUpdateWorkViewModel,
     loadUserWorkViewModel: LoadUserWorkViewModel,
     filterUsersViewModel: FilterUsersViewModel,
-    workApprovalsViewModel: WeekApprovalsViewModel
+    weekApprovalsViewModel: WeekApprovalsViewModel,
+    generateReportsViewModel: GenerateReportsViewModel,
     ) {
     val currentDestination by navigator.currentDestination
      val nextDestination by navigator.nextDestination
@@ -120,6 +123,7 @@ fun NavGraph(
         )
         is Destination.FilterUsers -> FilterUsersScreen(navigator,
             filterUsersViewModel, usersViewModel)
-        is Destination.ApproveWeek -> WeeklyApprovalScreen(workApprovalsViewModel)
+        is Destination.ApproveWeek -> WeeklyApprovalScreen(weekApprovalsViewModel)
+        is Destination.GenerateReports -> GenerateReportsScreen(generateReportsViewModel)
     }
 }

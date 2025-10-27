@@ -23,4 +23,5 @@ sealed class Destination(val route: String) {
     data class  ViewUserWork(val  userId : String) : Destination("view_work/$userId")
     object  FilterUsers: Destination("filter_users")
     object  ApproveWeek : Destination("approve_week")
+    object  GenerateReports : Destination("generate_reports")
 }

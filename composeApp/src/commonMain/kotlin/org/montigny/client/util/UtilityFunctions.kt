@@ -1,5 +1,8 @@
 package org.montigny.client.util
 
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.util.Date
 import java.util.UUID
 
 class UtilityFunctions {
@@ -37,6 +40,8 @@ class UtilityFunctions {
                 return false
             throw IllegalArgumentException("expecting 0  or 1 but got $value")
         }
-
+        fun generateDayDateForNowSpaced(): String{
+            return SimpleDateFormat("EEEE dd-MM-yyyy").format(Date.from(Instant.now()))
+        }
     }
 }

@@ -13,6 +13,7 @@ import org.montigny.client.domain.synchronization.SyncSettingsRepository
 import org.montigny.client.ui.Theme.ThemeManager
 import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
+import org.montigny.client.ui.reports.viewModel.GenerateReportsViewModel
 import org.montigny.client.ui.reports.viewModel.WeekApprovalsViewModel
 import org.montigny.client.ui.settings.stacks.viewModel.StacksViewModel
 import org.montigny.client.ui.users.viewModels.AuthViewModel
@@ -48,6 +49,7 @@ object Main {
             val  loadUserWorkViewModel : LoadUserWorkViewModel = koinInject()
             val  filterUsersViewModel: FilterUsersViewModel = koinInject()
             val  weekApprovalsViewModel: WeekApprovalsViewModel = koinInject()
+            val  generateReportsViewModel: GenerateReportsViewModel = koinInject()
             LaunchedEffect(Unit) {
                 appWorkerManager.startAllWorkers()
             }
@@ -58,7 +60,7 @@ object Main {
                 syncSettingsRepository, themeManager, stacksViewModel,
                 loadWorkViewModel, createAndUpdateWorkViewModel,
                 loadUserWorkViewModel,filterUsersViewModel,
-                weekApprovalsViewModel,)
+                weekApprovalsViewModel,generateReportsViewModel)
         }
     }
 }

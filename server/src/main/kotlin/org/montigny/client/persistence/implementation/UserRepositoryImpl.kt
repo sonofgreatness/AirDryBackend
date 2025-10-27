@@ -2,7 +2,6 @@ package org.montigny.client.persistence.implementation
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.montigny.client.domain.api.route.auth.UserRole
 import org.montigny.client.dto.Common.PaginatedResponse

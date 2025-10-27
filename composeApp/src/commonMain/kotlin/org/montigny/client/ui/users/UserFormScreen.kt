@@ -50,6 +50,7 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
     LaunchedEffect(Unit) {
         userViewModel.initializeEmptyCreateUse()
         userViewModel.resetCreateUserState()
+        userViewModel.populateDepartmentsAndSections()
     }
 
     // Validation state

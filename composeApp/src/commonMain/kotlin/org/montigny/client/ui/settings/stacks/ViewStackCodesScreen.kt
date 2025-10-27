@@ -114,6 +114,14 @@ fun ViewStackCodesScreen(viewModel: StacksViewModel, navigator: Navigator) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            // ----------------- STATUS MESSAGES -----------------
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                pdfMessage?.let { StatusMessageCard("PDF", it) }
+                excelMessage?.let { StatusMessageCard("Excel", it) }
+            }
             // ----------------- STACK CODES -----------------
             Text(
                 "Stack Codes",
@@ -180,14 +188,7 @@ fun ViewStackCodesScreen(viewModel: StacksViewModel, navigator: Navigator) {
                 }
             }
 
-            // ----------------- STATUS MESSAGES -----------------
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                pdfMessage?.let { StatusMessageCard("PDF", it) }
-                excelMessage?.let { StatusMessageCard("Excel", it) }
-            }
+
         }
     }
 }

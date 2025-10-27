@@ -120,5 +120,22 @@ fun  ReportsScreen(navigator: Navigator) {
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
+            Spacer(Modifier.height(32.dp))
+            Button(
+                onClick = { navigator.navigateTo(Destination.GenerateReports) },
+                modifier = Modifier.fillMaxWidth(0.6f),
+                contentPadding = PaddingValues(vertical = 16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ListAlt,
+                    contentDescription = "Generate Reports",
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Go to Generate Reports (PDF and Excel)",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
         }
     }}

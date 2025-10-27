@@ -110,7 +110,6 @@ fun WeeklyApprovalScreen(
             }
         }
     }
-
     // Status Confirmation/Notes Dialog
     pendingUpdate?.let { (id, status) ->
         val title = if (status == "APPROVED") "Approve Weekly Records?" else "Revoke Weekly Records?"

@@ -47,7 +47,6 @@ fun CreateStackScreen(
     LaunchedEffect(stackId) {
         if (isUpdate && stackId != null) {
             viewModel.resetUpdateState()
-            println(" create Stack id = $stackId")
             viewModel.initializeStack(stackId.toUUID())
             existingStack?.let {
                 displayName = it.displayName ?: ""
@@ -59,6 +58,10 @@ fun CreateStackScreen(
                 stackCodeDisplay = it.stackCode.displayName ?: ""
             }
         }
+    }
+    LaunchedEffect(isUpdate) {
+        if(!isUpdate)
+            viewModel.resetCreateState()
     }
     val displayNameError = displayName.isBlank()
     val stackCodeError = stackCodeDisplay.isBlank() || stackCodeName.isBlank()

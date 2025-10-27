@@ -481,7 +481,7 @@ fun StackRow(stack: StackInfoDTO) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
             Text(stack.displayName, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
-            Text(stack.stackCodeDisplayName, style = MaterialTheme.typography.labelSmall)
+            Text("${stack.stackCodeDisplayName} -- ${stack.stackCode}", style = MaterialTheme.typography.labelSmall)
         }
         Text(String.format("%.3f m³", stack.volume), style = MaterialTheme.typography.bodyMedium)
     }

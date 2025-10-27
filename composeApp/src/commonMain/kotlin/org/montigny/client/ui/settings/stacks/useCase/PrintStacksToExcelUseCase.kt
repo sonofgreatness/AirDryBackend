@@ -13,6 +13,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
 import org.montigny.client.dto.Work.GetStackDTO
 import org.montigny.client.dto.Work.StackEntityResponse
+import org.montigny.client.util.Constants.Companion.SYSTEM_REPORTS_MAIN_PATH
+import org.montigny.client.util.UtilityFunctions.Companion.generateDayDateForNowSpaced
 import org.montigny.client.util.UtilityFunctions.Companion.toUUID
 import org.montigny.client.util.stateClasses.UiState
 import java.io.File
@@ -132,6 +134,7 @@ class PrintStacksToExcelUseCase(
 
         val titleRow2 = sheetStacks.createRow(rowIndex++)
         val titleCell2 = titleRow2.createCell(0)
+        val dateStr =generateDayDateForNowSpaced()
         titleCell2.setCellValue("$organizationName - Stacks Report (${SimpleDateFormat("yyyy-MM-dd HH:mm").format(Date())})")
         sheetStacks.addMergedRegion(org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 7))
 
@@ -186,10 +189,10 @@ class PrintStacksToExcelUseCase(
         for (i in headersStacks.indices) sheetStacks.autoSizeColumn(i)
 
         // ---------- SAVE FILE ----------
-        val outputDir = File(System.getProperty("user.home"), "Documents/StackReports")
+        val outputDir = File(System.getProperty("user.home"), "$SYSTEM_REPORTS_MAIN_PATH/StackReports")
         if (!outputDir.exists()) outputDir.mkdirs()
 
-        val excelFile = File(outputDir, "StackReport_${System.currentTimeMillis()}.xlsx")
+        val excelFile = File(outputDir, "StackReport_${dateStr}.xlsx")
         FileOutputStream(excelFile).use { workbook.write(it) }
 
         workbook.close()

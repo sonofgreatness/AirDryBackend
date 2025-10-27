@@ -36,8 +36,10 @@ data class StackInfoDTO(
     val id: UUID,
     val displayName: String,
     val stackCodeDisplayName: String,
+    val stackCode:String,
     val volume: Double
 )
+
 
 @Serializable
 data class UserInfoDTO(

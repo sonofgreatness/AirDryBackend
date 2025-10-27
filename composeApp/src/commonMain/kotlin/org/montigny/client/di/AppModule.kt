@@ -24,6 +24,8 @@ import org.montigny.client.domain.synchronization.SyncSettingsRepository
 import org.montigny.client.ui.Theme.ThemeManager
 import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
+import org.montigny.client.ui.reports.useCase.GenerateWeeklySummaryPdfUseCase
+import org.montigny.client.ui.reports.viewModel.GenerateReportsViewModel
 import org.montigny.client.ui.reports.viewModel.WeekApprovalsViewModel
 import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToExcelUseCase
 import org.montigny.client.ui.settings.stacks.useCase.PrintStacksToPdfUseCase
@@ -98,6 +100,11 @@ single<PrintStacksToExcelUseCase>{
         get()
     )
 }
+single<GenerateWeeklySummaryPdfUseCase>{
+    GenerateWeeklySummaryPdfUseCase(
+        get(), get(),
+        get())
+}
 single<StacksViewModel>{StacksViewModel(get(), get(), get(),
     get(),get(), get(), get())}
 
@@ -120,4 +127,6 @@ single<FilterUsersViewModel>
 }
 single<WeekApprovalsViewModel>{WeekApprovalsViewModel(get(), get()
 ,get())}
+single<GenerateReportsViewModel>{ GenerateReportsViewModel(get(), get()
+,get(), get())}
 }

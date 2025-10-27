@@ -453,7 +453,7 @@ private fun StackSelectableItemRefactored(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(stack.displayName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text("${stack.printDimensionsAndVolume()}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
             // Use labelMedium for secondary info
             Text(stack.stackCode.displayName, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -533,7 +533,7 @@ fun WorkConfirmationDialog(
             .mapNotNull { stack ->
                 val count = selectedStackCounts[stack.id]
                 if (count != null && count > 0) {
-                    "${stack.displayName} (${stack.stackCode.displayName}) x$count"
+                    "${stack.printDimensionsAndVolume()} x$count"
                 } else null
             }
             .sorted()

@@ -2,7 +2,6 @@ package org.montigny.client.ui.settings.stacks.viewModel
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.StackApi
@@ -143,7 +142,6 @@ class StacksViewModel(
     }
     private suspend fun createStackOnline(req: CreateStackDTO) {
         try {
-            println("Create stack online called")
             when (val resp = stackApi.createStack(req = req)) {
                 is ApiResponse.Error -> {
                     logger.error("failed to create stack  ${resp.message}")
@@ -189,6 +187,9 @@ class StacksViewModel(
     }
     fun resetUpdateState(){
         _updateStackState.value = UiState.Idle
+    }
+    fun resetCreateState(){
+        _createStackState.value = UiState.Idle
     }
     fun updateStack(displayName : String, length:Float?,
                     height:Float?, thickness:Float?,
