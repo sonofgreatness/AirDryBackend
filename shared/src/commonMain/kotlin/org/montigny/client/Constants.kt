@@ -67,6 +67,7 @@ const val API_URL_WORK_WORK_WEEKLY_APPROVAL_UPDATE = "/work/weekly_approval/upda
 const val API_URL_WORK_WEEKLY_GET_BY_ID = "/work/weekly/get/{id}"
 const val API_URL_WORK_WEEKLY_GET_LATEST = "/work/weekly/latest"
 const val API_URL_WORK_WEEKLY_GET_ALL = "/work/weekly/getAll"
+const val API_URL_REPORT_DASHBOARD_EXCEL = "/report/get_dashboard_data_set"
 const val QUERY_STRING = "queryString"
 const val QUERY_PAGE = "page"
 const val QUERY_PAGE_SIZE = "pageSize"

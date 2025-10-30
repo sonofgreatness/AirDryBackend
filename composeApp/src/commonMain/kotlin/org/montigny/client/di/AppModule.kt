@@ -10,11 +10,13 @@ import org.montigny.client.auth.SessionExpiryWorker
 import org.montigny.client.data.AppStorage
 import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.implementation.OrganizationApiImpl
+import org.montigny.client.data.api.implementation.ReportApiImpl
 import org.montigny.client.data.api.implementation.StackApiImpl
 import org.montigny.client.data.api.implementation.UserApiImpl
 import org.montigny.client.data.api.implementation.WorkApiImpl
 import org.montigny.client.data.api.implementation.provideHttpClient
 import org.montigny.client.data.api.repository.OrganizationApi
+import org.montigny.client.data.api.repository.ReportApi
 import org.montigny.client.data.api.repository.StackApi
 import org.montigny.client.data.api.repository.UserApi
 import org.montigny.client.data.api.repository.WorkApi
@@ -93,6 +95,7 @@ single<PrintStacksToPdfUseCase>{
         get(), get(), get(),
         get(),get())
 }
+single<ReportApi>{ ReportApiImpl(get())}
 single<PrintStacksToExcelUseCase>{
     PrintStacksToExcelUseCase(
         get(), get(),

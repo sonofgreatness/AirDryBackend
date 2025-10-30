@@ -1,59 +1,37 @@
 package org.montigny.client.persistence.implementation
 
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.alias
-import org.jetbrains.exposed.sql.count
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.sum
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.between
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.montigny.client.Report.AllReportData
-import org.montigny.client.Report.DepartmentCountDTO
-import org.montigny.client.Report.DimDepartmentDTO
-import org.montigny.client.Report.DimOrganizationDTO
-import org.montigny.client.Report.DimSectionDTO
-import org.montigny.client.Report.DimStackDTO
-import org.montigny.client.Report.DimUserDTO
-import org.montigny.client.Report.FactWorkDoneDTO
-import org.montigny.client.Report.FactWorkDoneForSectionDTO
-import org.montigny.client.Report.GetMonthlyReportDTO
-import org.montigny.client.Report.WorkDoneUserCountDTO
-import org.montigny.client.Report.WorkDoneVolumeDTO
+import org.montigny.client.Report.*
 import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.User.CurrentUserDTO
-import org.montigny.client.persistence.AppUsers
-import org.montigny.client.persistence.Departments
-import org.montigny.client.persistence.MonthlyReport
-import org.montigny.client.persistence.Organizations
-import org.montigny.client.persistence.Sections
-import org.montigny.client.persistence.StackCodes
-import org.montigny.client.persistence.Stacks
-import org.montigny.client.persistence.UserTypes
-import org.montigny.client.persistence.WorkDone
-import org.montigny.client.persistence.WorkDoneStacks
-import org.montigny.client.persistence.WorkDoneUsers
+import org.montigny.client.persistence.*
 import org.montigny.client.persistence.repository.ReportsRepository
-import java.io.File
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
-import java.util.Date
-import java.util.UUID
+import java.time.ZoneOffset
+import java.util.*
 
 class ReportsRepositoryImpl() : ReportsRepository {
-
-
-
     // --- Master Report Function ---
-
    override fun generateAllReportData(
         startDate: String,
         endDate: String,
     ): AllReportData {
         return transaction {
+            val startDateInstant = startDate?.takeIf { it.isNotBlank() }
+                ?.let { LocalDate.parse(it).atStartOfDay(ZoneOffset.UTC).toInstant() }
+
+            val endDateInstant = endDate?.takeIf { it.isNotBlank() }
+                ?.let { LocalDate.parse(it).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() }
+
+            if (startDateInstant != null && endDateInstant != null && startDateInstant > endDateInstant) {
+                throw IllegalStateException("Start date cannot be after end date.")
+            }
             // 1. Get Intermediate Data
             val cubesPerWorkDoneList = getCubesPerWorkDone()
             val usersPerWorkDoneList = getUsersPerWorkDone()
@@ -63,7 +41,7 @@ class ReportsRepositoryImpl() : ReportsRepository {
             val usersPerWorkDoneMap = usersPerWorkDoneList.associateBy { it.workDoneId }
 
             // 2. Get Fact Data
-            val factWorkDone = getFactWorkDone(cubesPerWorkDoneMap, usersPerWorkDoneMap, departmentCountList)
+            val factWorkDone = getFactWorkDone(startDateInstant,endDateInstant,cubesPerWorkDoneMap, usersPerWorkDoneMap, departmentCountList)
             val factWorkDoneForSection = getFactWorkDoneForSection(cubesPerWorkDoneMap, usersPerWorkDoneMap)
 
             // 3. Get Dimension Data
@@ -89,6 +67,50 @@ class ReportsRepositoryImpl() : ReportsRepository {
         }
     }
 
+    private fun getFactWorkDone(
+        startDate: Instant?,
+        endDate: Instant?,
+        cubesPerWorkDone: Map<UUID, WorkDoneVolumeDTO>,
+        usersPerWorkDone: Map<UUID, WorkDoneUserCountDTO>,
+        departmentCounts: List<DepartmentCountDTO>
+    ): List<FactWorkDoneDTO> {
+
+        val dateFilter: Op<Boolean> = when {
+            startDate != null && endDate != null ->
+                WorkDone.workDate.between(startDate, endDate)
+            startDate != null ->
+                WorkDone.workDate greaterEq startDate
+            endDate != null ->
+                WorkDone.workDate less endDate
+            else -> Op.TRUE
+        }
+        val deptCountMap = departmentCounts.groupBy { it.workDoneId }
+
+        return WorkDone.select{
+            dateFilter}
+            .mapNotNull { row ->
+                val workDoneId = row[WorkDone.id].value
+                val volumeData = cubesPerWorkDone[workDoneId]
+                val userData = usersPerWorkDone[workDoneId]
+
+                if (volumeData == null || userData == null) return@mapNotNull null
+
+                val totalVolume = volumeData.totalVolumePerWorkDone
+                val totalUsers = userData.contributingUsers
+                val avgCubesPerPerson = if (totalUsers > 0) totalVolume / totalUsers else 0.0
+
+                deptCountMap[workDoneId]?.map { deptCount ->
+                    val departmentCount = deptCount.departmentCount
+                    // DepartmentVolume = (DepartmentCount / UsersPerWorkDone) * Volume
+                    val departmentVolume = (departmentCount.toDouble() / totalUsers) * totalVolume
+
+                    FactWorkDoneDTO(
+                        workDoneId, row[WorkDone.workDate], totalVolume, totalUsers,
+                        deptCount.departmentId, departmentCount, departmentVolume, avgCubesPerPerson
+                    )
+                }
+            }.flatten()
+    }
 
     private fun getFactWorkDoneForSection(
         cubesPerWorkDone: Map<UUID, WorkDoneVolumeDTO>,
@@ -153,8 +175,6 @@ class ReportsRepositoryImpl() : ReportsRepository {
             it[this.fileName] = fileName
         }.value
     }
-
-
     private fun getCubesPerWorkDone(): List<WorkDoneVolumeDTO> {
         val totalVolume = Stacks.volume.sum().alias("TotalVolumePerWorkDone")
         return WorkDoneStacks
@@ -169,7 +189,6 @@ class ReportsRepositoryImpl() : ReportsRepository {
                 )
             }
     }
-
     private fun getUsersPerWorkDone(): List<WorkDoneUserCountDTO> {
         val contributingUsers = WorkDoneUsers.appUserId.countDistinct().alias("ContributingUsers")
         return WorkDoneUsers
@@ -260,37 +279,7 @@ class ReportsRepositoryImpl() : ReportsRepository {
 
     // --- Fact Queries ---
 
-    private fun getFactWorkDone(
-        cubesPerWorkDone: Map<UUID, WorkDoneVolumeDTO>,
-        usersPerWorkDone: Map<UUID, WorkDoneUserCountDTO>,
-        departmentCounts: List<DepartmentCountDTO>
-    ): List<FactWorkDoneDTO> {
-        val deptCountMap = departmentCounts.groupBy { it.workDoneId }
 
-        return WorkDone.selectAll()
-            .mapNotNull { row ->
-                val workDoneId = row[WorkDone.id].value
-                val volumeData = cubesPerWorkDone[workDoneId]
-                val userData = usersPerWorkDone[workDoneId]
-
-                if (volumeData == null || userData == null) return@mapNotNull null
-
-                val totalVolume = volumeData.totalVolumePerWorkDone
-                val totalUsers = userData.contributingUsers
-                val avgCubesPerPerson = if (totalUsers > 0) totalVolume / totalUsers else 0.0
-
-                deptCountMap[workDoneId]?.map { deptCount ->
-                    val departmentCount = deptCount.departmentCount
-                    // DepartmentVolume = (DepartmentCount / UsersPerWorkDone) * Volume
-                    val departmentVolume = (departmentCount.toDouble() / totalUsers) * totalVolume
-
-                    FactWorkDoneDTO(
-                        workDoneId, row[WorkDone.workDate], totalVolume, totalUsers,
-                        deptCount.departmentId, departmentCount, departmentVolume, avgCubesPerPerson
-                    )
-                }
-            }.flatten()
-    }
 
     override  fun  getMonthlyReportById(user: CurrentUserDTO, id : UUID): GetMonthlyReportDTO?
     = transaction{
