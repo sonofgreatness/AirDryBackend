@@ -112,4 +112,10 @@ object WeeklyApprovals : BaseTable("weekly_approval") {
         uniqueIndex("unique_org_week", organizationId, weekStartDate)
     }
 }
+object MonthlyReport: BaseTable("monthly_report") {
+    val fileName = text("file_name")
+    val uploadTime = timestamptz("upload_time")
+    val fileData = binary("file_data")
+    val organizationId = reference("organization_id", Organizations).nullable()
+}
 

@@ -20,11 +20,8 @@ fun GenerateReportsScreen(
     val scrollState = rememberScrollState()
     // Messages
     var pdfMessage by remember { mutableStateOf<String?>(null) }
-
     // Observe StateFlows
     val pdfState by viewModel.pdfGeneratorMessage.collectAsState()
-
-
     LaunchedEffect(pdfState) {
         pdfMessage = pdfState
         if (pdfState?.contains("Done", true) == true) {

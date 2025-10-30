@@ -66,6 +66,12 @@ dependencies {
 
     implementation("org.instancio:instancio-core:2.14.0")
     implementation("at.favre.lib:bcrypt:0.10.2")
+    implementation("com.github.librepdf:openpdf:1.3.32")
+    implementation("org.apache.poi:poi:5.3.0")
+    implementation("org.apache.poi:poi-ooxml:5.3.0")
+
+    // optional (only if you embed images or need advanced streaming)
+    implementation("org.apache.poi:poi-ooxml-full:5.3.0")
 }
 // 🔥 Exclude duplicates in packaging tasks
 tasks.withType<Jar> {

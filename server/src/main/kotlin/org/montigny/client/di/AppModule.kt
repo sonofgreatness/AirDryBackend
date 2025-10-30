@@ -6,15 +6,18 @@ import org.montigny.client.config.DatabaseFactory
 import org.montigny.client.config.JwtProvider
 import org.montigny.client.persistence.implementation.BCryptPasswordHasher
 import org.montigny.client.persistence.implementation.OrganizationRepositoryImpl
+import org.montigny.client.persistence.implementation.ReportsRepositoryImpl
 import org.montigny.client.persistence.implementation.StackRepositoryImpl
 import org.montigny.client.persistence.implementation.UserRepositoryImpl
 import org.montigny.client.persistence.implementation.WorkRepositoryImpl
 import org.montigny.client.persistence.repository.OrganizationRepository
 import org.montigny.client.persistence.repository.PasswordHasher
+import org.montigny.client.persistence.repository.ReportsRepository
 import org.montigny.client.persistence.repository.StackRepository
 import org.montigny.client.persistence.repository.UserRepository
 import org.montigny.client.persistence.repository.WorkRepository
 import org.montigny.client.service.OrganizationService
+import org.montigny.client.service.ReportsService
 import org.montigny.client.service.StackService
 import org.montigny.client.service.UserService
 import org.montigny.client.service.WorkerService
@@ -26,6 +29,7 @@ val appModule = module {
     single<OrganizationRepository> { OrganizationRepositoryImpl()}
     single <StackRepository>{ StackRepositoryImpl()}
     single<WorkRepository>{ WorkRepositoryImpl()}
+    single<ReportsRepository>{ ReportsRepositoryImpl()}
     // JWT
     single {
         val config = get<ApplicationConfig>().config("ktor.jwt")
@@ -41,4 +45,5 @@ val appModule = module {
     single { OrganizationService(get()) }
     single {StackService(get()) }
     single<WorkerService> { WorkerService(get())}
+    single<ReportsService>{ ReportsService(get()) }
 }

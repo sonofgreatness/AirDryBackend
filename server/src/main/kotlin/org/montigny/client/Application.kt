@@ -33,10 +33,12 @@ import org.montigny.client.config.JwtProvider
 import org.montigny.client.di.appModule
 import org.montigny.client.dto.Common.AnySerializer
 import org.montigny.client.domain.api.route.orgRoutes
+import org.montigny.client.domain.api.route.reportRoutes
 import org.montigny.client.domain.api.route.userRoutes
 import org.montigny.client.domain.api.route.stackRoutes
 import org.montigny.client.domain.api.route.workRoutes
 import org.montigny.client.service.OrganizationService
+import org.montigny.client.service.ReportsService
 import org.montigny.client.service.StackService
 import org.montigny.client.service.UserService
 import org.montigny.client.service.WorkerService
@@ -127,6 +129,7 @@ fun Application.module() {
     val organizationService: OrganizationService by inject()
     val stackService: StackService by inject()
     val  workerService: WorkerService by inject()
+    val  reportsService : ReportsService by inject()
 
     install(Authentication) {
         jwtProvider.configureKtorAuth(this)
@@ -150,6 +153,7 @@ fun Application.module() {
         orgRoutes(organizationService,userService)
         stackRoutes(stackService, userService)
         workRoutes(userService,workerService)
+        reportRoutes(userService, reportsService)
         }
     }
 
