@@ -8,7 +8,12 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.montigny.client.API_URL_PAYROLL_DATA_DASHBOARD_EXCEL
 import org.montigny.client.API_URL_REPORT_DASHBOARD_EXCEL
+import org.montigny.client.END_DATE
+import org.montigny.client.START_DATE
+import org.montigny.client.domain.api.route.auth.UserRole
+import org.montigny.client.domain.api.route.auth.authorize
 import org.montigny.client.dto.Common.ErrorResponse
 import org.montigny.client.dto.Common.SimpleResponse
 import org.montigny.client.service.ReportsService
@@ -18,17 +23,67 @@ fun Route.reportRoutes(
     userService: UserService,
     reportsService: ReportsService
 ){
-    route(API_URL_REPORT_DASHBOARD_EXCEL ){
-        install(NotarizedRoute()){
-            tags = setOf("Work")
+    route (API_URL_PAYROLL_DATA_DASHBOARD_EXCEL){
+        install(NotarizedRoute())
+        {
+            tags = setOf("Report")
             security = mapOf("BearerAuth" to emptyList())
             parameters = listOf(
                 Parameter(
-                    name = "startDate",
+                    name = START_DATE,
                     `in` = Parameter.Location.query,
                     schema = TypeDefinition.STRING),
                 Parameter(
-                    name = "endDate",
+                    name = END_DATE,
+                    `in` = Parameter.Location.query,
+                    schema = TypeDefinition.STRING))
+            get  = GetInfo.builder  {
+                summary("Get preprocessed payroll excel file")
+                description("Get preprocessed payroll excel file")
+                response {
+                    responseCode(HttpStatusCode.OK)
+                    responseType<SimpleResponse>()
+                    description("Get preprocessed payroll excel file")
+                }
+            }
+        }
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER){
+        get {
+                try {
+                val startDate = call.parameters[START_DATE] ?: ""
+                val endDate = call.parameters[END_DATE] ?: ""
+                val bytes = reportsService.generateWorkerPayrollReport(startDate, endDate)
+                call.response.header(
+                    HttpHeaders.ContentDisposition,
+                    ContentDisposition.Attachment.withParameter(
+                        ContentDisposition.Parameters.FileName,
+                        "PayRoll_Data.xlsx"
+                    ).toString()
+                )
+                call.respondBytes(
+                    bytes,
+                    contentType = ContentType.parse("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                }catch (e: Exception){
+                         e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Server error: ${e.message}", 500)
+                    )
+                }
+            }
+        }
+    }
+    route(API_URL_REPORT_DASHBOARD_EXCEL ){
+        install(NotarizedRoute()){
+            tags = setOf("Report")
+            security = mapOf("BearerAuth" to emptyList())
+            parameters = listOf(
+                Parameter(
+                    name = START_DATE,
+                    `in` = Parameter.Location.query,
+                    schema = TypeDefinition.STRING),
+                Parameter(
+                    name = END_DATE,
                     `in` = Parameter.Location.query,
                     schema = TypeDefinition.STRING))
             get  = GetInfo.builder  {
@@ -40,10 +95,11 @@ fun Route.reportRoutes(
                     description("Get preprocessed dashboard excel file")
                 } }
             }
-            get{
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER){
+        get{
                 try {
-                    val startDate = call.parameters["startDate"] ?: ""
-                    val endDate = call.parameters["endDate"] ?: ""
+                    val startDate = call.parameters[START_DATE] ?: ""
+                    val endDate = call.parameters[END_DATE] ?: ""
                     val bytes = reportsService.generateExcelReport(startDate, endDate)
                     call.response.header(
                         HttpHeaders.ContentDisposition,
@@ -61,8 +117,7 @@ fun Route.reportRoutes(
                     call.respond(
                         HttpStatusCode.InternalServerError,
                         ErrorResponse("Server error: ${e.message}", 500)
-                    )
-                }
-       }
+                    ) }}
+        }
     }
 }

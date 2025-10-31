@@ -5,16 +5,65 @@ import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.montigny.client.Report.AllReportData
-import org.montigny.client.dto.User.CurrentUserDTO
+import org.montigny.client.Report.FactWorkDoneByUserDTO
+import org.montigny.client.Report.FactWorkDoneDTO
 import org.montigny.client.persistence.repository.ReportsRepository
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.Date
 
 class ReportsService(
     private val reportsRepo: ReportsRepository,
 ) {
+
+
+
+    fun generateWorkerPayrollReport(startDate: String, endDate: String): ByteArray {
+        val list  : List<FactWorkDoneByUserDTO> =
+            reportsRepo.getFactWorkDoneByUser(startDate,endDate)
+        val workbook = XSSFWorkbook()
+        val sheetName = "FactWorkDoneByUser"
+        val sheet = workbook.createSheet(sheetName)
+        val headers = listOf(
+            "WorkDoneID", "UserID", "UserName", "UserSurname", "UserPhoneNumber",
+            "CubesPerWorkDone", "ContributingUsers", "WorkDate", "PersonalVolumePerWorkDone"
+        )
+        // 1. Create Header Row
+        val headerRow = sheet.createRow(0)
+        headers.forEachIndexed { index, title ->
+            headerRow.createCell(index).setCellValue(title)
+        }
+        list.forEachIndexed { rowIndex, dto ->
+            val row = sheet.createRow(rowIndex + 1)
+
+            // Calculate PersonalVolumePerWorkDone (DAX logic equivalent)
+            val personalVolume = if (dto.contributingUsers > 0)
+                dto.cubesPerWorkDone / dto.contributingUsers
+            else 0.0
+
+            // FactWorkDoneByUser Columns
+            row.createCell(0).setCellValue(dto.workDoneId.toString())
+            row.createCell(1).setCellValue(dto.userId.toString())
+            row.createCell(2).setCellValue(dto.userName)
+            row.createCell(3).setCellValue(dto.userSurname)
+            row.createCell(4).setCellValue(dto.userPhoneNumber)
+            row.createCell(5).setCellValue(dto.cubesPerWorkDone)      // CubesPerWorkDone (Total Volume)
+            row.createCell(6).setCellValue(dto.contributingUsers.toDouble()) // ContributingUsers
+            createDateCell(row, 7, dto.workDate, workbook)             // WorkDate
+            row.createCell(8).setCellValue(personalVolume)            // PersonalVolumePerWorkDone
+        }
+        // 3. Auto-size columns
+        headers.indices.forEach { sheet.autoSizeColumn(it) }
+
+        // Write the workbook to a ByteArray
+        val outputStream = ByteArrayOutputStream()
+        workbook.write(outputStream)
+        workbook.close()
+        return outputStream.toByteArray()
+    }
+
 
     fun generateExcelReport(startDate: String,endDate: String) : ByteArray
   {
@@ -161,16 +210,4 @@ class ReportsService(
         dateCell.cellStyle = dateCellStyle
     }
 
-    // Helper for formatting LocalDate to an Excel date cell
-    private fun createDateCell(row: Row, columnIndex: Int, localDate: LocalDate, workbook: Workbook) {
-        val dateValue = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant())
-        val dateCell = row.createCell(columnIndex)
-        dateCell.setCellValue(dateValue)
-
-        val creationHelper = workbook.creationHelper
-        val dateCellStyle = workbook.createCellStyle()
-        // Use the desired Excel date format
-        dateCellStyle.dataFormat = creationHelper.createDataFormat().getFormat("yyyy-mm-dd")
-        dateCell.cellStyle = dateCellStyle
-    }
 }

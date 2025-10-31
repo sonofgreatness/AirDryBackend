@@ -60,3 +60,15 @@ data class AllReportData(
     val factWorkDone: List<FactWorkDoneDTO>,
     val factWorkDoneForSection: List<FactWorkDoneForSectionDTO>
 )
+
+
+data class FactWorkDoneByUserDTO(
+    val workDoneId: UUID,
+    val userId: UUID,
+    val userName: String,
+    val userSurname: String,
+    val userPhoneNumber: String,
+    val cubesPerWorkDone: Double, // This is the total volume for the workDone
+    val contributingUsers: Int,    // This is the total user count for the workDone
+    val workDate: Instant
+)

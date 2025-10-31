@@ -20,8 +20,13 @@ fun GenerateReportsScreen(
     val scrollState = rememberScrollState()
     // Messages
     var pdfMessage by remember { mutableStateOf<String?>(null) }
+    var payRollMessage by remember { mutableStateOf<String?>(null) }
+    var dashBoardMessage by remember { mutableStateOf<String?>(null) }
+
     // Observe StateFlows
     val pdfState by viewModel.pdfGeneratorMessage.collectAsState()
+    val  payRollState by viewModel.payRollGeneratorMessage.collectAsState()
+    val dashBoardState by viewModel.dashBoardGeneratorMessage.collectAsState()
     LaunchedEffect(pdfState) {
         pdfMessage = pdfState
         if (pdfState?.contains("Done", true) == true) {
@@ -43,20 +48,17 @@ fun GenerateReportsScreen(
                 viewModel.exportStacksDataToPdf()
             })
         }
-    //Allow to pick startDate,endDate  :=> default latest week
-    //Allow to choose format , pdf , excel
-    /***************************************************************
-     *Weekly Casual report 1 per casual work
-     * supported format:both
-     *Full transactional data  (specified period)
-     *    by , organization , department or section
-     *  -> stack data sheets , atomic  data (snapshot of db)
-     *     excel
-     *WorkSummary for period
-     *       by section , department or organization
-     *        excel, period
-     *
-     ****************************************************************/
+        Row {
+            Text("Generate payroll screen", modifier = Modifier.clickable {
+                viewModel.exportPayRollDataToExcel("","")
+            })
+        }
+
+        Row {
+            Text("Generate dashBoard screen", modifier = Modifier.clickable {
+                viewModel.exportDashBoardToExcel("","")
+            })
+        }
     Row{
         Column(
         modifier = Modifier.fillMaxWidth(),
@@ -64,7 +66,9 @@ fun GenerateReportsScreen(
     ) {
         pdfMessage?.let { StatusMessageCard("PDF", it) }
         }
-      }
+      payRollMessage?.let { StatusMessageCard("Pay roll", it) }
+      dashBoardMessage?.let { StatusMessageCard("DashBoard", it) }
+    }
     }
     Row{Text("Dummy Text")}
 }

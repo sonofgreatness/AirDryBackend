@@ -17,6 +17,67 @@ import java.time.ZoneOffset
 import java.util.*
 
 class ReportsRepositoryImpl() : ReportsRepository {
+    override fun getFactWorkDoneByUser(startDate: String, endDate: String): List<FactWorkDoneByUserDTO> =transaction{
+        val intermediateData = getIntermediateReportData()
+        val cubesPerWorkDoneMap = intermediateData.cubesPerWorkDoneList.associateBy { it.workDoneId }
+        val usersPerWorkDoneMap = intermediateData.usersPerWorkDoneList.associateBy { it.workDoneId }
+
+        val startDateInstant = startDate?.takeIf { it.isNotBlank() }
+            ?.let { LocalDate.parse(it).atStartOfDay(ZoneOffset.UTC).toInstant() }
+
+        val endDateInstant = endDate?.takeIf { it.isNotBlank() }
+            ?.let { LocalDate.parse(it).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() }
+
+        if (startDateInstant != null && endDateInstant != null && startDateInstant > endDateInstant) {
+            throw IllegalStateException("Start date cannot be after end date.")
+        }
+        val dateFilter: Op<Boolean> = when {
+            startDateInstant != null && endDateInstant != null ->
+                WorkDone.workDate.between(startDateInstant, endDateInstant)
+            startDateInstant != null ->
+                WorkDone.workDate greaterEq startDateInstant
+            endDateInstant != null ->
+                WorkDone.workDate less endDateInstant
+            else -> Op.TRUE
+        }
+         WorkDoneUsers
+            // 1. Join to AppUsers for user details (UserID, UserName, etc.)
+            .join(AppUsers, JoinType.INNER, WorkDoneUsers.appUserId, AppUsers.id)
+            // 2. Join to WorkDone for the work date and date filtering
+            .join(WorkDone, JoinType.INNER, WorkDoneUsers.workDoneId, WorkDone.id)
+            .select { dateFilter }
+            .mapNotNull { row ->
+                val workDoneId = row[WorkDoneUsers.workDoneId].value
+                val volumeData = cubesPerWorkDoneMap[workDoneId]
+                val userData = usersPerWorkDoneMap[workDoneId]
+                // Data must exist in the aggregated lists
+                if (volumeData == null || userData == null) return@mapNotNull null
+                FactWorkDoneByUserDTO(
+                    workDoneId = workDoneId,
+                    userId = row[AppUsers.id].value,
+                    userName = row[AppUsers.name],
+                    userSurname = row[AppUsers.surname],
+                    userPhoneNumber = row[AppUsers.phoneNumber],
+                    cubesPerWorkDone = volumeData.totalVolumePerWorkDone,
+                    contributingUsers = userData.contributingUsers,
+                    workDate = row[WorkDone.workDate]
+                )
+            }
+    }
+    private data class IntermediateReportData(
+        val cubesPerWorkDoneList: List<WorkDoneVolumeDTO>,
+        val usersPerWorkDoneList: List<WorkDoneUserCountDTO>,
+        val departmentCountList: List<DepartmentCountDTO>
+    )
+
+    private fun getIntermediateReportData(): IntermediateReportData {
+        return IntermediateReportData(
+            cubesPerWorkDoneList = getCubesPerWorkDone(),
+            usersPerWorkDoneList = getUsersPerWorkDone(),
+            departmentCountList = getDepartmentCountPerWorkDone()
+        )
+    }
+
     // --- Master Report Function ---
    override fun generateAllReportData(
         startDate: String,
@@ -33,9 +94,10 @@ class ReportsRepositoryImpl() : ReportsRepository {
                 throw IllegalStateException("Start date cannot be after end date.")
             }
             // 1. Get Intermediate Data
-            val cubesPerWorkDoneList = getCubesPerWorkDone()
-            val usersPerWorkDoneList = getUsersPerWorkDone()
-            val departmentCountList = getDepartmentCountPerWorkDone()
+            val intermediateData = getIntermediateReportData()
+            val cubesPerWorkDoneList = intermediateData.cubesPerWorkDoneList
+            val usersPerWorkDoneList = intermediateData.usersPerWorkDoneList
+            val departmentCountList = intermediateData.departmentCountList
 
             val cubesPerWorkDoneMap = cubesPerWorkDoneList.associateBy { it.workDoneId }
             val usersPerWorkDoneMap = usersPerWorkDoneList.associateBy { it.workDoneId }

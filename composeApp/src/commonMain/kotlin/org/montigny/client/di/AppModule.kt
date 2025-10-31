@@ -26,6 +26,8 @@ import org.montigny.client.domain.synchronization.SyncSettingsRepository
 import org.montigny.client.ui.Theme.ThemeManager
 import org.montigny.client.ui.organizations.viewModels.OrganizationDepartmentsAndSectionsViewModel
 import org.montigny.client.ui.organizations.viewModels.OrganizationViewModel
+import org.montigny.client.ui.reports.useCase.GenerateDashBoardReportUseCase
+import org.montigny.client.ui.reports.useCase.GeneratePayRollDataReportUseCase
 import org.montigny.client.ui.reports.useCase.GenerateWeeklySummaryPdfUseCase
 import org.montigny.client.ui.reports.viewModel.GenerateReportsViewModel
 import org.montigny.client.ui.reports.viewModel.WeekApprovalsViewModel
@@ -103,23 +105,20 @@ single<PrintStacksToExcelUseCase>{
         get()
     )
 }
-single<GenerateWeeklySummaryPdfUseCase>{
-    GenerateWeeklySummaryPdfUseCase(
-        get(), get(),
-        get())
-}
+single<GenerateWeeklySummaryPdfUseCase>{ GenerateWeeklySummaryPdfUseCase(get(),
+    get(),get())}
+
+single <GenerateDashBoardReportUseCase>{GenerateDashBoardReportUseCase(get())}
+single<GeneratePayRollDataReportUseCase>{GeneratePayRollDataReportUseCase(get())}
 single<StacksViewModel>{StacksViewModel(get(), get(), get(),
     get(),get(), get(), get())}
-
 single<LoadWorkViewModel>{LoadWorkViewModel(get(), get(), get(),
 get(),get(), get())}
 
 single<CreateAndUpdateWorkViewModel>{
     CreateAndUpdateWorkViewModel(get(),get(), get()
     ,get(), get(), get())
-
 }
-
 single<LoadUserWorkViewModel>{
     LoadUserWorkViewModel(get(), get(), get(), get())
 }
@@ -131,5 +130,5 @@ single<FilterUsersViewModel>
 single<WeekApprovalsViewModel>{WeekApprovalsViewModel(get(), get()
 ,get())}
 single<GenerateReportsViewModel>{ GenerateReportsViewModel(get(), get()
-,get(), get())}
+,get(), get(), get(),get())}
 }

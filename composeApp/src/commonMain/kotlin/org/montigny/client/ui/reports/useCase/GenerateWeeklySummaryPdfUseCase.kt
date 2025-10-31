@@ -16,6 +16,7 @@ import org.montigny.client.dto.User.UserResponse
 import org.montigny.client.dto.Work.WorkDaySummaryDTO
 import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
+import org.montigny.client.util.Constants.Companion.MULTIPLICATION_SYMBOL
 import org.montigny.client.util.Constants.Companion.SYSTEM_REPORTS_MAIN_PATH
 import org.montigny.client.util.UtilityFunctions.Companion.generateDayDateForNowSpaced
 import org.montigny.client.util.stateClasses.UiState
@@ -75,8 +76,6 @@ class GenerateWeeklySummaryPdfUseCase(
                 .mapValues { entry ->
                     entry.value.groupBy { it.section?.displayName ?: "Unassigned Section" }
                 }
-
-            // 4. prepare output file
             val outputDir =
                 File(System.getProperty("user.home"), "$SYSTEM_REPORTS_MAIN_PATH/WeeklyReports")
             if (!outputDir.exists()) outputDir.mkdirs()
@@ -114,26 +113,32 @@ class GenerateWeeklySummaryPdfUseCase(
                         addHeaderCell(table, "Total cubes")
 
                         for (user in usersInSection) {
-                            val userSummaries = fetchAllSummariesForUser(filters.copy(filterUserId = user.id))
-                            //val userTotalStacks = userSummaries.sumOf { it.totalStacks.toLong() }.toInt()
-                            //val userTotalCubes = userSummaries.sumOf { it.totalVolume }
-
+                            val userSummaries = fetchAllSummariesForUser(filters.copy(filterUserId = user.id)).sortedBy { it.dayLabel }
+                            var sum = 0.0
                             userSummaries.forEach {dailySummary->
                                 val stacksArray = getStacksArray(dailySummary)
                                 val stacksPercentagesArray = getStacksPercentagesArray(dailySummary)
                                 val totalPersonalCubes = getTotalPersonalCubes(dailySummary, user.id!!)
 
-                                val startDate = userSummaries.minOfOrNull { it.dayLabel } ?: ""
-                                /*val stackPercent = if (sectionTotals.totalStacks > 0) {
-                                (userTotalStacks.toDouble() / sectionTotals.totalStacks.toDouble()) * 100.0
-                            } else 0.0*/
+                                val startDate = userSummaries.minOfOrNull { dailySummary.dayLabel } ?: ""
 
                                 addCell(table, "${user.name} ${user.surname}")
                                 addCell(table, startDate)
                                 addCell(table, stacksArray.toString())
                                 addCell(table, stacksPercentagesArray.toString())
                                 addCell(table, String.format("%.2f",totalPersonalCubes))
+                                sum += totalPersonalCubes
                             }
+                            val totalFont = Font(Font.HELVETICA, 10f, Font.BOLD)
+                            val totalLabelCell = PdfPCell(Phrase("Total", totalFont)).apply {
+                                colspan = 4
+                                horizontalAlignment = Element.ALIGN_RIGHT
+                            }
+                            val totalValueCell = PdfPCell(Phrase(String.format("%.2f", sum), totalFont)).apply {
+                                horizontalAlignment = Element.ALIGN_LEFT
+                            }
+                            table.addCell(totalLabelCell)
+                            table.addCell(totalValueCell)
                             document.add(table)
                             document.newPage()
 
@@ -143,7 +148,6 @@ class GenerateWeeklySummaryPdfUseCase(
                             addHeaderCell(table, "Stacks")
                             addHeaderCell(table, "Stack %")
                             addHeaderCell(table, "Total cubes")
-
                         }
                         document.newPage()
                     }
@@ -152,7 +156,6 @@ class GenerateWeeklySummaryPdfUseCase(
                 document.close()
                 writer.close()
             }
-
             emit(UiState.Success)
         } catch (t: Throwable) {
             emit(UiState.Error(t.localizedMessage ?: "Unknown error"))
@@ -161,34 +164,24 @@ class GenerateWeeklySummaryPdfUseCase(
 
 
     private   fun  getStacksArray(dailySummary : WorkDaySummaryDTO) :List<String> {
-        // Flatten all stacks from all work summaries
         val allStacks = dailySummary.workList.flatMap { it.stacks }
-        // Group by stackCode and count how many times each appears
         val groupedStacks = allStacks.groupingBy { it.stackCode }.eachCount()
-        // Build list of "stackCode *count"
         return groupedStacks.map { (code, count) ->
-            "$code *$count"
+            "$code $MULTIPLICATION_SYMBOL $count"
         }
     }
 
   private fun   getStacksPercentagesArray(dailySummary:WorkDaySummaryDTO): List<String>{
       val result = mutableListOf<String>()
-
       dailySummary.workList.forEach { work ->
           val totalUsers = work.totalUsers.takeIf { it > 0 } ?: return@forEach
-
-          // Get distinct stacks for this work
           val distinctStacks = work.stacks.distinctBy { it.stackCode }
-
-          // Compute percentage per stack
           val percentage = (1.0 / totalUsers.toDouble()) * 100
-
           distinctStacks.forEach { stack ->
               val entry = "${stack.stackCode} (${String.format("%.1f", percentage)}%)"
               if (entry !in result) result.add(entry) // ensure unique across all works
           }
       }
-
       return result
   }
 
@@ -336,7 +329,6 @@ class GenerateWeeklySummaryPdfUseCase(
         p.alignment = Element.ALIGN_LEFT
         document.add(p)
     }
-
     private fun addHeaderCell(table: PdfPTable, text: String) {
         val font = Font(Font.HELVETICA, 10f, Font.BOLD)
         val cell = PdfPCell(Phrase(text, font))
@@ -344,7 +336,6 @@ class GenerateWeeklySummaryPdfUseCase(
         cell.verticalAlignment = Element.ALIGN_MIDDLE
         table.addCell(cell)
     }
-
     private fun addCell(table: PdfPTable, text: String) {
         val font = Font(Font.HELVETICA, 10f, Font.NORMAL)
         val cell = PdfPCell(Phrase(text, font))
