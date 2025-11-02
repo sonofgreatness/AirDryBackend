@@ -9,22 +9,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import org.montigny.client.WORK_DONE_EDIT_GRACE_PERIOD
 import org.montigny.client.dto.Work.StackInfoDTO
 import org.montigny.client.dto.Work.UserInfoDTO
 import org.montigny.client.dto.Work.WorkDaySummaryDTO
@@ -32,9 +27,10 @@ import org.montigny.client.dto.Work.WorkSummaryDTO
 import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.navigation.Destination
 import org.montigny.client.navigation.Navigator
-import org.montigny.client.ui.work.viewModel.WorkDataFiltersDTOState
 import org.montigny.client.ui.work.viewModel.LoadWorkViewModel
+import org.montigny.client.ui.work.viewModel.WorkDataFiltersDTOState
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
+import org.montigny.client.util.UtilityFunctions
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -424,19 +420,30 @@ private fun WorkSummaryItem(work: WorkSummaryDTO, navigator: Navigator) {
                             work.updatedAt?.let { StatInline("⏱ Updated at", it) }
                         }
                     }
-                    IconButton(
-                        onClick = {
-                            navigator.navigateTo(
-                                Destination.EditWork(work.id.toString())
+                    var showEditButton  = false
+                    work.capturedAt.let{ dateString->
+                        val updatedDateTime = java.time.LocalDateTime.parse(dateString!!, UtilityFunctions.Companion.CustomApiFormatter)
+                        val updatedInstant = updatedDateTime
+                            .atZone(ZoneId.systemDefault())
+                            .toInstant()
+                        val daysPassed = java.time.Duration.between(updatedInstant,Instant.now()).toDays()
+                        showEditButton = daysPassed < WORK_DONE_EDIT_GRACE_PERIOD
+                    }
+                    if(showEditButton){
+                        IconButton(
+                            onClick = {
+                                navigator.navigateTo(
+                                    Destination.EditWork(work.id.toString())
+                                )
+                            },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Work Entry",
+                                tint = MaterialTheme.colorScheme.primary
                             )
-                        },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Work Entry",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        }
                     }
                 }
             }
@@ -544,8 +551,6 @@ private fun UserRow(user: UserInfoDTO, navigator: Navigator) {
                         style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                     )
                 }
-
-                // Active / Approved badges
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     StatusChip("Active", user.isActive, Icons.Default.CheckCircle)
                     StatusChip("Approved", user.isApproved, Icons.Default.Verified)

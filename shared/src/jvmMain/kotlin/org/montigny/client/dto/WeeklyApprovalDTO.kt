@@ -5,7 +5,6 @@ import org.montigny.client.dto.Common.UUIDNonNullableSerializer
 import org.montigny.client.dto.Common.UUIDSerializer
 import java.util.*
 
-
 @Serializable
 data class WeeklyApprovalDTO(
     @Serializable(with = UUIDNonNullableSerializer::class)
@@ -16,6 +15,7 @@ data class WeeklyApprovalDTO(
     val weekEndDate: String,
     @Serializable(with = UUIDSerializer::class)
     val approvedById: UUID? = null,
+    val approvedByFullName : String? = null,
     val approvedAt: String? = null,
     val status: String,
     val notes: String? = null

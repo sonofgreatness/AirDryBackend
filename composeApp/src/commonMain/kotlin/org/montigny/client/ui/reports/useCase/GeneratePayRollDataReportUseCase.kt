@@ -14,7 +14,7 @@ class GeneratePayRollDataReportUseCase(
     operator  fun  invoke(startDate:String , endDate:String): Flow<FileState> = flow{
         emit(FileState.Loading)
         try {
-            println("payRoll usecase")
+
             val outputDir =
                 File(System.getProperty("user.home"), "$SYSTEM_REPORTS_MAIN_PATH/Reports")
             if (!outputDir.exists()) outputDir.mkdirs()
@@ -22,11 +22,10 @@ class GeneratePayRollDataReportUseCase(
             val excelFile = File(outputDir, "MasterPayRollData_${dateStr}.xlsx")
             val fileData: ByteArray? = reportApi.getPayRollDataReport(startDate, endDate)
             fileData?.let {
-                println("payRoll usecase  api not empty")
                 excelFile.setWritable(true, false)
                 excelFile.writeBytes(it)
             }
-            emit(FileState.Success(filePath = outputDir.absolutePath))
+            emit(FileState.Success(filePath = excelFile.absolutePath))
         }catch (ex: Exception){
             ex.printStackTrace()
             emit(FileState.Error(message = ex.message.toString()))

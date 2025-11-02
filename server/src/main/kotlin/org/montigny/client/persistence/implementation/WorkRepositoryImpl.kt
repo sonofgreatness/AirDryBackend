@@ -8,6 +8,8 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.montigny.client.WORK_DONE_EDIT_GRACE_PERIOD
+import org.montigny.client.WORK_DONE_EDIT_GRACE_PERIOD_CAPTURER
 import org.montigny.client.dto.Common.PaginatedResponse
 import org.montigny.client.dto.CreateWeeklyApprovalDTO
 import org.montigny.client.dto.UpdateWeeklyApprovalDTO
@@ -77,8 +79,6 @@ class WorkRepositoryImpl(): WorkRepository {
                 it[createdAt] = Instant.now()
             }
         }
-
-        // --- 6️⃣ Return the new WorkDone ID ---
         workDoneId
     }
 
@@ -92,22 +92,20 @@ class WorkRepositoryImpl(): WorkRepository {
 
         // --- 2️⃣ Enforce time update rules ---
         if (UserUtils.isAdminUser(user) &&
-            myCreatedAt.isBefore(now.minus(7, ChronoUnit.DAYS))) {
+            myCreatedAt.isBefore(now.minus(WORK_DONE_EDIT_GRACE_PERIOD.toLong(), ChronoUnit.DAYS))) {
             error("Admin cannot update work older than 7 days")
         }
-
         if (UserUtils.isCapturerUser(user) &&
-            myCreatedAt.isBefore(now.minus(2, ChronoUnit.DAYS))) {
+            myCreatedAt.isBefore(now.minus(WORK_DONE_EDIT_GRACE_PERIOD_CAPTURER.toLong(), ChronoUnit.DAYS))) {
             error("Capturer cannot update work older than 2 days")
         }
-
         // --- 3️⃣ Update main record ---
         val updatedRows = WorkDone.update({ WorkDone.id eq req.id }) {
-            it[workDate] = req.workDate.toInstant()
+            //g
+            // it[workDate] = req.workDate.toInstant()
             it[updatedBy] = user.id
             it[updatedAt] = Instant.now()
         }
-
         // --- 4️⃣ Validate users ---
         val allUserIds = req.workersList.flatMap { it.userIds }.distinct()
         val missingUsers = allUserIds.filterNot { uid ->
@@ -116,7 +114,6 @@ class WorkRepositoryImpl(): WorkRepository {
         if (missingUsers.isNotEmpty()) {
             error("Some users not found: ${missingUsers.joinToString()}")
         }
-
         // --- 5️⃣ Validate stacks ---
         val allStackIds = req.stacksList.flatMap { it.stackIds } // duplicates allowed
         val missingStacks = allStackIds.distinct().filterNot { sid ->
@@ -147,18 +144,12 @@ class WorkRepositoryImpl(): WorkRepository {
                 it[createdAt] = Instant.now()
             }
         }
-        // --- 9️⃣ Return number of updated rows ---
         updatedRows
     }
-
-
-
-
-
     override  fun  deleteWorkById (user: CurrentUserDTO, id: UUID): Int =transaction{
         // --- 1️⃣ Check existence of WorkDone record ---
         val existing = WorkDone.select { WorkDone.id eq id }.singleOrNull()
-            ?: error("Work record not found for ID: ${id}")
+            ?: error("Work record not found for ID: $id")
 
         val createdAt = existing[WorkDone.createdAt]
         val now = Instant.now()
@@ -612,9 +603,6 @@ class WorkRepositoryImpl(): WorkRepository {
             totalPages = totalPages
         )
     }
-
-
-
    override fun  getDailyWorkSummariesByUser(currentUserDTO: CurrentUserDTO, page: Int,
                                      pageSize: Int,filters: WorkDataFiltersDTO)
             : PaginatedResponse<WorkDaySummaryDTO>
@@ -744,12 +732,9 @@ class WorkRepositoryImpl(): WorkRepository {
            totalPages = totalPages
        )
    }
-
-
     // --------------------------------------------
     // 🆕 Weekly Approvals Implementation
     // --------------------------------------------
-
     override fun createWeeklyApproval(user: CurrentUserDTO, req: CreateWeeklyApprovalDTO): UUID {
         return transaction {
              checkIfBelongsToOrganization(user,req.organizationId)
@@ -796,16 +781,47 @@ class WorkRepositoryImpl(): WorkRepository {
     }
     override fun getWeeklyApprovalById(user: CurrentUserDTO, id: UUID): WeeklyApprovalDTO? {
         return transaction {
-            WeeklyApprovals.select { WeeklyApprovals.id eq id }
+            val ApprovedByUser = AppUsers.alias("approved_by_user")
+
+            // Alias for the user who last UPDATED the record (as in your original code)
+            val UpdatedByUser = AppUsers.alias("updated_by_user")
+
+            WeeklyApprovals
+                // 1. Join for the ApprovedBy user (LEFT join because approvedById is nullable)
+                .join(
+                    ApprovedByUser,
+                    JoinType.LEFT,
+                    WeeklyApprovals.approvedById,
+                    ApprovedByUser[AppUsers.id]
+                )
+                // 2. Join for the UpdatedBy user (already in your original code)
+                .join(
+                    UpdatedByUser,
+                    JoinType.LEFT,
+                    WeeklyApprovals.updatedBy,
+                    UpdatedByUser[AppUsers.id]
+                )
+                .select { WeeklyApprovals.id eq id }
                 .map { row ->
+                    // The name and surname fields for the approved user are retrieved from the ApprovedByUser alias
+                    val approvedByName = row.getOrNull(ApprovedByUser[AppUsers.name])
+                    val approvedBySurname = row.getOrNull(ApprovedByUser[AppUsers.surname])
+
                     WeeklyApprovalDTO(
                         id = row[WeeklyApprovals.id].value,
                         organizationId = row[WeeklyApprovals.organizationId].value,
+                        // Use LocalDate directly for cleaner DTO mapping if possible, otherwise toString() is fine
                         weekStartDate = row[WeeklyApprovals.weekStartDate].toString(),
                         weekEndDate = row[WeeklyApprovals.weekEndDate].toString(),
                         approvedById = row[WeeklyApprovals.approvedById]?.value,
                         approvedAt = row[WeeklyApprovals.approvedAt]?.toString(),
                         status = row[WeeklyApprovals.status].name,
+                        // **FIXED: Combine name/surname from the ApprovedByUser alias**
+                        approvedByFullName = if (approvedByName != null && approvedBySurname != null) {
+                            "$approvedByName $approvedBySurname"
+                        } else {
+                            null
+                        },
                         notes = row[WeeklyApprovals.notes]
                     )
                 }.firstOrNull()
@@ -819,7 +835,23 @@ class WorkRepositoryImpl(): WorkRepository {
         organizationId: UUID?
     ): PaginatedResponse<WeeklyApprovalDTO> {
         return transaction {
-            val baseQuery = WeeklyApprovals.selectAll()
+            val ApprovedByUser = AppUsers.alias("approved_by_user")
+
+            // Alias for the user who last UPDATED the record (as in your original code)
+            val UpdatedByUser = AppUsers.alias("updated_by_user")
+            val baseQuery = WeeklyApprovals.join(
+                    ApprovedByUser,
+                    JoinType.LEFT,
+                    WeeklyApprovals.approvedById,
+                    ApprovedByUser[AppUsers.id]
+                )
+                // 2. Join for the UpdatedBy user (already in your original code)
+                .join(
+                    UpdatedByUser,
+                    JoinType.LEFT,
+                    WeeklyApprovals.updatedBy,
+                    UpdatedByUser[AppUsers.id]
+                ).selectAll()
                 .apply {
                     if (organizationId != null) this.andWhere { WeeklyApprovals.organizationId eq organizationId }
                     else
@@ -832,6 +864,8 @@ class WorkRepositoryImpl(): WorkRepository {
                 .orderBy(WeeklyApprovals.weekStartDate, SortOrder.DESC)
                 .limit(pageSize, offset = ((page - 1) * pageSize).toLong())
                 .map { row ->
+                    val approvedByName = row.getOrNull(ApprovedByUser[AppUsers.name])
+                    val approvedBySurname = row.getOrNull(ApprovedByUser[AppUsers.surname])
                     WeeklyApprovalDTO(
                         id = row[WeeklyApprovals.id].value,
                         organizationId = row[WeeklyApprovals.organizationId].value,
@@ -840,6 +874,12 @@ class WorkRepositoryImpl(): WorkRepository {
                         approvedById = row[WeeklyApprovals.approvedById]?.value,
                         approvedAt = row[WeeklyApprovals.approvedAt]?.toString(),
                         status = row[WeeklyApprovals.status].name,
+                        approvedByFullName = if (approvedByName != null && approvedBySurname != null) {
+                            "$approvedByName $approvedBySurname"
+                        } else {
+                            // Return null or empty string if no approver is set (due to LEFT JOIN)
+                            null
+                        },
                         notes = row[WeeklyApprovals.notes]
                     )
                 }
@@ -856,10 +896,28 @@ class WorkRepositoryImpl(): WorkRepository {
 
     override fun getLatestWeeklyApproval(user: CurrentUserDTO): WeeklyApprovalDTO? {
         return transaction {
-            WeeklyApprovals.select { WeeklyApprovals.organizationId eq user.organizationId }
+            val ApprovedByUser = AppUsers.alias("approved_by_user")
+            val UpdatedByUser = AppUsers.alias("updated_by_user")
+
+            WeeklyApprovals.join(
+                    ApprovedByUser,
+                    JoinType.LEFT,
+                    WeeklyApprovals.approvedById,
+                    ApprovedByUser[AppUsers.id]
+                )
+                // 2. Join for the UpdatedBy user (already in your original code)
+                .join(
+                    UpdatedByUser,
+                    JoinType.LEFT,
+                    WeeklyApprovals.updatedBy,
+                    UpdatedByUser[AppUsers.id]
+                ).
+            select { WeeklyApprovals.organizationId eq user.organizationId }
                 .orderBy(WeeklyApprovals.weekStartDate, SortOrder.DESC)
                 .limit(1)
                 .map { row ->
+                    val approvedByName = row.getOrNull(ApprovedByUser[AppUsers.name])
+                    val approvedBySurname = row.getOrNull(ApprovedByUser[AppUsers.surname])
                     WeeklyApprovalDTO(
                         id = row[WeeklyApprovals.id].value,
                         organizationId = row[WeeklyApprovals.organizationId].value,
@@ -868,10 +926,14 @@ class WorkRepositoryImpl(): WorkRepository {
                         approvedById = row[WeeklyApprovals.approvedById]?.value,
                         approvedAt = row[WeeklyApprovals.approvedAt]?.toString(),
                         status = row[WeeklyApprovals.status].name,
-                        notes = row[WeeklyApprovals.notes]
+                        notes = row[WeeklyApprovals.notes],
+                        approvedByFullName = if (approvedByName != null && approvedBySurname != null) {
+                            "$approvedByName $approvedBySurname"
+                        } else {
+                            null
+                        }
                     )
                 }.firstOrNull()
         }
     }
-
 }

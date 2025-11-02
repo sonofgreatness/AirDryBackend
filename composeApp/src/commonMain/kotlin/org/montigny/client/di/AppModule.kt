@@ -114,7 +114,6 @@ single<StacksViewModel>{StacksViewModel(get(), get(), get(),
     get(),get(), get(), get())}
 single<LoadWorkViewModel>{LoadWorkViewModel(get(), get(), get(),
 get(),get(), get())}
-
 single<CreateAndUpdateWorkViewModel>{
     CreateAndUpdateWorkViewModel(get(),get(), get()
     ,get(), get(), get())
@@ -122,8 +121,7 @@ single<CreateAndUpdateWorkViewModel>{
 single<LoadUserWorkViewModel>{
     LoadUserWorkViewModel(get(), get(), get(), get())
 }
-single<FilterUsersViewModel>
-{
+single<FilterUsersViewModel> {
     FilterUsersViewModel(get(), get()
     ,get(), get(), get(),get())
 }

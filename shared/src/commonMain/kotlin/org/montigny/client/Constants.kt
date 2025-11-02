@@ -74,3 +74,5 @@ const val QUERY_PAGE = "page"
 const val QUERY_PAGE_SIZE = "pageSize"
 const val START_DATE = "startDate"
 const val END_DATE = "endDate"
+const val WORK_DONE_EDIT_GRACE_PERIOD = 7
+const val WORK_DONE_EDIT_GRACE_PERIOD_CAPTURER = 2

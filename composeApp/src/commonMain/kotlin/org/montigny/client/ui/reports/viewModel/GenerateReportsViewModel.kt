@@ -25,13 +25,13 @@ class GenerateReportsViewModel(
 ):ViewModel() {
 
 
-    private val _pdfGeneratorMessage  = MutableStateFlow<String?>(null)
+    private val _pdfGeneratorMessage  = MutableStateFlow<String>("")
     val  pdfGeneratorMessage: StateFlow<String?> = _pdfGeneratorMessage
 
-    private val _payRollGeneratorMessage  = MutableStateFlow<String?>(null)
+    private val _payRollGeneratorMessage  = MutableStateFlow<String>("")
     val  payRollGeneratorMessage: StateFlow<String?> = _payRollGeneratorMessage
 
-    private val _dashBoardGeneratorMessage  = MutableStateFlow<String?>(null)
+    private val _dashBoardGeneratorMessage  = MutableStateFlow<String>("")
     val  dashBoardGeneratorMessage: StateFlow<String?> = _dashBoardGeneratorMessage
 
 
@@ -40,19 +40,21 @@ class GenerateReportsViewModel(
     private val  _filterDto  = MutableStateFlow<WorkDataFiltersDTO>(WorkDataFiltersDTO())
     val  filterDto: StateFlow<WorkDataFiltersDTO> = _filterDto
 
+
+  fun   setStartAndEndDateFilters(start: String, end:String) {
+      println("setting start date and end date filters with  values $start and $end")
+        _filterDto.value  = _filterDto.value.copy(filterDate = start, filterDateEndDate = end)
+    }
     fun  exportStacksDataToPdf(){
         viewModelScope.launch {
             generateWeeklySummaryPdfUseCase.invoke(filterDto.value).collect {
                 when (it) {
-                    is UiState.Error -> {
+                    is FileState.Error -> {
                         _pdfGeneratorMessage.value = "Failed to generate file"
                         logger.error("failed to export ${it.message}")
                     }
-                    is UiState.Success -> {
-                        _pdfGeneratorMessage.value = "Done."
-                    }
-                    is UiState.Loading -> {
-                        _pdfGeneratorMessage.value = "Loading..."
+                    is FileState.Success -> {
+                        _pdfGeneratorMessage.value = it.filePath
                     }
                     else -> {}
                 }
@@ -62,7 +64,6 @@ class GenerateReportsViewModel(
 
 
     fun  exportPayRollDataToExcel(startdate:String, enddate:String) {
-        println("viewModel print pay roll data")
         viewModelScope.launch {
             generatePayRollDataReportUseCase.invoke(startdate, enddate).collect {
                 when (it) {
@@ -78,7 +79,6 @@ class GenerateReportsViewModel(
         }
     }
      fun exportDashBoardToExcel(startdate:String, enddate:String) {
-         println("viewModel print DashBoardToExcel")
          viewModelScope.launch {
              generateDashBoardReportUseCase.invoke(startdate, enddate).collect {
                  when (it) {
@@ -93,5 +93,9 @@ class GenerateReportsViewModel(
              }
          }
      }
-
+    fun resetReportMessages() {
+        _pdfGeneratorMessage.value = ""
+        _payRollGeneratorMessage.value = ""
+        _dashBoardGeneratorMessage.value = ""
+    }
 }

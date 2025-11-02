@@ -19,21 +19,12 @@ import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import org.montigny.client.util.Constants.Companion.MULTIPLICATION_SYMBOL
 import org.montigny.client.util.Constants.Companion.SYSTEM_REPORTS_MAIN_PATH
 import org.montigny.client.util.UtilityFunctions.Companion.generateDayDateForNowSpaced
+import org.montigny.client.util.stateClasses.FileState
 import org.montigny.client.util.stateClasses.UiState
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
-
-/*********************************
- * Generates weekly summary workDone
- * week must be =< latest WeeklyApproval
- * 1. get active casual workers
- *    -> for each worker
- *        -> get list of work for that period
- *           -> process write into back file
- * Forced PAGE BREAK for user
- *********************************/
 
 class GenerateWeeklySummaryPdfUseCase(
     private val workApi: WorkApi,
@@ -50,10 +41,9 @@ class GenerateWeeklySummaryPdfUseCase(
     private val _summaryTotalPages = MutableStateFlow(Int.MAX_VALUE)
     private val _summaries = MutableStateFlow<List<WorkDaySummaryDTO>>(emptyList())
 
-    operator fun invoke(filters: WorkDataFiltersDTO): Flow<UiState> = flow {
-        emit(UiState.Idle)
+    operator fun invoke(filters: WorkDataFiltersDTO): Flow<FileState> = flow {
+        emit(FileState.Loading)
         try {
-            emit(UiState.Loading)
 
             // 1. get organization info
             val organizations = organizationApi.getOrganizationWithNestedDepartments()
@@ -156,9 +146,9 @@ class GenerateWeeklySummaryPdfUseCase(
                 document.close()
                 writer.close()
             }
-            emit(UiState.Success)
+            emit(FileState.Success(filePath = pdfFile.absolutePath))
         } catch (t: Throwable) {
-            emit(UiState.Error(t.localizedMessage ?: "Unknown error"))
+            emit(FileState.Error(t.localizedMessage ?: "Unknown error"))
         }
     }
 

@@ -2,7 +2,10 @@ package org.montigny.client.util
 
 import java.text.SimpleDateFormat
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 class UtilityFunctions {
@@ -14,13 +17,11 @@ class UtilityFunctions {
         } catch (e: IllegalArgumentException) {
             null
         }
-
         fun UUID?.toStringOrNull():String? {
             if(this == null)
                 return null
             return this.toString()
         }
-
         fun UUID?.toStringCustom():String {
             if(this == null)
                 return "null"
@@ -43,5 +44,22 @@ class UtilityFunctions {
         fun generateDayDateForNowSpaced(): String{
             return SimpleDateFormat("EEEE dd-MM-yyyy").format(Date.from(Instant.now()))
         }
+        fun formatReadableDate(isoString: String?): String {
+            return try {
+                if (isoString.isNullOrBlank()) return "-"
+                val instant = Instant.parse(isoString)
+                val formatter = DateTimeFormatter.ofPattern("EEEE dd/MM/yyyy")
+                    .withLocale(Locale.getDefault())
+                    .withZone(ZoneId.systemDefault())
+                formatter.format(instant)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                "-"
+            }
+        }
+        val CustomApiFormatter = DateTimeFormatter.ofPattern(
+            "EEEE dd/MM/yyyy HH:mm",
+            Locale.getDefault()
+        )
     }
 }

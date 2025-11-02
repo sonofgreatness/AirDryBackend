@@ -22,7 +22,7 @@ class GenerateDashBoardReportUseCase
             fileData?.let {
                 excelFile.writeBytes(it)
             }
-            emit(FileState.Success(filePath = outputDir.absolutePath))
+            emit(FileState.Success(filePath = excelFile.absolutePath))
         }catch (ex: Exception){
             ex.printStackTrace()
             emit(FileState.Error(message = ex.message.toString()))

@@ -19,7 +19,8 @@ import kotlinx.coroutines.launch
 import org.montigny.client.dto.WeeklyApprovalDTO
 import org.montigny.client.ui.reports.viewModel.WeekApprovalsViewModel
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
-import java.util.UUID // Required for the dialog state
+import org.montigny.client.util.UtilityFunctions.Companion.formatReadableDate
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,8 +83,6 @@ fun WeeklyApprovalScreen(
                             onApprove = { pendingUpdate = Pair(approval.id, "APPROVED") },
                             onRevoke = { pendingUpdate = Pair(approval.id, "REVOKED") }
                         )
-
-                        // Infinite scrolling logic
                         val hasMorePages = viewModel.currentPage.value < totalPages
                         if (index >= weeklyApprovals.lastIndex - 2 && hasMorePages) {
                             SideEffect {
@@ -204,7 +203,14 @@ fun WeeklyApprovalCard(
                 )
                 approval.approvedAt?.let {
                     Text(
-                        "Approved: $it",
+                        "Approved Day: ${formatReadableDate(it)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+                approval.approvedByFullName?.let {
+                    Text(
+                        "Approved By: $it}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -220,10 +226,7 @@ fun WeeklyApprovalCard(
 
             // --- Actions Row ---
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-
-                // === APPROVE Button ===
-                // Show if status is PENDING or REVOKED (Allows re-approval)
-                if (approval.status == "PENDING" || approval.status == "REVOKED") {
+                    if (approval.status == "PENDING" || approval.status == "REVOKED") {
                     Button(
                         onClick = onApprove,
                         enabled = !isUpdating,
@@ -238,24 +241,40 @@ fun WeeklyApprovalCard(
                 // === REVOKE Button ===
                 // Show if status is PENDING or APPROVED (Allows rejection or revocation)
                 if (approval.status == "APPROVED" || approval.status == "PENDING") {
-                    OutlinedButton(
-                        onClick = onRevoke,
-                        enabled = !isUpdating,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        // Border logic remains the same
-                        border = if (isUpdating) {
-                            ButtonDefaults.outlinedButtonBorder.copy(
-                                brush = SolidColor(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f))
-                            )
-                        } else {
-                            ButtonDefaults.outlinedButtonBorder.copy(
-                                brush = SolidColor(MaterialTheme.colorScheme.error)
-                            )
+
+                    //If   this was   over 24 hours  do not  show  outlined button
+                    var showRevokeButton = false
+
+                    if (approval.status == "PENDING") {
+                        showRevokeButton = true
+                    } else {
+                        approval.approvedAt?.let {
+                            try {
+                                val approvedInstant = java.time.Instant.parse(it)
+                                val hoursPassed = java.time.Duration.between(approvedInstant, java.time.Instant.now()).toHours()
+                                showRevokeButton = hoursPassed < 24
+                            } catch (e: Exception) {
+                                showRevokeButton = true
+                            }
                         }
-                    ) {
-                        ActionContent(isUpdating, "Revoke", Icons.Default.Refresh)
+                    }
+                    if (showRevokeButton) {
+                        OutlinedButton(
+                            onClick = onRevoke,
+                            enabled = !isUpdating,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            border = if (isUpdating) {
+                                ButtonDefaults.outlinedButtonBorder.copy(
+                                    brush = SolidColor(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)))
+                            } else {
+                                ButtonDefaults.outlinedButtonBorder.copy(
+                                    brush = SolidColor(MaterialTheme.colorScheme.error))
+                            }
+                        ) {
+                            ActionContent(isUpdating, "Revoke", Icons.Default.Refresh)
+                        }
                     }
                 }
             }
