@@ -37,12 +37,10 @@ kotlin {
             implementation(files("libs2/kompendium-core-3.14.1-SNAPSHOT.jar"))
             implementation(files("libs2/kompendium-json-schema-3.14.1-SNAPSHOT.jar"))
             implementation(files("libs2/kompendium-oas-3.14.1-SNAPSHOT.jar"))
-
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
-
     }
 }
 

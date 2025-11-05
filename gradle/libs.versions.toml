@@ -29,6 +29,7 @@ multiplatform-settings = {module = "com.russhwolf:multiplatform-settings", versi
 multiplatform-settings-no-arg  = {module = "com.russhwolf:multiplatform-settings-no-arg", version.ref ="commonsettingsVersion"}
 kotlinx-datetime = {module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref= "datetimeVersion"}
 
+
 [plugins]
 composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

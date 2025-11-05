@@ -187,11 +187,11 @@ fun Route.userRoutes(userService: UserService) {
                BEARER_AUTH_TAG to emptyList())
            parameters = listOf(
                Parameter(
-                   name = "page",
+                   name = PAGE,
                    `in` = Parameter.Location.query,
                    schema = TypeDefinition.INT)
                ,Parameter(
-                   name = "pageSize",
+                   name = PAGE_SIZE,
                    `in` = Parameter.Location.query,
                    schema = TypeDefinition.INT)
            )
@@ -209,8 +209,8 @@ fun Route.userRoutes(userService: UserService) {
 
                    try {
                        val currentUser = UserUtils.getLoggedInUser(call)
-                       val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
-                       val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
+                       val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
+                       val pageSize = call.request.queryParameters[PAGE_SIZE]?.toIntOrNull() ?: 20
 
                        val users = userService.getUsers(currentUser,page,pageSize)
                        call.respond(HttpStatusCode.OK, users)
@@ -262,8 +262,8 @@ fun Route.userRoutes(userService: UserService) {
 
                     try {
                         val currentUser = UserUtils.getLoggedInUser(call)
-                        val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
-                        val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull() ?: 20
+                        val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
+                        val pageSize = call.request.queryParameters[PAGE_SIZE]?.toIntOrNull() ?: 20
                         val  queryString  = call.request.queryParameters["queryString"]
                         val users = userService.getCasualUsers(currentUser,page,pageSize, queryString)
                         call.respond(HttpStatusCode.OK, users)
@@ -297,7 +297,7 @@ fun Route.userRoutes(userService: UserService) {
                     description(GET_USERS_DESCRIPTION_TYPE)
                 }
             }
-            authorize(userService, UserRole.ADMIN,UserRole.SUPER_USER) {
+            authorize(userService, UserRole.ADMIN,UserRole.SUPER_USER, UserRole.CAPTURER) {
                 get{
                     try {
                         val users = userService.getUserTypes()

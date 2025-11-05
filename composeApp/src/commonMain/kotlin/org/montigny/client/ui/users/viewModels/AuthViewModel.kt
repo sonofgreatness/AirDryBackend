@@ -2,14 +2,11 @@ package org.montigny.client.ui.users.viewModels
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
-import org.montigny.client.auth.OfflineSessionManager
-import org.montigny.client.auth.SessionManager
 import org.montigny.client.data.api.repository.UserApi
 import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.util.ConnectivityObserver
@@ -20,9 +17,7 @@ import org.montigny.client.util.stateClasses.UiState
 import org.slf4j.Logger
 
 class AuthViewModel(
-    private val sessionManager: SessionManager,
-    private val offlineSessionManager: OfflineSessionManager,
-                    private  val userApi: UserApi,
+    private  val userApi: UserApi,
                     private val logger: Logger,
     private val userRepository: UserRepository,
     private val connectivityObserver: ConnectivityObserver,
@@ -78,8 +73,10 @@ class AuthViewModel(
                     else -> {_uiState.value = UiState.Success}
                 }
                 } else {
-                    userApi.login(username, password)
+                   if ( userApi.login(username, password))
                     _uiState.value = UiState.Success
+                    else
+                       _uiState.value = UiState.Error(FAILED_LOGIN)
                 }
             } catch (e: Exception) {
                 val msg = e.message ?: "Unexpected error"
