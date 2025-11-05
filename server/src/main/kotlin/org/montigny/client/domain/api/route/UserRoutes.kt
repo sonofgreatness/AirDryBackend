@@ -513,7 +513,7 @@ fun Route.userRoutes(userService: UserService) {
           }
       }
   }
-        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER, UserRole.CAPTURER) {
             get {
                 try {
                     val idParam = call.parameters["id"]
