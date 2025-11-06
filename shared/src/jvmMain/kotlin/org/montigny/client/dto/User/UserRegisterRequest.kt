@@ -3,14 +3,13 @@ package org.montigny.client.dto.User
 import kotlinx.serialization.Serializable
 import org.montigny.client.dto.Common.UUIDSerializer
 import java.util.UUID
-import javax.naming.Name
 
 @Serializable
 data class UserRegisterRequest(
     val name: String = "John",
     val surname: String = "Doe",
     val phoneNumber: String = "76000000",
-    val secondaryPhoneNumber: String? = "79000000",
+    val nationalId: String? = "79000000",
     @Serializable(with = UUIDSerializer::class)
     val userTypeId: UUID? = null,
     @Serializable(with = UUIDSerializer::class)
@@ -29,7 +28,7 @@ data class UserRegisterRequest(
     fun toUpdateUserDTO(): UpdateUserDTO {
         return UpdateUserDTO(
             updated_name = name,updated_surname = surname,updated_phoneNumber = phoneNumber,
-            updated_secondaryPhoneNumber = secondaryPhoneNumber, updated_password = password,
+            updated_secondaryPhoneNumber = nationalId, updated_password = password,
             updated_sectionId = sectionId, updated_userTypeId = userTypeId, updated_departmentId = departmentId,
             updated_email = email, isApproved = isApproved, isActive = isActive
         )
@@ -40,7 +39,7 @@ data class UserRegisterRequest(
             name = name,
             surname = surname,
             phoneNumber = phoneNumber,
-            secondaryPhoneNumber = secondaryPhoneNumber,
+            nationalId = nationalId,
             email = email,
             isActive = isActive,
             isApproved = isApproved,

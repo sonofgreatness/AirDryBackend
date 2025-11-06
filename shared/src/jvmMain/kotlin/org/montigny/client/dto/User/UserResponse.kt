@@ -13,7 +13,7 @@ data class UserResponse(
     val name: String,
     val surname: String,
     val phoneNumber: String,
-    val secondaryPhoneNumber: String?,
+    val nationalId: String?,
     val email: String?,
     val isActive: Boolean,
     val isApproved: Boolean,

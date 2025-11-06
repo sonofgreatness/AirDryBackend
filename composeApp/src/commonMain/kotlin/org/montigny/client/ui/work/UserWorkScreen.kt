@@ -159,7 +159,7 @@ private fun UserDetailsCard(user: UserResponse) {
 
             FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 DetailItem(Icons.Default.Call, user.phoneNumber)
-                user.secondaryPhoneNumber?.let { DetailItem(Icons.Default.PhoneIphone, it) }
+                user.nationalId?.let { DetailItem(Icons.Default.PhoneIphone, it) }
                 user.email?.let { DetailItem(Icons.Default.Email, it) }
                 user.department?.let { DetailItem(Icons.Default.Business, it.displayName) }
                 user.section?.let { DetailItem(Icons.Default.Layers, it.displayName) }

@@ -19,7 +19,6 @@ import org.montigny.client.dto.Work.*
 import org.montigny.client.dto.WorkDataFiltersDTO
 import org.montigny.client.persistence.*
 import org.montigny.client.persistence.repository.WorkRepository
-import org.montigny.client.util.Constants
 import org.montigny.client.util.UserUtils
 import org.montigny.client.util.UserUtils.checkIfBelongsToOrganization
 import java.text.SimpleDateFormat
@@ -295,7 +294,7 @@ class WorkRepositoryImpl(): WorkRepository {
         filters.filterName?.takeIf { it.isNotBlank() }?.let { userConditions += AppUsers.name.lowerCase() like "%${it.lowercase()}%" }
         filters.filterSurname?.takeIf { it.isNotBlank() }?.let { userConditions += AppUsers.surname.lowerCase() like "%${it.lowercase()}%" }
         filters.filterPhoneNumber?.takeIf { it.isNotBlank() }?.let { userConditions += AppUsers.phoneNumber like "%$it%" }
-        filters.filterSecondaryPhoneNumber?.takeIf { it.isNotBlank() }?.let { userConditions += AppUsers.secondaryPhone like "%$it%" }
+        filters.filterSecondaryPhoneNumber?.takeIf { it.isNotBlank() }?.let { userConditions += AppUsers.nationalId like "%$it%" }
 
         val combinedUserCondition = userConditions.reduceOrNull { acc, op -> acc and op } ?: Op.TRUE
 
@@ -483,7 +482,7 @@ class WorkRepositoryImpl(): WorkRepository {
         filters.filterPhoneNumber?.takeIf { it.isNotBlank() }
             ?.let { userConditions += AppUsers.phoneNumber like "%$it%" }
         filters.filterSecondaryPhoneNumber?.takeIf { it.isNotBlank() }
-            ?.let { userConditions += AppUsers.secondaryPhone like "%$it%" }
+            ?.let { userConditions += AppUsers.nationalId like "%$it%" }
 
         val combinedUserCondition = userConditions.reduceOrNull { acc, op -> acc and op } ?: Op.TRUE
 

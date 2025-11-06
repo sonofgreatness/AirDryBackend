@@ -31,7 +31,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             it[name] = req.name
             it[surname] = req.surname
             it[phoneNumber] = req.phoneNumber
-            it[secondaryPhone] = req.secondaryPhoneNumber
+            it[nationalId] = req.nationalId
             it[userTypeId] = req.userTypeId
             it[organizationId] = currentUserDTO.organizationId
             it[departmentId] = req.departmentId
@@ -59,7 +59,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             it[name] = req.name
             it[surname] = req.surname
             it[phoneNumber] = req.phoneNumber
-            it[secondaryPhone] = req.secondaryPhoneNumber
+            it[nationalId] = req.nationalId
             it[userTypeId] = superUserTypeId  // Force SUPER_USER type
             it[organizationId] = req.organizationId
             it[departmentId] = req.departmentId
@@ -78,7 +78,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 name = row[AppUsers.name],
                 surname = row[AppUsers.surname],
                 phoneNumber = row[AppUsers.phoneNumber],
-                secondaryPhoneNumber = row[AppUsers.secondaryPhone],
+                nationalId = row[AppUsers.nationalId],
                 isApproved = row[AppUsers.isApproved],
                 isActive = row[AppUsers.isActive],
                 userTypeId = row[AppUsers.userTypeId]!!.value,
@@ -101,7 +101,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                AppUsers.name,
                AppUsers.surname,
                AppUsers.phoneNumber,
-               AppUsers.secondaryPhone,
+               AppUsers.nationalId,
                AppUsers.email,
                AppUsers.isActive,
                AppUsers.isApproved,
@@ -124,7 +124,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                name = row[AppUsers.name],
                surname = row[AppUsers.surname],
                phoneNumber = row[AppUsers.phoneNumber],
-               secondaryPhoneNumber = row[AppUsers.secondaryPhone],
+               nationalId = row[AppUsers.nationalId],
                email = row[AppUsers.email],
                isActive = row[AppUsers.isActive],
                isApproved = row[AppUsers.isApproved],
@@ -175,7 +175,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 AppUsers.name,
                 AppUsers.surname,
                 AppUsers.phoneNumber,
-                AppUsers.secondaryPhone,
+                AppUsers.nationalId,
                 AppUsers.email,
                 AppUsers.isActive,
                 AppUsers.isApproved,
@@ -203,7 +203,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 name = row[AppUsers.name],
                 surname = row[AppUsers.surname],
                 phoneNumber = row[AppUsers.phoneNumber],
-                secondaryPhoneNumber = row[AppUsers.secondaryPhone],
+                nationalId = row[AppUsers.nationalId],
                 email = row[AppUsers.email],
                 isActive = row[AppUsers.isActive],
                 isApproved = row[AppUsers.isApproved],
@@ -247,7 +247,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                AppUsers.name,
                AppUsers.surname,
                AppUsers.phoneNumber,
-               AppUsers.secondaryPhone,
+               AppUsers.nationalId,
                AppUsers.email,
                AppUsers.isActive,
                AppUsers.isApproved,
@@ -281,7 +281,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                (AppUsers.name.lowerCase() like pattern) or
                        (AppUsers.surname.lowerCase() like pattern) or
                        (AppUsers.phoneNumber.lowerCase() like pattern) or
-                       (AppUsers.secondaryPhone.lowerCase() like pattern) or
+                       (AppUsers.nationalId.lowerCase() like pattern) or
                        (AppUsers.email.lowerCase() like pattern)
            }
        }
@@ -294,7 +294,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                name = row[AppUsers.name],
                surname = row[AppUsers.surname],
                phoneNumber = row[AppUsers.phoneNumber],
-               secondaryPhoneNumber = row[AppUsers.secondaryPhone],
+               nationalId = row[AppUsers.nationalId],
                email = row[AppUsers.email],
                isActive = row[AppUsers.isActive],
                isApproved = row[AppUsers.isApproved],
@@ -375,7 +375,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             req.updated_name?.let { n -> it[name] = n }
             req.updated_surname?.let { s -> it[surname] = s }
             req.updated_phoneNumber?.let { p -> it[phoneNumber] = p }
-            req.updated_secondaryPhoneNumber?.let { sp -> it[secondaryPhone] = sp }
+            req.updated_secondaryPhoneNumber?.let { sp -> it[nationalId] = sp }
             req.updated_userTypeId?.let { ut -> it[userTypeId] = ut }
             req.updated_departmentId?.let { dept -> it[departmentId] = dept }
             req.updated_sectionId?.let { sec -> it[sectionId] = sec }
@@ -471,7 +471,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 AppUsers.name,
                 AppUsers.surname,
                 AppUsers.phoneNumber,
-                AppUsers.secondaryPhone,
+                AppUsers.nationalId,
                 AppUsers.email,
                 AppUsers.isActive,
                 AppUsers.isApproved,
@@ -541,7 +541,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 name = row[AppUsers.name],
                 surname = row[AppUsers.surname],
                 phoneNumber = row[AppUsers.phoneNumber],
-                secondaryPhoneNumber = row[AppUsers.secondaryPhone],
+                nationalId = row[AppUsers.nationalId],
                 email = row[AppUsers.email],
                 isActive = row[AppUsers.isActive],
                 isApproved = row[AppUsers.isApproved],
@@ -591,7 +591,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 AppUsers.name,
                 AppUsers.surname,
                 AppUsers.phoneNumber,
-                AppUsers.secondaryPhone,
+                AppUsers.nationalId,
                 AppUsers.email,
                 AppUsers.isActive,
                 AppUsers.isApproved,
@@ -630,7 +630,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
         }
         filters.filterSecondaryPhoneNumber?.takeIf { it.isNotBlank() }?.let { query ->
             // Assuming partial match for secondary phone numbers is acceptable
-            baseQuery.andWhere { AppUsers.secondaryPhone like "%$query%" }
+            baseQuery.andWhere { AppUsers.nationalId like "%$query%" }
         }
         if (!filters.includeInactiveWorkers) {
             // If we DON'T include inactive workers, filter for only active workers
@@ -646,7 +646,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
                 name = row[AppUsers.name],
                 surname = row[AppUsers.surname],
                 phoneNumber = row[AppUsers.phoneNumber],
-                secondaryPhoneNumber = row[AppUsers.secondaryPhone],
+                nationalId = row[AppUsers.nationalId],
                 email = row[AppUsers.email],
                 isActive = row[AppUsers.isActive],
                 isApproved = row[AppUsers.isApproved],
@@ -681,7 +681,7 @@ class UserRepositoryImpl(private val passwordHasher: PasswordHasher) : UserRepos
             UserRegisterRequest(
                 id = it[AppUsers.id].value, name = it[AppUsers.name],
                 surname = it[AppUsers.surname], phoneNumber = it[AppUsers.phoneNumber],
-                secondaryPhoneNumber = it[AppUsers.secondaryPhone], departmentId = it[AppUsers.departmentId]?.value,
+                nationalId = it[AppUsers.nationalId], departmentId = it[AppUsers.departmentId]?.value,
                 email = it[AppUsers.email], sectionId = it[AppUsers.sectionId]?.value,isActive = it[AppUsers.isActive],
                 isApproved = it[AppUsers.isApproved], userTypeId = it[AppUsers.userTypeId]?.value,
                 organizationId = it[AppUsers.organizationId]?.value, password = it[AppUsers.passwordHash]!!)

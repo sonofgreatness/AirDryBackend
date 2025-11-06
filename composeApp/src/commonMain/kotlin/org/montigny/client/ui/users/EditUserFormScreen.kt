@@ -58,7 +58,7 @@ fun  EditUserFormScreen(
                 it.surname.isNullOrBlank() ||
                 it.email.isNullOrBlank() ||
                 it.phoneNumber.isNullOrBlank() || it.phoneNumber!!.length != 8 ||
-                (!it.secondaryPhoneNumber.isNullOrBlank() && it.secondaryPhoneNumber!!.length != 8)
+                (!it.nationalId.isNullOrBlank() && it.nationalId!!.length != 13)
                 ||it.password.length < 5
     } ?: true
 

@@ -4,7 +4,6 @@ import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.date
 import org.montigny.client.persistence.converters.timestamptz
-import java.time.LocalDate
 
 open class BaseTable(name: String) : UUIDTable(name) {
     val createdAt = timestamptz("created_at").clientDefault { java.time.Instant.now() }
@@ -31,7 +30,7 @@ object AppUsers : BaseTable("app_user") {
     val name = varchar("name", 42)
     val surname = varchar("surname", 42)
     val phoneNumber = varchar("phone_number", 15)
-    val secondaryPhone = varchar("secondary_phone_number", 15).nullable()
+    val nationalId = varchar("national_id", 15).nullable().index(isUnique = true)
     val isApproved = bool("is_approved").default(false)
     val isActive = bool("is_active").default(true)
     val userTypeId = reference("user_type_id", UserTypes).nullable()

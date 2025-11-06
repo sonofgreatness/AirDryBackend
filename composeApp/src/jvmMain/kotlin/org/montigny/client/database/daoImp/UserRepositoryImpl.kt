@@ -1,8 +1,6 @@
 package org.montigny.client.database.daoImp
 
 import org.com.client.database.User_type
-import org.montigny.client.ADMIN_DISPLAY_NAME
-import org.montigny.client.SUPER_USER_DISPLAY_NAME
 import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.auth.SessionExpiryRepository
 import org.montigny.client.database.AppDatabase
@@ -11,7 +9,6 @@ import org.montigny.client.database.dao.UserRepository
 import org.montigny.client.dto.User.NamedEntityResponse
 import org.montigny.client.dto.User.UserRegisterRequest
 import org.montigny.client.dto.User.UserResponse
-import org.montigny.client.dto.User.UserTypesDTO
 import org.montigny.client.util.UtilityFunctions.Companion.convertBoolToLong
 import org.montigny.client.util.UtilityFunctions.Companion.convertLongToBool
 import org.montigny.client.util.UtilityFunctions.Companion.toStringCustom
@@ -44,7 +41,7 @@ private val offlineSessionManager: OfflineSessionManager,
                     email = user.email,
                     surname = user.surname,
                     phone_number = user.phoneNumber,
-                    secondary_phone_number = user.secondaryPhoneNumber,
+                    secondary_phone_number = user.nationalId,
                     is_approved = convertBoolToLong(user.isApproved),
                     is_active = convertBoolToLong(user.isActive),
                     user_type_id = user.userTypeId?.toString(),
@@ -70,7 +67,7 @@ private val offlineSessionManager: OfflineSessionManager,
                     email = user.email,
                     surname = user.surname,
                     phone_number = user.phoneNumber,
-                    secondary_phone_number = user.secondaryPhoneNumber,
+                    secondary_phone_number = user.nationalId,
                     is_approved = convertBoolToLong(user.isApproved),
                     is_active = convertBoolToLong(user.isActive),
                     user_type_id = user.userTypeId?.toString(),
@@ -99,7 +96,7 @@ private val offlineSessionManager: OfflineSessionManager,
             email = it.email,
             surname = it.surname,
             phoneNumber = it.phone_number,
-            secondaryPhoneNumber = it.secondary_phone_number,
+            nationalId = it.secondary_phone_number,
             isActive =convertLongToBool(it.is_approved) ,
             isApproved = convertLongToBool(it.is_active) ,
             userType = it.user_type_id?.let { uid ->
@@ -137,7 +134,7 @@ private val offlineSessionManager: OfflineSessionManager,
         return UserRegisterRequest(
             name = row.name, surname = row.surname,
             phoneNumber = row.phone_number,
-            secondaryPhoneNumber = row.secondary_phone_number,
+            nationalId = row.secondary_phone_number,
             email = row.email,
             id = row.id.toUUIDOrNull(),
             departmentId=row.department_id.toUUIDOrNull(),
@@ -227,7 +224,7 @@ private val offlineSessionManager: OfflineSessionManager,
             UserRegisterRequest(
                 id = UUID.fromString(it.id),
                 name = it.name, email = it.email, surname = it.surname,
-                phoneNumber = it.phone_number, secondaryPhoneNumber = it.secondary_phone_number,
+                phoneNumber = it.phone_number, nationalId = it.secondary_phone_number,
                 sectionId = it.section_id.toUUIDOrNull(),
                 departmentId = it.department_id.toUUIDOrNull(),
                 organizationId =it.organization_id.toUUIDOrNull(),
@@ -244,7 +241,7 @@ private val offlineSessionManager: OfflineSessionManager,
             UserRegisterRequest(
                 id = UUID.fromString(it.id),
                 name = it.name, email = it.email, surname = it.surname,
-                phoneNumber = it.phone_number, secondaryPhoneNumber = it.secondary_phone_number,
+                phoneNumber = it.phone_number, nationalId = it.secondary_phone_number,
                 sectionId = UUID.fromString(it.section_id),
                 departmentId = UUID.fromString(it.department_id),
                 organizationId = UUID.fromString(it.organization_id),
@@ -268,7 +265,7 @@ private val offlineSessionManager: OfflineSessionManager,
            id = user.id.toStringCustom(),
            surname = user.surname,
            phone_number = user.phoneNumber,
-           secondary_phone_number = user.secondaryPhoneNumber,
+           secondary_phone_number = user.nationalId,
            is_approved = convertBoolToLong(user.isApproved),
            is_active = convertBoolToLong(user.isActive),
            user_type_id = user.userTypeId.toStringOrNull(),
@@ -285,7 +282,7 @@ private val offlineSessionManager: OfflineSessionManager,
             id = user.id.toStringCustom(),
             surname = user.surname,
             phone_number = user.phoneNumber,
-            secondary_phone_number = user.secondaryPhoneNumber,
+            secondary_phone_number = user.nationalId,
             is_approved = convertBoolToLong(user.isApproved),
             is_active = convertBoolToLong(user.isActive),
             user_type_id = user.userTypeId.toStringOrNull(),

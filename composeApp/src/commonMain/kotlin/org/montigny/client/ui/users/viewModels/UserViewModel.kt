@@ -56,7 +56,7 @@ private val _updateUser = MutableStateFlow<UserRegisterRequest?> (null)
 private val _createUser = MutableStateFlow<UserRegisterRequest?> (UserRegisterRequest(
     id = UUID.randomUUID(),
     name ="", email = null, phoneNumber = "",surname = "",
-    password = "" , secondaryPhoneNumber = null,)
+    password = "" , nationalId = null,)
 )
 val createUser: StateFlow<UserRegisterRequest?> = _createUser
 
@@ -124,7 +124,7 @@ fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
             _createUser.value= copy
         }
         is UserRegisterDTOState.secondaryPhoneNumber -> {
-            val copy = _createUser.value?.copy(secondaryPhoneNumber = newValue)
+            val copy = _createUser.value?.copy(nationalId = newValue)
             _createUser.value= copy
         }
         is UserRegisterDTOState.sectionId -> {
@@ -179,7 +179,7 @@ fun onUpdateUserChange(newValue: String, state: UserRegisterDTOState) {
             _updateUser.value= copy
         }
         is UserRegisterDTOState.secondaryPhoneNumber -> {
-            val copy = _updateUser.value?.copy(secondaryPhoneNumber = newValue)
+            val copy = _updateUser.value?.copy(nationalId = newValue)
             _updateUser.value= copy
         }
         is UserRegisterDTOState.sectionId -> {
@@ -203,7 +203,7 @@ fun initializeEmptyCreateUse(){
     _createUserState.value = UiState.Idle
     _createUser.value = UserRegisterRequest(
         name ="", email = null, phoneNumber = "", surname = "",
-        password = "" , secondaryPhoneNumber = null, id = UUID.randomUUID())
+        password = "" , nationalId = null, id = UUID.randomUUID())
 }
 fun initializeUpdateUser(userId: String) {
     viewModelScope.launch {

@@ -59,7 +59,7 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 it.surname.isNullOrBlank() ||
                 it.email.isNullOrBlank() ||
                 it.phoneNumber.isNullOrBlank() || it.phoneNumber!!.length != 8 ||
-                (!it.secondaryPhoneNumber.isNullOrBlank() && it.secondaryPhoneNumber!!.length != 8)
+                (!it.nationalId.isNullOrBlank() && it.nationalId!!.length != 13)
                  it.password.length < 5
     } ?: true
 
@@ -239,9 +239,9 @@ fun ContactFields(createUser: UserRegisterRequest?,
         createUser.phoneNumber!!.length != 8 -> "Phone number must be 8 digits"
         else -> null
     }
-    val secondaryPhoneError = if (!createUser?.secondaryPhoneNumber.isNullOrBlank() &&
-        createUser.secondaryPhoneNumber!!.length != 8
-    ) "Secondary phone must be 8 digits" else null
+    val secondaryPhoneError = if (!createUser?.nationalId.isNullOrBlank() &&
+        createUser.nationalId!!.length != 13
+    ) "National ID must be 13 digits" else null
     val emailError = createUser?.email.isNullOrBlank()
 
     OutlinedTextField(
@@ -261,10 +261,10 @@ fun ContactFields(createUser: UserRegisterRequest?,
     }
 
     OutlinedTextField(
-        value = createUser?.secondaryPhoneNumber.orEmpty(),
+        value = createUser?.nationalId.orEmpty(),
         singleLine = true,
         onValueChange = { onClick(it, UserRegisterDTOState.secondaryPhoneNumber) },
-        label = { Text("Secondary Phone", style = MaterialTheme.typography.labelMedium) },
+        label = { Text("National ID", style = MaterialTheme.typography.labelMedium) },
         modifier = Modifier.fillMaxWidth(),
         isError = secondaryPhoneError != null,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),

@@ -330,7 +330,7 @@ class ReportsRepositoryImpl() : ReportsRepository {
             .map {
                 DimUserDTO(
                     it[AppUsers.id].value, it[AppUsers.name], it[AppUsers.surname], it[AppUsers.phoneNumber],
-                    it[AppUsers.secondaryPhone], it[AppUsers.isApproved], it[AppUsers.isActive],
+                    it[AppUsers.nationalId], it[AppUsers.isApproved], it[AppUsers.isActive],
                     it[AppUsers.userTypeId]?.value, it[AppUsers.organizationId]?.value, it[AppUsers.departmentId]?.value,
                     it[AppUsers.sectionId]?.value, it[AppUsers.email],
                     it.getOrNull(Organizations.displayname), // OrganizationName

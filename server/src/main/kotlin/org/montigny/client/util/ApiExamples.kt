@@ -25,7 +25,7 @@ class ApiExamples {
             "Solo",
             "Dube",
             phoneNumber = "76900009",
-            secondaryPhoneNumber = "7998909",
+            nationalId = "7998909",
             userTypeId = UUID.randomUUID(),
             organizationId = UUID.randomUUID(),
             sectionId = UUID.randomUUID(),
