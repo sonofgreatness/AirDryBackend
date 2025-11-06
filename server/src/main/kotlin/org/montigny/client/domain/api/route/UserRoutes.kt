@@ -71,7 +71,7 @@ fun Route.userRoutes(userService: UserService) {
                 }
             }
         }
-           authorize(userService, UserRole.ADMIN,UserRole.SUPER_USER){
+           authorize(userService, UserRole.ADMIN,UserRole.SUPER_USER, UserRole.CAPTURER){
             post {
                 try {
                     val currentUser = UserUtils.getLoggedInUser(call)
