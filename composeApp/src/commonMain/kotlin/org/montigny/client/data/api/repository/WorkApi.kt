@@ -20,15 +20,12 @@ interface WorkApi {
     suspend  fun  createWork(req : CreateWorkDoneDTO): ApiResponse
     suspend fun getWorkById(id : UUID): CreateWorkDoneDTO?
    suspend  fun updateWork (  req:CreateWorkDoneDTO):ApiResponse
-
     suspend  fun getDailyWorkSummariesBetweenDates(page: Int, pageSize: Int,filters: WorkDataFiltersDTO): PaginatedResponse<WorkDaySummaryDTO>?
     suspend fun  getDailyWorkSummariesByUser(page: Int, pageSize: Int,filters: WorkDataFiltersDTO)
             : PaginatedResponse<WorkDaySummaryDTO>?
-
     suspend fun createWeeklyApproval(req: CreateWeeklyApprovalDTO): ApiResponse
     suspend fun updateWeeklyApproval(req: UpdateWeeklyApprovalDTO): ApiResponse
     suspend fun getWeeklyApprovalById(id: UUID): WeeklyApprovalDTO?
     suspend fun getWeeklyApprovals(page: Int, pageSize: Int): PaginatedResponse<WeeklyApprovalDTO>?
     suspend fun getLatestWeeklyApproval(): WeeklyApprovalDTO?
-
 }

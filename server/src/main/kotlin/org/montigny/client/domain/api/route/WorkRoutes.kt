@@ -96,7 +96,6 @@ fun Route.workRoutes(
                         HttpStatusCode.InternalServerError,
                         ErrorResponse("Server error: ${e.message}", 500)
                     )
-
                 }
             }
         }
@@ -127,7 +126,7 @@ fun Route.workRoutes(
                 }
             }
         }
-        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER, UserRole.ADMIN) {
+        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER, UserRole.ADMIN, UserRole.CAPTURER) {
             post{
                 try {
                     val user  = UserUtils.getLoggedInUser(call)
@@ -302,8 +301,7 @@ fun Route.workRoutes(
                 }
             }
         }
-        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
-            UserRole.CAPTURER,UserRole.CASUAL_WORKER) {
+        authorize(userService,UserRole.SUPER_USER) {
             get {
                 try {
                     val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
@@ -354,7 +352,7 @@ fun Route.workRoutes(
             }
         }
         authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
-            UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) {
+            UserRole.CASUAL_WORKER, UserRole.ADMIN) {
             post {
                 try {
                     val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
@@ -405,7 +403,7 @@ fun Route.workRoutes(
             }
         }
         authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
-            UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) { post {
+            UserRole.CASUAL_WORKER, UserRole.ADMIN) { post {
                 try {
                     val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1
                     val pageSize = call.request.queryParameters[PAGE_SIZE]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
@@ -454,8 +452,8 @@ fun Route.workRoutes(
                 }
             }
         }
-        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER,
-            UserRole.CAPTURER,UserRole.CASUAL_WORKER, UserRole.ADMIN) {
+        authorize(userService,UserRole.SUPER_USER,UserRole.CAPTURER
+                ,UserRole.CASUAL_WORKER, UserRole.ADMIN) {
             post {
                 try {
                     val page = call.request.queryParameters[PAGE]?.toIntOrNull() ?: 1

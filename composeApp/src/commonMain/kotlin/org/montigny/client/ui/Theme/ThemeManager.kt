@@ -3,6 +3,7 @@ package org.montigny.client.ui.Theme
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.montigny.client.util.Constants.Companion.THEME_KEY
 
 class ThemeManager(private val settings: Settings) {
     private val _isDarkThemeEnabled = MutableStateFlow(getTheme())
