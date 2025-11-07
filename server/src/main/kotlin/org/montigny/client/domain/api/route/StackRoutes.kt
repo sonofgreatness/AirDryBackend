@@ -388,7 +388,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
                 }
             }
         }
-        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER, UserRole.CAPTURER, UserRole.CASUAL_WORKER) {
             get{
                 try {
                     val stacks  = stackService.getAllStacks()
@@ -470,7 +470,7 @@ fun Route.stackRoutes(stackService: StackService, userService: UserService) {
                 }
             }
         }
-        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER) {
+        authorize(userService, UserRole.ADMIN, UserRole.SUPER_USER, UserRole.CAPTURER, UserRole.CASUAL_WORKER) {
             get{
                 try {
                     val stackcodes  = stackService.getAllStackCodes()

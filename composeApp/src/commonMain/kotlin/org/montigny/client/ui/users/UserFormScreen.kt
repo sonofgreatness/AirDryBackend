@@ -69,7 +69,6 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
             .padding(32.dp)
     ) {
         val isWideScreen = maxWidth > 800.dp
-
         Column(
             horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.Top,
@@ -85,7 +84,6 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
             Spacer(Modifier.height(24.dp))
 
             // --- Form Layout ---
