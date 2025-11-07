@@ -87,7 +87,7 @@ single<SessionExpiryRepository>{SessionExpiryRepository(get())}
 single<SessionExpiryWorker>{SessionExpiryWorker(get(), get(),get())}
 single {BackgroundSyncWorker(get(), get()) }
 single<AppWorkerManager> { AppWorkerManager(get(), get()) }
-single <ThemeManager>{ThemeManager()}
+single <ThemeManager>{ThemeManager(get())}
 
 single<WorkApi>{ WorkApiImpl(get()) }
 single<StackApi>{ StackApiImpl(get(), get())}
