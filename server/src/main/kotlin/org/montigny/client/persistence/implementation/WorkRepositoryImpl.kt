@@ -566,6 +566,23 @@ class WorkRepositoryImpl(): WorkRepository {
             val perUserVolume = if (totalUsers > 0) totalVolume / totalUsers else 0.0
             val usersWithCubes = users.map { it.copy(personalCubes = perUserVolume) }
 
+            val timeFormat =  SimpleDateFormat("EEEE dd/MM/yyyy HH:mm")
+            val createdAtStr = workRow[WorkDone.createdAt]?.let { timeFormat.format(Date.from(it)) }
+            val updatedAtStr = workRow[WorkDone.updatedAt]?.let { timeFormat.format(Date.from(it)) }
+
+            // --- Resolve createdBy/updatedBy names ---
+            fun resolveUserName(userId: UUID?) =
+                userId?.let {
+                    AppUsers.select { AppUsers.id eq it }
+                        .map { r -> "${r[AppUsers.name]} ${r[AppUsers.surname]}" }
+                        .firstOrNull()
+                }
+
+            val createdByName = resolveUserName(workRow[WorkDone.createdBy])
+            val updatedByName = resolveUserName(workRow[WorkDone.updatedBy])
+
+
+
             WorkSummaryDTO(
                 id = workId,
                 workDate = dateStr,
@@ -574,10 +591,10 @@ class WorkRepositoryImpl(): WorkRepository {
                 totalUsers = totalUsers,
                 stacks = stacks,
                 users = usersWithCubes,
-                capturedAt = null,
-                updatedAt = null,
-                capturedBy = null,
-                updatedBy = null
+                capturedAt =createdAtStr,
+                updatedAt = updatedAtStr,
+                capturedBy =createdByName,
+                updatedBy =updatedByName
             )
         }
 

@@ -79,11 +79,9 @@ fun CreateOrUpdateWorkScreen(
                     )
                 }
                 is CreateAndUpdateWorkViewModel.WorkUiEvent.WorkSaved -> {
-                    // Optional: Navigate back or clear selections after successful save
                     navigator.navigateTo(Destination.WorkLandingPage)
                 }
                 is CreateAndUpdateWorkViewModel.WorkUiEvent.WorkUpdated -> { // <-- Added WorkUpdated
-                    // Navigate back to the work landing page after successful save/update
                     navigator.navigateTo(Destination.WorkLandingPage)
                 }
             }
@@ -94,26 +92,17 @@ fun CreateOrUpdateWorkScreen(
             viewModel.loadWork(workId)
         }
     }
-
     // --- NEW: LaunchedEffect to populate selections from loaded work data ---
     LaunchedEffect(Unit) {
         viewModel.workDataToPopulate.collect { workDoneDTO ->
-            // 1. Clear existing selections first
-            selectedWorkers.clear()
+           selectedWorkers.clear()
             selectedStacks.clear()
-            // 2. Populate selectedWorkers
-            // The DTO structure has workersList: List<WorkDoneUsersDTO>
-            // and each WorkDoneUsersDTO has userIds: List<UUID>
             workDoneDTO.workersList.flatMap { it.userIds }.distinct().forEach { userId ->
                 selectedWorkers.add(userId)
             }
-            // 3. Populate selectedStacks
-            // The DTO structure has stacksList: List<WorkDoneStacksDTO>
-            // We need to count the occurrences of each stackId
-            workDoneDTO.stacksList.flatMap { it.stackIds }.forEach { stackId ->
+           workDoneDTO.stacksList.flatMap { it.stackIds }.forEach { stackId ->
                 selectedStacks[stackId] = selectedStacks.getOrElse(stackId) { 0 } + 1
             }
-            // Optional: Show a message that data has been loaded
             snackbarHostState.showSnackbar("Work data loaded for editing.", duration = SnackbarDuration.Short)
         }
     }
@@ -290,11 +279,8 @@ private fun WorkerListContainer(
     onLoadMore: () -> Unit
 ) {
     Column(modifier = modifier) {
-        // Clearer title for the section
         Text("Workers Selection", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
         Spacer(Modifier.height(8.dp))
-
-        // Search field remains an OutlinedTextField, which is fine for desktop
         OutlinedTextField(
             value = workerQuery,
             onValueChange = onWorkerQueryChange,
@@ -303,8 +289,6 @@ private fun WorkerListContainer(
             singleLine = true
         )
         Spacer(Modifier.height(8.dp))
-
-        // Card for visual separation, giving the list a distinct boundary
         Card(
             modifier = Modifier.fillMaxWidth().height(300.dp),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
