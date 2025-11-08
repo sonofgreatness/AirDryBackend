@@ -578,8 +578,8 @@ class WorkRepositoryImpl(): WorkRepository {
                         .firstOrNull()
                 }
 
-            val createdByName = resolveUserName(workRow[WorkDone.createdBy])
-            val updatedByName = resolveUserName(workRow[WorkDone.updatedBy])
+            val createdByName = workRow[WorkDone.createdBy].toString()
+            val updatedByName = workRow[WorkDone.updatedBy].toString()
 
 
 
