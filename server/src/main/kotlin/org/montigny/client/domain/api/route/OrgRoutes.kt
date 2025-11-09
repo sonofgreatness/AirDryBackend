@@ -760,7 +760,7 @@ fun Route.orgRoutes(orgService: OrganizationService, userService: UserService) {
                 }
             }
         }
-        authorize(userService, UserRole.ADMIN) {
+        authorize(userService, UserRole.ADMIN, UserRole.CAPTURER, UserRole.SUPER_USER) {
             get {
 
                 try {
