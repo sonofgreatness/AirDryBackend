@@ -31,6 +31,7 @@ class LoadWorkViewModel(
 ViewModel(){
     private val _dailyWorkSummaries = MutableStateFlow<List<WorkDaySummaryDTO>>(emptyList())
     val  dailyWorkSummaries: StateFlow<List<WorkDaySummaryDTO>> = _dailyWorkSummaries
+
     private val  _filterDto  = MutableStateFlow<WorkDataFiltersDTO>(WorkDataFiltersDTO())
     val  filterDto: StateFlow<WorkDataFiltersDTO> = _filterDto
 

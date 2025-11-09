@@ -1,5 +1,6 @@
 package org.montigny.client.util
 
+import org.montigny.client.HUMAN_READABLE_FORMAT_TEXT_HOUR_MINUTE
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -60,6 +61,15 @@ class UtilityFunctions {
         val CustomApiFormatter = DateTimeFormatter.ofPattern(
             "EEEE dd/MM/yyyy HH:mm",
             Locale.getDefault()
+        )
+        val customApiFormattterHTextHour  = DateTimeFormatter.ofPattern(
+            HUMAN_READABLE_FORMAT_TEXT_HOUR_MINUTE,
+            Locale.getDefault()
+        )
+        val customApiFormattterHText  = DateTimeFormatter.ofPattern(
+            HUMAN_READABLE_FORMAT_TEXT_HOUR_MINUTE,
+            Locale.getDefault()
+
         )
     }
 }

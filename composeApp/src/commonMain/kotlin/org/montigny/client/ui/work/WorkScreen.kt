@@ -422,7 +422,7 @@ private fun WorkSummaryItem(work: WorkSummaryDTO, navigator: Navigator) {
                     }
                     var showEditButton  = false
                     work.capturedAt.let{ dateString->
-                        val updatedDateTime = java.time.LocalDateTime.parse(dateString!!, UtilityFunctions.Companion.CustomApiFormatter)
+                        val updatedDateTime = java.time.LocalDateTime.parse(dateString!!, UtilityFunctions.Companion.customApiFormattterHTextHour)
                         val updatedInstant = updatedDateTime
                             .atZone(ZoneId.systemDefault())
                             .toInstant()

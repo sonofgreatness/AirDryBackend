@@ -8,6 +8,8 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.montigny.client.HUMAN_READABLE_FORMAT_TEXT
+import org.montigny.client.HUMAN_READABLE_FORMAT_TEXT_HOUR_MINUTE
 import org.montigny.client.WORK_DONE_EDIT_GRACE_PERIOD
 import org.montigny.client.WORK_DONE_EDIT_GRACE_PERIOD_CAPTURER
 import org.montigny.client.dto.Common.PaginatedResponse
@@ -347,7 +349,7 @@ class WorkRepositoryImpl(): WorkRepository {
             val workId = workRow[WorkDone.id].value
             val workDateInstant = workRow[WorkDone.workDate]
             val date = Date.from(workDateInstant)
-            val dateFmt = SimpleDateFormat("EEEE dd/MM/yyyy")
+            val dateFmt = SimpleDateFormat(HUMAN_READABLE_FORMAT_TEXT)
             val dayLabel = dateFmt.format(date)
 
             // --- Get stacks ---
@@ -386,7 +388,7 @@ class WorkRepositoryImpl(): WorkRepository {
             val usersWithCubes = users.map { it.copy(personalCubes = perUserVolume) }
 
             // --- Format created/updated time ---
-            val timeFormat =  SimpleDateFormat("EEEE dd/MM/yyyy HH:mm")
+            val timeFormat =  SimpleDateFormat(HUMAN_READABLE_FORMAT_TEXT_HOUR_MINUTE)
             val createdAtStr = workRow[WorkDone.createdAt]?.let { timeFormat.format(Date.from(it)) }
             val updatedAtStr = workRow[WorkDone.updatedAt]?.let { timeFormat.format(Date.from(it)) }
 
@@ -531,7 +533,7 @@ class WorkRepositoryImpl(): WorkRepository {
         val summaries = pagedRows.map { workRow ->
             val workId = workRow[WorkDone.id].value
             val workDateInstant = workRow[WorkDone.workDate]
-            val dateStr = SimpleDateFormat("EEEE dd/MM/yyyy").format(Date.from(workDateInstant))
+            val dateStr = SimpleDateFormat(HUMAN_READABLE_FORMAT_TEXT).format(Date.from(workDateInstant))
 
             val stacks = (WorkDoneStacks innerJoin Stacks innerJoin StackCodes)
                 .select { WorkDoneStacks.workDoneId eq workId }
@@ -566,7 +568,7 @@ class WorkRepositoryImpl(): WorkRepository {
             val perUserVolume = if (totalUsers > 0) totalVolume / totalUsers else 0.0
             val usersWithCubes = users.map { it.copy(personalCubes = perUserVolume) }
 
-            val timeFormat =  SimpleDateFormat("EEEE dd/MM/yyyy HH:mm")
+            val timeFormat =  SimpleDateFormat(HUMAN_READABLE_FORMAT_TEXT_HOUR_MINUTE)
             val createdAtStr = workRow[WorkDone.createdAt]?.let { timeFormat.format(Date.from(it)) }
             val updatedAtStr = workRow[WorkDone.updatedAt]?.let { timeFormat.format(Date.from(it)) }
 
@@ -578,8 +580,8 @@ class WorkRepositoryImpl(): WorkRepository {
                         .firstOrNull()
                 }
 
-            val createdByName = workRow[WorkDone.createdBy].toString()
-            val updatedByName = workRow[WorkDone.updatedBy].toString()
+            val createdByName = resolveUserName(workRow[WorkDone.createdBy])
+            val updatedByName = resolveUserName(workRow[WorkDone.updatedBy])
 
 
 
@@ -678,7 +680,7 @@ class WorkRepositoryImpl(): WorkRepository {
        val summaries = pagedRows.map { workRow ->
            val workId = workRow[WorkDone.id].value
            val workDateInstant = workRow[WorkDone.workDate]
-           val dateStr = SimpleDateFormat("EEEE dd/MM/yyyy").format(Date.from(workDateInstant))
+           val dateStr = SimpleDateFormat(HUMAN_READABLE_FORMAT_TEXT).format(Date.from(workDateInstant))
 
            val stacks = (WorkDoneStacks innerJoin Stacks innerJoin StackCodes)
                .select { WorkDoneStacks.workDoneId eq workId }
