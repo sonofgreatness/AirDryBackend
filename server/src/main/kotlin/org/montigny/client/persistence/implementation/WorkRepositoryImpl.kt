@@ -291,6 +291,7 @@ class WorkRepositoryImpl(): WorkRepository {
             userConditions += (AppUsers.isActive eq true) and (AppUsers.isApproved eq true)
         }
 
+
         filters.filterDepartmentId?.let { userConditions += (AppUsers.departmentId eq it) }
         filters.filterSectionId?.let { userConditions += (AppUsers.sectionId eq it) }
         filters.filterName?.takeIf { it.isNotBlank() }?.let { userConditions += AppUsers.name.lowerCase() like "%${it.lowercase()}%" }
@@ -322,15 +323,32 @@ class WorkRepositoryImpl(): WorkRepository {
                 val date = LocalDate.parse(dateStr)
                 val startOfDay = date.atStartOfDay(ZoneOffset.UTC).toInstant()
                 val endOfDay = date.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
+
                 WorkDone
                     .select {
                         (WorkDone.id inList filteredWorkDoneIds) and
                                 (WorkDone.workDate.between(startOfDay, endOfDay))
                     }
+                    .apply {
+                        if (!filters.includeOtherStaffRecords) {
+                            andWhere {
+                                (WorkDone.createdBy eq currentUserDTO.id) or
+                                        (WorkDone.updatedBy eq currentUserDTO.id)
+                            }
+                        }
+                    }
                     .orderBy(WorkDone.workDate to SortOrder.DESC)
             }
             ?: WorkDone
                 .select { WorkDone.id inList filteredWorkDoneIds }
+                .apply {
+                    if (!filters.includeOtherStaffRecords) {
+                        andWhere {
+                            (WorkDone.createdBy eq currentUserDTO.id) or
+                                    (WorkDone.updatedBy eq currentUserDTO.id)
+                        }
+                    }
+                }
                 .orderBy(WorkDone.workDate to SortOrder.DESC)
 
         // --------------------------------------------------------
@@ -524,6 +542,15 @@ class WorkRepositoryImpl(): WorkRepository {
         val filteredQuery = WorkDone
             .select { (WorkDone.id inList filteredWorkDoneIds) and dateFilter }
             .orderBy(WorkDone.workDate to SortOrder.DESC)
+
+        /*if (!filters.includeOtherStaffRecords) {
+            filteredQuery.andWhere {
+                (WorkDone.createdBy eq currentUserDTO.id) or
+                        (WorkDone.updatedBy eq currentUserDTO.id)
+            }
+        }*/
+
+
 
         // --------------------------------------------------------
         // STEP 5 — Pagination (same as sister function)
