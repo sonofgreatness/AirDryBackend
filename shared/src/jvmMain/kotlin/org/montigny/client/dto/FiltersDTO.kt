@@ -18,4 +18,5 @@ data class  WorkDataFiltersDTO (
     val  filterSecondaryPhoneNumber : String? = null,
     val filterDateEndDate : String? = null,
     @Serializable(with = UUIDSerializer::class)
-    val  filterUserId : UUID? = null)
+    val  filterUserId : UUID? = null,
+    val includeOtherStaffRecords : Boolean = true)

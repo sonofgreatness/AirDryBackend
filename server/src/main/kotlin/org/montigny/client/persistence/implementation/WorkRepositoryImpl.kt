@@ -444,6 +444,9 @@ class WorkRepositoryImpl(): WorkRepository {
             totalPages = totalPages
         )
     }
+
+
+
     override fun getDailyWorkSummariesBetweenDates(
         currentUserDTO: CurrentUserDTO,
         page: Int,
@@ -471,6 +474,10 @@ class WorkRepositoryImpl(): WorkRepository {
 
         if (!filters.includeInactiveWorkers) {
             userConditions += (AppUsers.isActive eq true) and (AppUsers.isApproved eq true)
+        }
+
+        if (!filters.includeOtherStaffRecords){
+            userConditions += (WorkDone.createdBy eq currentUserDTO.id) or (WorkDone.updatedBy eq currentUserDTO.id)
         }
 
         filters.filterDepartmentId?.let { userConditions += (AppUsers.departmentId eq it) }
@@ -576,7 +583,7 @@ class WorkRepositoryImpl(): WorkRepository {
             fun resolveUserName(userId: UUID?) =
                 userId?.let {
                     AppUsers.select { AppUsers.id eq it }
-                        .map { r -> "${r[AppUsers.name]} ${r[AppUsers.surname]}" }
+                        .map { r -> "${r[AppUsers.id]} ${r[AppUsers.name]} ${r[AppUsers.surname]}" }
                         .firstOrNull()
                 }
 
@@ -621,7 +628,10 @@ class WorkRepositoryImpl(): WorkRepository {
             totalPages = totalPages
         )
     }
-   override fun  getDailyWorkSummariesByUser(currentUserDTO: CurrentUserDTO, page: Int,
+
+
+
+    override fun  getDailyWorkSummariesByUser(currentUserDTO: CurrentUserDTO, page: Int,
                                      pageSize: Int,filters: WorkDataFiltersDTO)
             : PaginatedResponse<WorkDaySummaryDTO>
 
