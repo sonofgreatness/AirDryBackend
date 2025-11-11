@@ -610,7 +610,7 @@ class WorkRepositoryImpl(): WorkRepository {
             fun resolveUserName(userId: UUID?) =
                 userId?.let {
                     AppUsers.select { AppUsers.id eq it }
-                        .map { r -> "${r[AppUsers.id]} ${r[AppUsers.name]} ${r[AppUsers.surname]}" }
+                        .map { r -> "${r[AppUsers.id]}; ${r[AppUsers.name]} ${r[AppUsers.surname]}" }
                         .firstOrNull()
                 }
 
