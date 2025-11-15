@@ -105,10 +105,10 @@ single<PrintStacksToExcelUseCase>{
     )
 }
 single<GenerateWeeklySummaryPdfUseCase>{ GenerateWeeklySummaryPdfUseCase(get(),
-    get(),get())}
+    get(),get(), get(),get())}
 
 single <GenerateDashBoardReportUseCase>{GenerateDashBoardReportUseCase(get())}
-single<GeneratePayRollDataReportUseCase>{GeneratePayRollDataReportUseCase(get())}
+single<GeneratePayRollDataReportUseCase>{GeneratePayRollDataReportUseCase(get(), get())}
 single<StacksViewModel>{StacksViewModel(get(), get(), get(),
     get(),get(), get(), get())}
 single<LoadWorkViewModel>{LoadWorkViewModel(get(), get(), get(),

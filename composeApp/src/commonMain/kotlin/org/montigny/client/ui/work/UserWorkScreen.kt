@@ -21,6 +21,7 @@ import org.montigny.client.dto.Work.WorkDaySummaryDTO
 import org.montigny.client.navigation.Navigator
 import org.montigny.client.ui.work.viewModel.LoadUserWorkViewModel
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
+import org.montigny.client.util.UtilityFunctions.Companion.extractFullNameFromApiString
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -40,7 +41,7 @@ fun UserWorkScreen(
     val startDate by viewModel.startDate.collectAsState()
     val endDate by viewModel.endDate.collectAsState()
     val totalPages by viewModel.totalPages.collectAsState()
-
+    val isSyncing  by viewModel.isSyncing.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val currentPage by viewModel.currentPage.collectAsState()
     val pageSize = DEFAULT_PAGE_SIZE
@@ -104,9 +105,15 @@ fun UserWorkScreen(
             Spacer(Modifier.height(16.dp))
 
             // --- 3. Summaries Section ---
-            if (dailySummaries.isEmpty()) {
+            if(dailySummaries.isEmpty() && !isSyncing) {
+                EmptyListPlaceHolder(
+                    "No work data to show",
+                    50,
+                    Icons.Default.WarningAmber)
+            }
+            if (dailySummaries.isEmpty() && isSyncing) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No work records found for this period.", style = MaterialTheme.typography.bodyMedium)
+                    CircularProgressIndicator()
                 }
             } else {
                 LazyColumn(
@@ -121,7 +128,7 @@ fun UserWorkScreen(
                             expanded = expandedDays[daySummary.dayLabel] == true,
                             onToggleExpand = { expanded -> expandedDays[daySummary.dayLabel] = expanded },
                             navigator = navigator,
-                            targetUserId = userId // Pass the ID to highlight the data
+                            targetUserId = userId
                         )
 
                         val hasMorePages = currentPage < totalPages
@@ -381,14 +388,14 @@ private fun UserWorkSummaryItem(work: org.montigny.client.dto.Work.WorkSummaryDT
                         StatInline("📦 Total Volume", String.format("%.2f m³", work.totalVolume))
                         StatInline("🗂 Stacks", work.totalStacks.toString())
                         StatInline("👷 Users", work.totalUsers.toString())
-                        work.capturedBy?.let { StatInline("✍️ Captured by", it) }
+                        work.capturedBy?.let { StatInline("✍️ Captured by", extractFullNameFromApiString(it)) }
                         work.capturedAt?.let { StatInline("⏱ Captured at", it) }
                     }
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        work.updatedBy?.let { StatInline("🔄 Updated by", it) }
+                        work.updatedBy?.let { StatInline("🔄 Updated by", extractFullNameFromApiString(it)) }
                         if (work.capturedAt != work.updatedAt) {
                             work.updatedAt?.let { StatInline("⏱ Updated at", it) }
                         }

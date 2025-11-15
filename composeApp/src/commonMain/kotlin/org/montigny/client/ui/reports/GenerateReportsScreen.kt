@@ -1,24 +1,22 @@
 package org.montigny.client.ui.reports
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Card
 import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,11 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
-import org.jetbrains.compose.resources.painterResource
 import org.montigny.client.ui.reports.viewModel.GenerateReportsViewModel
-import org.montigny.client.ui.settings.stacks.StatusMessageCard
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,14 +36,18 @@ fun GenerateReportsScreen(
     viewModel: GenerateReportsViewModel
 ) {
     val scrollState = rememberScrollState()
-    var startDateMillis by remember { mutableStateOf<Long?>(System.currentTimeMillis()) }
-    var endDateMillis by remember { mutableStateOf<Long?>(null) }
+    var startDateMillis by remember { mutableStateOf<Long?>(null) }
+    var endDateMillis by remember { mutableStateOf<Long?>(System.currentTimeMillis()) }
     val pdfState by viewModel.pdfGeneratorMessage.collectAsState()
     val payRollState by viewModel.payRollGeneratorMessage.collectAsState()
     val dashBoardState by viewModel.dashBoardGeneratorMessage.collectAsState()
     var pdfMessage by remember { mutableStateOf<Pair<String, String?>>(pdfState!! to null) } // Pair of (message, filePath)
     var payRollMessage by remember { mutableStateOf<Pair<String, String?>>(payRollState!! to null) }
     var dashBoardMessage by remember { mutableStateOf<Pair<String, String?>>(dashBoardState!! to null) }
+    val isSyncingPayRoll = viewModel.isSyncingPayRoll.collectAsState()
+    val isSyncingMasterData = viewModel.isSyncingMasterData.collectAsState()
+    val isSyncingPdf = viewModel.isSyncingPdf.collectAsState()
+
 
     LaunchedEffect(Unit) {
         viewModel.resetReportMessages()
@@ -104,7 +102,8 @@ fun GenerateReportsScreen(
                     val end = endDateMillis?.toDateString() ?: ""
                     viewModel.setStartAndEndDateFilters(start, end)
                     viewModel.exportStacksDataToPdf()
-                }
+                },
+                isSyncingPdf
             )
             ReportGenerationCard(
                 title = "Payroll Data Excel Export",
@@ -117,7 +116,8 @@ fun GenerateReportsScreen(
                     val start = startDateMillis?.toDateString() ?: ""
                     val end = endDateMillis?.toDateString() ?: ""
                     viewModel.exportPayRollDataToExcel(start, end)
-                }
+                },
+                isSyncing = isSyncingPayRoll
             )
             ReportGenerationCard(
                 title = "Master Dashboard Data Excel",
@@ -130,7 +130,8 @@ fun GenerateReportsScreen(
                     val start = startDateMillis?.toDateString() ?: ""
                     val end = endDateMillis?.toDateString() ?: ""
                     viewModel.exportDashBoardToExcel(start, end)
-                }
+                },
+                isSyncing = isSyncingMasterData
             )
         }
     }
@@ -143,7 +144,8 @@ fun ReportGenerationCard(
     currentMessage: String?,
     filePath: String?,
     buttonText: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isSyncing: State<Boolean>
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -166,6 +168,9 @@ fun ReportGenerationCard(
                         Text(buttonText)
                     }
                 }
+
+
+
                 Card(
                     modifier = Modifier.weight(1f).height(150.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
@@ -180,10 +185,17 @@ fun ReportGenerationCard(
                     )
                 }
             }
-            currentMessage?.let {
+
+            if (isSyncing.value) {
+                Box(modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+            else{  currentMessage?.let {
                 val message = if (filePath != null) "Success: File created at path shown below" else it
                 StatusMessageCard(title.replace(" ", ""), message, filePath)
-            }
+            }}
         }
     }
 }

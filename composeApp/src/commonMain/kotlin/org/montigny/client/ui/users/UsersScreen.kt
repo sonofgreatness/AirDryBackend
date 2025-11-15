@@ -1,6 +1,7 @@
 package org.montigny.client.ui.users
 
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -46,6 +47,7 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
     val pageSize = DEFAULT_PAGE_SIZE
     val scope = rememberCoroutineScope()
 
+    var showWorkerDropDown by remember {mutableStateOf(false)}
     LaunchedEffect(currentPage) {
         userViewModel.populateUsersExternal(pageSize)
     }
@@ -60,79 +62,101 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // ------- DASHBOARD REGION -------
-            Surface(
-                tonalElevation = 6.dp,
-                shadowElevation = 8.dp,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    val totalUsers = users.size
-                    val approvedUsers = users.count { it.isApproved }
-                    val notApproved = users.count { !it.isApproved }
 
-                    DashboardCard("Total Users", totalUsers, Icons.Outlined.Group)
-                    DashboardCard("Approved Users", approvedUsers, Icons.Outlined.Done)
-                    DashboardCard("Not Approved", notApproved, Icons.Outlined.MoodBad)
-                }
-            }
-            // ------- ACTION REGION -------
-            Surface(
-                tonalElevation = 4.dp,
-                shape = MaterialTheme.shapes.small,
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            if (showWorkerDropDown) {
+                // ------- DASHBOARD REGION -------
+                Surface(
+                    tonalElevation = 6.dp,
+                    shadowElevation = 8.dp,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface
                 ) {
-                    Button(
-                        onClick = {
-                            if (isNetworkAvailable && !isOnlineLoggedIn) {
-                                navigator.navigateTo(Destination.Login, Destination.Users)
-                            }
-                            userViewModel.synchronizeUserData()},
-                        enabled = !isSyncing,
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        if (isSyncing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Syncing")
-                        } else {
+                        val totalUsers = users.size
+                        val approvedUsers = users.count { it.isApproved }
+                        val notApproved = users.count { !it.isApproved }
+
+                        DashboardCard("Total Users", totalUsers, Icons.Outlined.Group)
+                        DashboardCard("Approved Users", approvedUsers, Icons.Outlined.Done)
+                        DashboardCard("Not Approved", notApproved, Icons.Outlined.MoodBad)
+                    }
+                }
+                // ------- ACTION REGION -------
+                Surface(
+                    tonalElevation = 4.dp,
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = {
+                                if (isNetworkAvailable && !isOnlineLoggedIn) {
+                                    navigator.navigateTo(Destination.Login, Destination.Users)
+                                }
+                                userViewModel.synchronizeUserData()
+                            },
+                            enabled = !isSyncing,
+                        ) {
+                            if (isSyncing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Syncing")
+                            } else {
+                                Icon(
+                                    Icons.Default.Refresh, contentDescription = "Sync Users",
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Sync")
+                            }
+                        }
+                        Button(
+                            onClick = { navigator.navigateTo(Destination.CreateAccount) }
+                        ) {
                             Icon(
-                                Icons.Default.Refresh, contentDescription = "Sync Users",
+                                Icons.Default.Add, contentDescription = "Create User",
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Sync")
+                            Text("Create")
                         }
                     }
-                    Button(
-                        onClick = { navigator.navigateTo(Destination.CreateAccount) }
-                    ) {
-                        Icon(
-                            Icons.Default.Add, contentDescription = "Create User",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Create")
-                    }
                 }
+            }
+            Box(modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ){
+                androidx.compose.material3.Icon(
+                    if (showWorkerDropDown)
+                        Icons.Default.ExpandLess
+                    else
+                        Icons.Default.ExpandMore,
+                    contentDescription = "Opens worker Select",
+                    modifier = Modifier.size(36.dp).clickable {
+                        showWorkerDropDown = !showWorkerDropDown
+                        if (!showWorkerDropDown) {
+                            userViewModel.populateUsersExternal(DEFAULT_PAGE_SIZE)
+                        }
+
+                    }
+                )
             }
 
             if (isNetworkAvailable && isOnlineLoggedIn) {
@@ -307,7 +331,8 @@ fun UserRow(
                 Text("📧 ${user.email}", style = MaterialTheme.typography.bodySmall, color = TextMuted)
                 Text("📱 ${user.phoneNumber}", style = MaterialTheme.typography.bodySmall, color = TextMuted)
                 Text("Role: ${user.userType?.displayName ?: "NONE"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-
+                Text("Department: ${user.department?.displayName ?: "NONE"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                Text("Section: ${user.section?.displayName ?: "NONE"}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // 3. Status Icons Row (Cleaner Feel)
@@ -319,7 +344,6 @@ fun UserRow(
                         activeIcon = Icons.Default.CheckCircle,
                         inactiveIcon = Icons.Default.Cancel
                     )
-
                     // isApproved Status
                     StatusPill(
                         isSet = isUserApproved,

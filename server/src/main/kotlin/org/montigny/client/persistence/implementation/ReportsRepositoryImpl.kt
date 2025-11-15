@@ -1,7 +1,9 @@
 package org.montigny.client.persistence.implementation
 
+import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.between
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.coalesce
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greaterEq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -15,6 +17,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.*
+
 
 class ReportsRepositoryImpl() : ReportsRepository {
     override fun getFactWorkDoneByUser(startDate: String, endDate: String): List<FactWorkDoneByUserDTO> =transaction{
@@ -265,22 +268,63 @@ class ReportsRepositoryImpl() : ReportsRepository {
             }
     }
 
-    private fun getDepartmentCountPerWorkDone(): List<DepartmentCountDTO> {
+
+
+   private fun getDepartmentCountPerWorkDone(): List<DepartmentCountDTO> = transaction {
+        val defaultUuid = "00000000-0000-0000-0000-000000000000"
+
+        val sql = """
+        SELECT wdu.work_done_id,
+               COALESCE(au.department_id::text, '$defaultUuid') as department_id,
+               COUNT(DISTINCT au.id) as department_count
+        FROM work_done_user wdu
+        INNER JOIN app_user au ON wdu.app_user_id = au.id
+        GROUP BY wdu.work_done_id, department_id
+    """.trimIndent()
+
+        exec(sql) { rs ->
+            val result = mutableListOf<DepartmentCountDTO>()
+            while (rs.next()) {
+                result.add(
+                    DepartmentCountDTO(
+                        workDoneId = UUID.fromString(rs.getString("work_done_id")),
+                        departmentId = UUID.fromString(rs.getString("department_id")),
+                        departmentCount = rs.getInt("department_count")
+                    )
+                )
+            }
+            result
+        } ?: emptyList()
+    }
+    /*private fun getDepartmentCountPerWorkDone(): List<DepartmentCountDTO> {
+
+        // 1. Default UUID for missing departmentIds
+        val defaultDepartmentId = UUID.fromString("00000000-0000-0000-0000-000000000000")
+
+        // 2. Wrap it in an EntityID so Exposed can handle it in expressions
+        val defaultEntityId = EntityID(defaultDepartmentId, Departments)
+
+        // 3. Coalesce the departmentId column with the default EntityID
+        val coalescedDepartmentId = coalesce(AppUsers.departmentId, literal(defaultEntityId))
+            .alias("CoalescedDepartmentId")
+
+        // 4. Count distinct AppUsers.id per group
         val departmentCount = AppUsers.id.countDistinct().alias("DepartmentCount")
 
+        // 5. Build the query
         return WorkDoneUsers
             .join(AppUsers, JoinType.INNER, WorkDoneUsers.appUserId, AppUsers.id)
-            .slice(WorkDoneUsers.workDoneId, AppUsers.departmentId, departmentCount)
+            .slice(WorkDoneUsers.workDoneId, coalescedDepartmentId, departmentCount)
             .selectAll()
-            .groupBy(WorkDoneUsers.workDoneId, AppUsers.departmentId)
+            .groupBy(WorkDoneUsers.workDoneId, coalescedDepartmentId)
             .map { row ->
                 DepartmentCountDTO(
                     workDoneId = row[WorkDoneUsers.workDoneId].value,
-                    departmentId = row[AppUsers.departmentId]!!.value,
+                    departmentId = row[coalescedDepartmentId].value, // unwrap EntityID<UUID>
                     departmentCount = row[departmentCount]?.toInt() ?: 0
                 )
             }
-    }
+    }*/
     // --- Dimension Queries ---
 
     private fun getDimDepartment(): List<DimDepartmentDTO> {

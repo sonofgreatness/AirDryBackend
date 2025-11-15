@@ -1,5 +1,6 @@
 package org.montigny.client.ui.work.viewModel
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -47,64 +48,82 @@ ViewModel(){
     private val _totalPages = MutableStateFlow(1)
     val totalPages: StateFlow<Int> = _totalPages
 
+    private  val _isSyncing  = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing
 
 
     private val _currentPage = MutableStateFlow(DEFAULT_PAGE)
     val currentPage: StateFlow<Int> = _currentPage
 
-
-    fun clearAllFilters(){
-        println("clear filters called")
-        _filterDto.value = WorkDataFiltersDTO()
-        _totalPages.value = DEFAULT_PAGE
-        _currentPage.value = DEFAULT_PAGE // <-- RESET CURRENT PAGE
+    private var isResetting = false
+    fun refreshPage(){
+        if(isResetting)
+            return
+        isResetting = true
+        resetPagination()
         populateDailyWorkSummaries()
     }
 
+    fun clearAllFilters(){
+        resetPagination()
+        _filterDto.value = WorkDataFiltersDTO()
+        populateDailyWorkSummaries()
+    }
+
+    private fun resetPagination() {
+        _currentPage.value = DEFAULT_PAGE
+        _dailyWorkSummaries.value = emptyList()
+        _totalPages.value = DEFAULT_PAGE
+    }
+
+
+
 
     fun onChangeFilter(state : WorkDataFiltersDTOState, newValue: String) {
+        resetPagination()
         when(state) {
             is WorkDataFiltersDTOState.IncludeInactiveWorkers -> {
                 _filterDto.value = _filterDto.value.copy(includeInactiveWorkers = state.newValue)
-            populateDailyWorkSummaries()
             }
             is WorkDataFiltersDTOState.FilterDepartment ->{
                 _filterDto.value = _filterDto.value.copy(filterDepartmentId = newValue.toUUIDOrNull())
-                populateSections(UUID.fromString(newValue))
-                populateDailyWorkSummaries()
-            }
+                populateSections(UUID.fromString(newValue)) }
             is WorkDataFiltersDTOState.FilterDate ->{
                 _filterDto.value = _filterDto.value.copy(filterDate = newValue)
-             populateDailyWorkSummaries()
             }
             is WorkDataFiltersDTOState.FilterName -> {
                 _filterDto.value = _filterDto.value.copy(filterName = newValue)
-            populateDailyWorkSummaries()
             }
             is WorkDataFiltersDTOState.FilterSection ->{
                 _filterDto.value = _filterDto.value.copy(filterSectionId = newValue.toUUIDOrNull())
-            populateDailyWorkSummaries()}
+           }
             is WorkDataFiltersDTOState.FilterSurname->{
                 _filterDto.value = _filterDto.value.copy(filterSurname = newValue)
-                populateDailyWorkSummaries()
             }
             is WorkDataFiltersDTOState.FilterPhone ->{
                 _filterDto.value  = _filterDto.value.copy(filterPhoneNumber = newValue)
-            populateDailyWorkSummaries()
             }
             is WorkDataFiltersDTOState.FilterSecondaryPhone -> {
                 _filterDto.value = _filterDto.value.copy(
                     filterSecondaryPhoneNumber = newValue
                 )
-                populateDailyWorkSummaries()
             }
         }
+        populateDailyWorkSummaries()
     }
 
+    private var isLoading = false
+
     fun loadNextPage(pageSize: Int = DEFAULT_PAGE_SIZE) {
-        if (_currentPage.value < _totalPages.value) {
-            _currentPage.value++
+        if (isLoading) return
+        if (_currentPage.value >= _totalPages.value) return
+
+        isLoading = true
+        _currentPage.value++
+
+        viewModelScope.launch {
             populateDailyWorkSummaries(pageSize)
+            isLoading = false
         }
     }
     fun populateDailyWorkSummaries(pageSize: Int = DEFAULT_PAGE_SIZE) {
@@ -113,7 +132,7 @@ ViewModel(){
             return
         }
         viewModelScope.launch {
-            println("getDailyWorkSummaries called with date ${filterDto.value.filterDate}")
+            _isSyncing.value = true
             val resp = workApi.getDailyWorkSummaries(page, pageSize, filterDto.value)
             resp?.let {
                 _totalPages.value = it.totalPages
@@ -123,6 +142,8 @@ ViewModel(){
                     _dailyWorkSummaries.value += it.items
                 }
             }
+            delay(2000)
+            _isSyncing.value = false
         }
     }
 

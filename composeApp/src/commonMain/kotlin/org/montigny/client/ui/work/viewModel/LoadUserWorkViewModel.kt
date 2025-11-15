@@ -2,6 +2,7 @@ package org.montigny.client.ui.work.viewModel
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -57,7 +58,8 @@ class LoadUserWorkViewModel(
 
     private val _currentPage = MutableStateFlow(DEFAULT_PAGE)
     val currentPage: StateFlow<Int> = _currentPage
-
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing
 
 
     fun clearDateFilters() {
@@ -98,6 +100,7 @@ class LoadUserWorkViewModel(
             return
         }
         viewModelScope.launch(Dispatchers.IO) {
+            _isSyncing.value = true
             val currentFilters = _filterDto.value.copy(
                 includeInactiveWorkers = true,
                 filterUserId = _user.value?.id?.toString()?.toUUID()
@@ -111,6 +114,8 @@ class LoadUserWorkViewModel(
                     _dailyWorkSummaries.value += it.items
                 }
             }
+            delay(2000)
+            _isSyncing.value = false
         }
     }
 

@@ -8,6 +8,7 @@ import org.montigny.client.Report.AllReportData
 import org.montigny.client.Report.FactWorkDoneByUserDTO
 import org.montigny.client.Report.FactWorkDoneDTO
 import org.montigny.client.persistence.repository.ReportsRepository
+import org.montigny.client.persistence.repository.StackRepository
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -52,6 +53,8 @@ class ReportsService(
         workbook.close()
         return outputStream.toByteArray()
     }
+
+
     fun generateExcelReport(startDate: String,endDate: String) : ByteArray{
         val data : AllReportData = reportsRepo.generateAllReportData(startDate, endDate)
         val workbook = XSSFWorkbook()

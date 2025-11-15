@@ -1,4 +1,5 @@
 package org.montigny.client.ui.reports.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -40,6 +41,13 @@ class GenerateReportsViewModel(
     private val  _filterDto  = MutableStateFlow<WorkDataFiltersDTO>(WorkDataFiltersDTO())
     val  filterDto: StateFlow<WorkDataFiltersDTO> = _filterDto
 
+    private val _isSyncingPdf = MutableStateFlow<Boolean>(false)
+    val isSyncingPdf: StateFlow<Boolean> = _isSyncingPdf
+    private  val  _isSyncingPayRoll = MutableStateFlow(false)
+    val isSyncingPayRoll: StateFlow<Boolean> = _isSyncingPayRoll
+
+    private  val _isSyncingMasterData  = MutableStateFlow(false)
+    val isSyncingMasterData: StateFlow<Boolean> = _isSyncingMasterData
 
   fun   setStartAndEndDateFilters(start: String, end:String) {
       println("setting start date and end date filters with  values $start and $end")
@@ -47,31 +55,39 @@ class GenerateReportsViewModel(
     }
     fun  exportStacksDataToPdf(){
         viewModelScope.launch {
+            _isSyncingPdf.value = true
             generateWeeklySummaryPdfUseCase.invoke(filterDto.value).collect {
                 when (it) {
                     is FileState.Error -> {
-                        _pdfGeneratorMessage.value = "Failed to generate file"
-                        logger.error("failed to export ${it.message}")
+                         _pdfGeneratorMessage.value = "Failed to generate file, make sure file is not open by other apps"
+                         logger.error("failed to export ${it.message}")
+                         delay(2000)
+                        _isSyncingPdf.value = false
                     }
                     is FileState.Success -> {
                         _pdfGeneratorMessage.value = it.filePath
+                         delay(2000)
+                        _isSyncingPdf.value = false
                     }
                     else -> {}
                 }
             }
         }
     }
-
-
     fun  exportPayRollDataToExcel(startdate:String, enddate:String) {
         viewModelScope.launch {
+            _isSyncingPayRoll.value = true
             generatePayRollDataReportUseCase.invoke(startdate, enddate).collect {
                 when (it) {
                     is FileState.Success -> {
                         _payRollGeneratorMessage.value = it.filePath
+                        delay(2000)
+                        _isSyncingPayRoll.value = false
                     }
                     is FileState.Error -> {
                         _payRollGeneratorMessage.value = it.message
+                        delay(2000)
+                        _isSyncingPayRoll.value = false
                     }
                      else -> {}
                 }
@@ -80,13 +96,18 @@ class GenerateReportsViewModel(
     }
      fun exportDashBoardToExcel(startdate:String, enddate:String) {
          viewModelScope.launch {
+             _isSyncingMasterData.value = true
              generateDashBoardReportUseCase.invoke(startdate, enddate).collect {
                  when (it) {
                      is FileState.Success -> {
                          _dashBoardGeneratorMessage.value = it.filePath
+                         delay(2000)
+                         _isSyncingMasterData.value=false
                      }
                      is FileState.Error -> {
                          _dashBoardGeneratorMessage.value = it.message
+                         delay(2000)
+                         _isSyncingMasterData.value=false
                      }
                      is FileState.Loading -> {}
                  }

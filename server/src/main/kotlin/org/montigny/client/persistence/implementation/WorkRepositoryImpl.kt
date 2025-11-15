@@ -42,18 +42,16 @@ class WorkRepositoryImpl(): WorkRepository {
             it[createdBy] = user.id
             it[createdAt] = Instant.now()
         }.value
-
         // --- 2️⃣ Collect and validate user IDs ---
-        val allUserIds = req.workersList.flatMap { it.userIds }.distinct() // enforce uniqueness
+        val allUserIds = req.workersList.flatMap { it.userIds }.distinct()
         val missingUsers = allUserIds.filterNot { uid ->
             AppUsers.select { AppUsers.id eq uid }.any()
         }
         if (missingUsers.isNotEmpty()) {
             error("Some users not found: ${missingUsers.joinToString()}")
         }
-
         // --- 3️⃣ Collect and validate stack IDs (duplicates allowed) ---
-        val allStackIds = req.stacksList.flatMap { it.stackIds } // do NOT distinct here
+        val allStackIds = req.stacksList.flatMap { it.stackIds }
         val missingStacks = allStackIds.distinct().filterNot { sid ->
             Stacks.select { Stacks.id eq sid }.any()
         }
@@ -321,9 +319,8 @@ class WorkRepositoryImpl(): WorkRepository {
             ?.takeIf { it.isNotBlank() }
             ?.let { dateStr ->
                 val date = LocalDate.parse(dateStr)
-                val startOfDay = date.atStartOfDay(ZoneOffset.UTC).toInstant()
-                val endOfDay = date.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
-
+                val startOfDay = date.minusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()
+                val endOfDay = date.atStartOfDay(ZoneOffset.UTC).toInstant()
                 WorkDone
                     .select {
                         (WorkDone.id inList filteredWorkDoneIds) and

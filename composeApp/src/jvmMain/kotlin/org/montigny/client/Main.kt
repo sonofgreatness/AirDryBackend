@@ -29,7 +29,7 @@ object Main {
     fun main(args: Array<String>) = application {
         Window(
             onCloseRequest = ::exitApplication,
-            title = "IMS (GUNDANE@MONTIGNY)",
+            title = "BrotherHood Office",
         ) {
             startKoin { modules(databaseModule, appModule) }
 

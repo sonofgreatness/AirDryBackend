@@ -1,13 +1,20 @@
 package org.montigny.client.util
 
+import androidx.compose.runtime.remember
 import org.montigny.client.HUMAN_READABLE_FORMAT_TEXT_HOUR_MINUTE
+import org.montigny.client.util.Constants.Companion.FILTER_DATE_FORMAT
+import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+
+
 
 class UtilityFunctions {
 
@@ -43,7 +50,7 @@ class UtilityFunctions {
             throw IllegalArgumentException("expecting 0  or 1 but got $value")
         }
         fun generateDayDateForNowSpaced(): String{
-            return SimpleDateFormat("EEEE dd-MM-yyyy").format(Date.from(Instant.now()))
+            return SimpleDateFormat("EEEE dd-MMM-yyyy").format(Date.from(Instant.now()))
         }
         fun formatReadableDate(isoString: String?): String {
             return try {
@@ -68,8 +75,42 @@ class UtilityFunctions {
         )
         val customApiFormattterHText  = DateTimeFormatter.ofPattern(
             HUMAN_READABLE_FORMAT_TEXT_HOUR_MINUTE,
-            Locale.getDefault()
+            Locale.getDefault())
+        fun covertNumberTo2DecimalString(number : Float): String {
+            return String.format("%.2f m³", number)
+        }
+        fun covertNumberTo2DecimalString(number : Double): String {
+            return String.format("%.2f m³", number)
+        }
+        fun covertNumberTo3DecimalString(number : Float): String {
+            return String.format("%.3f m³", number)
+        }
+        fun covertNumberTo3DecimalString(number : Double): String {
+            return String.format("%.3f m³", number)
+        }
 
-        )
+        fun extractUUIDFromApiString(loaded: String?): UUID? {
+            if (loaded.isNullOrBlank()) return null
+            val uuidString = loaded.substringBefore(";").trim()
+            return try {
+                UUID.fromString(uuidString)
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        }
+        fun extractFullNameFromApiString(loaded: String?): String {
+            if (loaded.isNullOrBlank()) return ""
+            return loaded.substringAfter(";", "").trim()
+        }
+        private val utcZoneId: ZoneId = ZoneOffset.UTC
+
+        private val datePickerFormatter: DateTimeFormatter =
+            DateTimeFormatter.ofPattern(FILTER_DATE_FORMAT, Locale.getDefault())
+        fun parseStringFromDatePickerToTimeStamp(dateString: String): Timestamp {
+            val localDate = LocalDate.parse(dateString, datePickerFormatter)
+            val millis = localDate.atStartOfDay(utcZoneId).toInstant().toEpochMilli()
+            return Timestamp(millis)
+        }
+
     }
 }

@@ -5,12 +5,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.DatePickerDefaults.dateFormatter
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,23 +32,26 @@ import org.montigny.client.navigation.Navigator
 import org.montigny.client.ui.work.viewModel.LoadWorkViewModel
 import org.montigny.client.ui.work.viewModel.WorkDataFiltersDTOState
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
+import org.montigny.client.util.Constants.Companion.FILTER_DATE_FORMAT
 import org.montigny.client.util.UtilityFunctions
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-
+import  org.montigny.client.util.UtilityFunctions.Companion.extractFullNameFromApiString
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkScreen(
     loadWorkViewModel: LoadWorkViewModel, navigator: Navigator
 ) {
-    val scope = rememberCoroutineScope()
+
+    val currentPage by loadWorkViewModel.currentPage.collectAsState()
+    val totalPages by loadWorkViewModel.totalPages.collectAsState()
     val workSummaries by loadWorkViewModel.dailyWorkSummaries.collectAsState()
     val filtersDTO by loadWorkViewModel.filterDto.collectAsState()
-
+    val listState = rememberLazyListState()
     val pageSize = DEFAULT_PAGE_SIZE
-
     val expandedDays = remember { mutableStateMapOf<String, Boolean>() }
+    val isSyncing  by loadWorkViewModel.isSyncing.collectAsState()
 
     LaunchedEffect(Unit) {
         loadWorkViewModel.populateDailyWorkSummaries(pageSize = pageSize)
@@ -85,12 +90,28 @@ fun WorkScreen(
                 }
             }
             Spacer(Modifier.height(18.dp))
-
-            if (workSummaries.isEmpty()) {
+            if(workSummaries.isEmpty() &&!isSyncing) {
+                EmptyListPlaceHolder(
+                    "No work data to show",
+                    50,
+                    Icons.Default.WarningAmber
+                )
+            }
+            if (workSummaries.isEmpty() && isSyncing) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No records yet", style = MaterialTheme.typography.bodyMedium)
+                 CircularProgressIndicator()
                 }
             } else {
+                LaunchedEffect(listState) {
+                    snapshotFlow { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0 }
+                        .collect { atTop ->
+                            if (atTop) {
+                               if(workSummaries.isEmpty()){
+                                   loadWorkViewModel.refreshPage()
+                               }
+                            }
+                        }
+                }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -105,19 +126,17 @@ fun WorkScreen(
                             navigator
                         )
 
-                        if (index >= workSummaries.lastIndex - 2) {
-                            scope.launch {
-                                loadWorkViewModel.loadNextPage(
-                                    pageSize = pageSize
-                                )
+                        if (index == workSummaries.lastIndex && currentPage < totalPages) {
+                            LaunchedEffect(index) {
+                                loadWorkViewModel.loadNextPage(pageSize)
                             }
+                        }
                         }
                     }
                 }
             }
         }
     }
-}
 
 /** ✅ HEADER SECTION **/
 @Composable
@@ -148,7 +167,7 @@ private fun FilterSectionTopRow(
     filtersDTO: WorkDataFiltersDTO,
     loadWorkViewModel: LoadWorkViewModel
 ) {
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
+    val dateFormatter = remember { DateTimeFormatter.ofPattern(FILTER_DATE_FORMAT) }
     val openDialog = remember { mutableStateOf(false) }
     val dateState = rememberDatePickerState(initialSelectedDateMillis = System.currentTimeMillis())
 
@@ -319,6 +338,7 @@ private fun FilterSectionBottomRow(
                 loadWorkViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterPhone, it)
             },
             label = { Text("Phone number") },
+            maxLines = 1,
             modifier = Modifier.weight(1f)
         )
         OutlinedTextField(
@@ -327,6 +347,7 @@ private fun FilterSectionBottomRow(
                 loadWorkViewModel.onChangeFilter(WorkDataFiltersDTOState.FilterSecondaryPhone, it)
             },
             label = { Text("Secondary phone number.") },
+            maxLines = 1,
             modifier = Modifier.weight(1f)
         )
     }
@@ -408,16 +429,17 @@ private fun WorkSummaryItem(work: WorkSummaryDTO, navigator: Navigator) {
                         StatInline("📦 Volume", String.format("%.2f m³", work.totalVolume))
                         StatInline("🗂 Stacks", work.totalStacks.toString())
                         StatInline("👷 Users", work.totalUsers.toString())
-                        work.capturedBy?.let { StatInline("✍️ Captured by", it) }
+
+                        work.capturedBy?.let { StatInline("✍️ Captured by",  extractFullNameFromApiString(it)) }
                         work.capturedAt?.let { StatInline("⏱ Captured at", it) }
                     }
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        work.updatedBy?.let { StatInline("🔄 Updated by", it) }
+                        work.updatedBy?.let { StatInline("🔄 Updated by", extractFullNameFromApiString(it)) }
                         if (work.capturedAt != work.updatedAt) {
-                            work.updatedAt?.let { StatInline("⏱ Updated at", it) }
+                            work.updatedAt?.let { StatInline("⏱ Updated at", it)}
                         }
                     }
                     var showEditButton  = false
@@ -447,7 +469,6 @@ private fun WorkSummaryItem(work: WorkSummaryDTO, navigator: Navigator) {
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(12.dp))
 
             // -------------------------
@@ -556,8 +577,6 @@ private fun UserRow(user: UserInfoDTO, navigator: Navigator) {
                     StatusChip("Approved", user.isApproved, Icons.Default.Verified)
                 }
             }
-
-            // --- Right: Volume ---
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = String.format("%.3f m³", user.personalCubes),
@@ -600,4 +619,19 @@ fun StatusChip(label: String, status: Boolean, icon: ImageVector) {
         )
     }
 }
+@Composable
+fun EmptyListPlaceHolder(title:String, imageSize:Int, displayIcon: ImageVector ){
 
+    Box(modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center){
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Icon(displayIcon,
+                contentDescription = "",
+                modifier = Modifier
+                    .size(imageSize.dp)
+                    .clip(CircleShape),
+            )
+            Text(title)
+        }
+    }
+}

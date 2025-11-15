@@ -1,5 +1,6 @@
 package org.montigny.client.ui.settings.stacks
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -7,11 +8,14 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Apartment
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,10 +43,15 @@ fun ManageStacksScreen(viewModel: StacksViewModel, navigator: Navigator) {
     val stackCodes by viewModel.allStackCodes.collectAsState()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsState()
     val isOnlineLoggedIn by viewModel.isOnlineLoggedIn.collectAsState()
+    var showWorkerDropDown by remember {mutableStateOf(false)}
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var stackToDelete by remember { mutableStateOf<UUID?>(null) }
+    LaunchedEffect(Unit){
+        viewModel.populateAllStacksList()
+
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -55,73 +64,95 @@ fun ManageStacksScreen(viewModel: StacksViewModel, navigator: Navigator) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // ----- DASHBOARD -----
-            Surface(
-                tonalElevation = 6.dp,
-                shadowElevation = 8.dp,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+
+
+            if (showWorkerDropDown){
+                Surface(
+                    tonalElevation = 6.dp,
+                    shadowElevation = 8.dp,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface
                 ) {
-                    val totalStack = stacks.size
-                    val totalStackCodes = stackCodes.size
-                    DashboardCard("Stacks", totalStack, Icons.Outlined.Apartment)
-                    DashboardCardWithAction(
-                        "Stack Codes", totalStackCodes, Icons.Outlined.Groups
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        navigator.navigateTo(Destination.ViewStackCodes)
+                        val totalStack = stacks.size
+                        val totalStackCodes = stackCodes.size
+                        DashboardCard("Stacks", totalStack, Icons.Outlined.Apartment)
+                        DashboardCardWithAction(
+                            "Stack Codes", totalStackCodes, Icons.Outlined.Groups
+                        ) {
+                            navigator.navigateTo(Destination.ViewStackCodes)
+                        }
+                    }
+                }
+
+                // ----- ACTIONS -----
+                Surface(
+                    tonalElevation = 4.dp,
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = {
+                                if (isNetworkAvailable && !isOnlineLoggedIn) {
+                                    navigator.navigateTo(Destination.Login, Destination.ManageStacksScreen)
+                                }
+                                viewModel.populateAllStacksList()
+                            },
+                            enabled = !isSyncing
+                        ) {
+                            if (isSyncing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Syncing")
+                            } else {
+                                Icon(Icons.Default.Refresh, contentDescription = "Sync")
+                                Spacer(Modifier.width(4.dp))
+                                Text("Sync")
+                            }
+                        }
+                        Button(onClick = { navigator.navigateTo(Destination.CreateStack) }) {
+                            Icon(Icons.Default.Add, contentDescription = "Create Stack")
+                            Spacer(Modifier.width(4.dp))
+                            Text("Create")
+                        }
                     }
                 }
             }
-            // ----- ACTIONS -----
-            Surface(
-                tonalElevation = 4.dp,
-                shape = MaterialTheme.shapes.small,
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = {
-                            if (isNetworkAvailable && !isOnlineLoggedIn) {
-                                navigator.navigateTo(Destination.Login, Destination.ManageStacksScreen)
-                            }
+            Box(modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ){
+                Icon(
+                    if (showWorkerDropDown)
+                        Icons.Default.ExpandLess
+                    else
+                        Icons.Default.ExpandMore
+                    , contentDescription = "Opens worker Select"
+                    , modifier = Modifier.size(36.dp).clickable{
+                        showWorkerDropDown =!showWorkerDropDown
+                        if (!showWorkerDropDown){
                             viewModel.populateAllStacksList()
-                        },
-                        enabled = !isSyncing
-                    ) {
-                        if (isSyncing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text("Syncing")
-                        } else {
-                            Icon(Icons.Default.Refresh, contentDescription = "Sync")
-                            Spacer(Modifier.width(4.dp))
-                            Text("Sync")
                         }
+
                     }
-                    Button(onClick = { navigator.navigateTo(Destination.CreateStack) }) {
-                        Icon(Icons.Default.Add, contentDescription = "Create Stack")
-                        Spacer(Modifier.width(4.dp))
-                        Text("Create")
-                    }
-                }
+                )
             }
 
             // ----- LIST -----

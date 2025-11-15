@@ -45,5 +45,5 @@ val appModule = module {
     single { OrganizationService(get()) }
     single {StackService(get()) }
     single<WorkerService> { WorkerService(get())}
-    single<ReportsService>{ ReportsService(get()) }
+    single<ReportsService>{ ReportsService(get(),) }
 }

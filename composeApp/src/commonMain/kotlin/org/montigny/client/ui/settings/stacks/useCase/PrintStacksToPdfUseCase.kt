@@ -13,6 +13,7 @@ import com.lowagie.text.pdf.PdfPTable
 import com.lowagie.text.pdf.PdfWriter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import org.montigny.client.HUMAN_READABLE_FORMAT_TEXT_HOUR_MINUTE
 import org.montigny.client.auth.OfflineSessionManager
 import org.montigny.client.data.api.repository.OrganizationApi
 import org.montigny.client.data.api.repository.StackApi
@@ -99,7 +100,7 @@ try {
         val orgCell = PdfPCell(
             Phrase(
                 "$organizationName\n\nDate Issued: ${
-                    SimpleDateFormat("yyyy-MM-dd HH:mm").format(Date())
+                    SimpleDateFormat(HUMAN_READABLE_FORMAT_TEXT_HOUR_MINUTE).format(Date())
                 }",
                 Font(Font.HELVETICA, 12f, Font.BOLD)
             )
@@ -121,30 +122,24 @@ try {
         // ---------- HELPER FUNCTIONS ----------
         val headerStyle = Font(Font.HELVETICA, 11f, Font.BOLD)
         val cellStyle = Font(Font.HELVETICA, 10f, Font.NORMAL)
-
-
-
-        // ---------- STACK CODES TABLE ----------
-        document.add(Paragraph("Stack Codes", Font(Font.HELVETICA, 14f, Font.BOLD)))
-        document.add(Paragraph("\n"))
-
-        val codeTable = PdfPTable(floatArrayOf(1f, 2f))
-        codeTable.widthPercentage = 100f
-
-        addHeaderCell("Code", codeTable,headerStyle)
-        addHeaderCell("Display Name", codeTable,headerStyle)
-
-        stackCodes.forEach { code ->
-            addBodyCell(code.displayCode ?: "-", codeTable, cellStyle)
-            addBodyCell(code.displayName ?: "-", codeTable, cellStyle)
-        }
-
-        document.add(codeTable)
-
-        // ---------- PAGE BREAK ----------
-        document.newPage()
+         val backPageCellStyle  = Font(Font.HELVETICA, 10f, Font.NORMAL) //redifine to fit necessary contraints
 
         // ---------- STACKS TABLE ----------
+        writeStacksFrontPage(document, headerStyle, stacks, cellStyle)
+        document.newPage()
+        writeStacksBackPage(document, headerStyle, stacks, backPageCellStyle)
+
+        document.close()
+        writer.close()
+        println("Generate pdf completed")
+    }
+
+    private fun writeStacksFrontPage(
+        document: Document,
+        headerStyle: Font,
+        stacks: List<GetStackDTO>,
+        cellStyle: Font
+    ) {
         document.add(Paragraph("Stacks", Font(Font.HELVETICA, 14f, Font.BOLD)))
         document.add(Paragraph("\n"))
 
@@ -175,10 +170,89 @@ try {
                 Font(Font.HELVETICA, 9f, Font.ITALIC)
             )
         )
-        document.close()
-        writer.close()
-        println("Generate pdf completed")
     }
+
+    private fun writeStacksBackPage(
+        document: Document,
+        headerStyle: Font,
+        stacks: List<GetStackDTO>,
+        cellStyle: Font
+    ) {
+
+        // --- Switch this PAGE ONLY to LANDSCAPE ---
+        document.pageSize = PageSize.A4.rotate()
+        document.setMargins(20f, 20f, 30f, 20f)
+        document.add(Paragraph("Back Page — All Stacks Summary", Font(Font.HELVETICA, 13f, Font.BOLD)))
+        document.add(Paragraph("\n"))
+
+        // ---- SETTINGS TO CONDENSE CONTENT ----
+        val condensedHeader = Font(Font.HELVETICA, 8f, Font.BOLD)
+        val condensedCell = Font(Font.HELVETICA, 7f, Font.NORMAL)
+        val rowPadding = 2f
+
+        // ---- COLUMNS WE WILL SHOW ----
+        val columnTitles = listOf(
+            "Name", "Code", "Description", "L (m)", "H (m)", "T (m)", "Pieces", "Volume"
+        )
+
+        // ---- MAX HEIGHT CONSIDERATIONS ----
+        val maxRowsPerTable = 35   // fits safely on landscape A4
+
+        val chunks: List<List<GetStackDTO>> = stacks.chunked(maxRowsPerTable)
+
+        chunks.forEachIndexed { index, chunk ->
+            val table = PdfPTable(floatArrayOf(2.2f, 1.2f, 2f, 1f, 1f, 1f, 1f, 1f))
+            table.widthPercentage = 100f
+            table.setSpacingAfter(5f)
+
+            // ----- ADD HEADERS -----
+            columnTitles.forEach { title ->
+                val cell = PdfPCell(Phrase(title, condensedHeader)).apply {
+                    backgroundColor = Color(240, 240, 240)
+                    horizontalAlignment = Element.ALIGN_CENTER
+                    paddingTop = rowPadding
+                    paddingLeft = rowPadding
+                    paddingRight = rowPadding
+                    paddingBottom = rowPadding
+
+                }
+                table.addCell(cell)
+            }
+
+            // ----- BODY -----
+            for (s in chunk) {
+                table.addCell(makeCondensedCell(s.displayName ?: "-", condensedCell, rowPadding))
+                table.addCell(makeCondensedCell(s.stackCode.displayCode ?: "-", condensedCell, rowPadding))
+                table.addCell(makeCondensedCell(s.stackCode.displayName ?: "-", condensedCell, rowPadding))
+                table.addCell(makeCondensedCell(fmt(s.length), condensedCell, rowPadding))
+                table.addCell(makeCondensedCell(fmt(s.height), condensedCell, rowPadding))
+                table.addCell(makeCondensedCell(fmt(s.thickness), condensedCell, rowPadding))
+                table.addCell(makeCondensedCell(s.numberOfPieces?.toString() ?: "-", condensedCell, rowPadding))
+                table.addCell(makeCondensedCell(fmt(s.volume), condensedCell, rowPadding))
+            }
+
+            // Add table
+            document.add(table)
+
+            // Add tiny divider if it's not the last one
+            if (index != chunks.lastIndex) {
+                document.add(Paragraph("\n"))
+            }
+        }
+
+        // ---- FOOTER (Condensed) ----
+        document.add(
+            Paragraph(
+                "\n$PDF_FOOTER_TEXT",
+                Font(Font.HELVETICA, 7f, Font.ITALIC)
+            )
+        )
+
+        // ---- RETURN TO PORTRAIT FOR NEXT PAGE ----
+        document.pageSize = PageSize.A4
+        document.setMargins(36f, 36f, 54f, 36f)
+    }
+
     private  fun addHeaderCell(text: String, table: PdfPTable, headerStyle: Font) {
         val cell = PdfPCell(Phrase(text, headerStyle))
         cell.backgroundColor = Color(230, 230, 230)
@@ -194,4 +268,23 @@ try {
         cell.horizontalAlignment = Element.ALIGN_LEFT
         table.addCell(cell)
     }
+
+
+    private fun makeCondensedCell(text: String, font: Font, myPadding: Float): PdfPCell {
+        return PdfPCell(Phrase(text, font)).apply {
+            horizontalAlignment = Element.ALIGN_LEFT
+            isNoWrap = false
+            paddingTop = myPadding
+            paddingLeft = myPadding
+            paddingRight =myPadding
+            paddingBottom= myPadding
+        }
+    }
+
+    private fun fmt(value: Double?): String =
+        String.format("%.3f", value ?: 0.0)
+    private fun fmt(value: Float?): String =
+        String.format("%.3f", value ?: 0.0)
+
+
 }
