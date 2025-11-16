@@ -68,7 +68,7 @@ class OrganizationDepartmentsAndSectionsViewModel(
                     val organization = organizationRepository.selectOrganizationHierarchyByUserId(userId.toUUID())
                     _loadOrganization.value = organization[0]
                 }
-
+                 delay(900)
                 _isSyncing.value= false
             }catch (e: Exception) {
                 _isSyncing.value= false
@@ -127,9 +127,11 @@ class OrganizationDepartmentsAndSectionsViewModel(
             throw Exception("department id is null")
         val dto  = CreateDptDTO(id = departmentId, displayName = newName,
             organizationId = _loadOrganization.value!!.id)
-        println("calling editDepartment  with $dto")
+        _isSyncing.value = true
         editDepartmentInternal(dto)
-        println("edit department completed")
+
+
+
     }
     private fun  editDepartmentInternal(department: CreateDptDTO) {
      viewModelScope.launch{
@@ -149,6 +151,11 @@ class OrganizationDepartmentsAndSectionsViewModel(
              }
              else{
                  organizationRepository.updateDepartment(department)
+             }
+             delay(1100)
+
+             loadOrganization.value?.id?.let {
+                 initializeLoadOrganization(it.toString())
              }
          }
          catch (e: Exception){
@@ -176,6 +183,11 @@ class OrganizationDepartmentsAndSectionsViewModel(
             else{
                 organizationRepository.insertSection(dto, true)
             }
+            delay(1100)
+
+            loadOrganization.value?.id?.let {
+                initializeLoadOrganization(it.toString())
+            }
         }
     }
     fun editSection(newName: String, sectionId: UUID?, departmentId: UUID?){
@@ -201,6 +213,11 @@ class OrganizationDepartmentsAndSectionsViewModel(
 
                 }else{
                     organizationRepository.updateSection(dto) }
+                delay(1100)
+
+                loadOrganization.value?.id?.let {
+                    initializeLoadOrganization(it.toString())
+                }
             }catch (e: Exception){
                 logger.error("Failed to update section ${e.message}")
             }
@@ -226,6 +243,11 @@ class OrganizationDepartmentsAndSectionsViewModel(
                    }
                 }
                 synchronizeOrganizations()
+                delay(1100)
+
+                loadOrganization.value?.id?.let {
+                    initializeLoadOrganization(it.toString())
+                }
             }catch (e: Exception){
                 logger.error("Failed to delete section ${e.message}")
             }finally {
@@ -253,6 +275,12 @@ class OrganizationDepartmentsAndSectionsViewModel(
                     }
                 }
                 synchronizeOrganizations()
+                delay(1100)
+
+                loadOrganization.value?.id?.let {
+                    initializeLoadOrganization(it.toString())
+                }
+
             }catch (e: Exception){
                 logger.error("Failed to delete department ${e.message}")
             }finally {
