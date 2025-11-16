@@ -1,6 +1,7 @@
 package org.montigny.client.ui.organizations.viewModels
 
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -54,9 +55,12 @@ class OrganizationDepartmentsAndSectionsViewModel(
     val isNetworkAvailable: StateFlow<Boolean> = connectivityObserver.isServerReachable
     val isOnlineLoggedIn : StateFlow<Boolean> =  sessionManager.isLoggedInFlow
 
+    private  val  _isSyncing  = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing
     fun initializeLoadOrganization(userId:String) {
         viewModelScope.launch {
             try {
+                _isSyncing.value= true
                 if (isNetworkAvailable.value && isOnlineLoggedIn.value) {
                     val organization = organizationApi.getOrganizationWithNestedDepartments()
                     _loadOrganization.value = organization[0]
@@ -64,7 +68,10 @@ class OrganizationDepartmentsAndSectionsViewModel(
                     val organization = organizationRepository.selectOrganizationHierarchyByUserId(userId.toUUID())
                     _loadOrganization.value = organization[0]
                 }
+
+                _isSyncing.value= false
             }catch (e: Exception) {
+                _isSyncing.value= false
                 logger.error("Failed to load update user", e)
             } }
     }

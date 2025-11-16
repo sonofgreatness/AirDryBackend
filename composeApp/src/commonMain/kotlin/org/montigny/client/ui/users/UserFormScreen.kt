@@ -15,6 +15,7 @@ import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import org.com.client.database.User_type
 import org.montigny.client.dto.Organization.CreateOrgDTO
 import org.montigny.client.dto.Organization.CreateSectDTO
@@ -38,6 +39,7 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
     var expandedUserType by remember { mutableStateOf(false) }
     var expandedDepartment by remember { mutableStateOf(false) }
     var expandedSection by remember { mutableStateOf(false) }
+    val isSyncingDepartment by userViewModel.isSyncingDepartments.collectAsState()
 
     // Currently selected values
     val selectedUserType = userTypes.find { it.id == createUser?.userTypeId?.toString() }
@@ -51,6 +53,7 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
         userViewModel.initializeEmptyCreateUse()
         userViewModel.resetCreateUserState()
         userViewModel.populateDepartmentsAndSections()
+        userViewModel.populateUserTypes()
     }
 
     // Validation state
@@ -63,126 +66,146 @@ fun UserFormScreen(userViewModel: UserViewModel, navigator: Navigator) {
                  it.password.length < 5
     } ?: true
 
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp)
-    ) {
-        val isWideScreen = maxWidth > 800.dp
-        Column(
-            horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.Top,
-            modifier = Modifier.fillMaxSize().verticalScroll(scrollState)
-        ) {
-            // --- Page Header ---
-            Text(
-                "Create User",
-                style = MaterialTheme.typography.headlineMedium
-            )
-            Text(
-                "Fill in details to register a new user account.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(24.dp))
+    if (isSyncingDepartment) {
+        Box(modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    }
+    else {
 
-            // --- Form Layout ---
-            if (isWideScreen) {
-                Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        NameFields(createUser, focusManager=focusManager , {newValues, state ->
-                            userViewModel.onCreateUserChange(newValues, state)})
-                        ContactFields(createUser,focusManager=focusManager, {newValues, state ->
-                            userViewModel.onCreateUserChange(newValues, state)})
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp)
+        ) {
+            val isWideScreen = maxWidth > 800.dp
+            Column(
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.Top,
+                modifier = Modifier.fillMaxSize().verticalScroll(scrollState)
+            ) {
+                // --- Page Header ---
+                Text(
+                    "Create User",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(
+                    "Fill in details to register a new user account.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(24.dp))
+
+                // --- Form Layout ---
+                if (isWideScreen) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            NameFields(createUser, focusManager = focusManager, { newValues, state ->
+                                userViewModel.onCreateUserChange(newValues, state)
+                            })
+                            ContactFields(createUser, focusManager = focusManager, { newValues, state ->
+                                userViewModel.onCreateUserChange(newValues, state)
+                            })
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            DropdownFields(
+                                selectedUserType, selectedDepartment, selectedSection,
+                                expandedUserType, { expandedUserType = it },
+                                expandedDepartment, { expandedDepartment = it },
+                                expandedSection, { expandedSection = it },
+                                userTypes, departments, sections, { newValues, state ->
+                                    userViewModel.onCreateUserChange(newValues, state)
+                                }
+                            )
+
+                            ToggleFields(createUser, { newValues, state ->
+                                userViewModel.onCreateUserChange(newValues, state)
+                            })
+
+                            PasswordField(
+                                password = createUser?.password.orEmpty(),
+                                focusManager = focusManager,
+                                onPasswordChange = {
+                                    userViewModel.onCreateUserChange(it, UserRegisterDTOState.password)
+                                },
+                                onDone = { userViewModel.createUser() }
+                            )
+                        }
                     }
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        NameFields(createUser, focusManager = focusManager, { newValues, state ->
+                            userViewModel.onCreateUserChange(newValues, state)
+                        })
+                        ContactFields(createUser, focusManager = focusManager, { newValues, state ->
+                            userViewModel.onCreateUserChange(newValues, state)
+                        })
                         DropdownFields(
                             selectedUserType, selectedDepartment, selectedSection,
                             expandedUserType, { expandedUserType = it },
                             expandedDepartment, { expandedDepartment = it },
                             expandedSection, { expandedSection = it },
-                            userTypes, departments, sections, {newValues, state ->
-                                userViewModel.onCreateUserChange(newValues, state)}
+                            userTypes, departments, sections, { newValues, state ->
+                                userViewModel.onCreateUserChange(newValues, state)
+                            }
                         )
 
-                        ToggleFields(createUser,{newValues, state ->
-                            userViewModel.onCreateUserChange(newValues, state)})
-
+                        ToggleFields(
+                            createUser,
+                            { newValues, state ->
+                                userViewModel.onCreateUserChange(newValues, state)
+                            })
                         PasswordField(
                             password = createUser?.password.orEmpty(),
-                            focusManager=focusManager,
-                                    onPasswordChange = {
+                            focusManager = focusManager,
+                            onPasswordChange = {
                                 userViewModel.onCreateUserChange(it, UserRegisterDTOState.password)
                             },
                             onDone = { userViewModel.createUser() }
                         )
                     }
                 }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    NameFields(createUser, focusManager=focusManager , {newValues, state ->
-                        userViewModel.onCreateUserChange(newValues, state)})
-                    ContactFields(createUser,focusManager=focusManager, {newValues, state ->
-                        userViewModel.onCreateUserChange(newValues, state)})
-                    DropdownFields(
-                        selectedUserType, selectedDepartment, selectedSection,
-                        expandedUserType, { expandedUserType = it },
-                        expandedDepartment, { expandedDepartment = it },
-                        expandedSection, { expandedSection = it },
-                        userTypes, departments, sections, {newValues, state ->
-                            userViewModel.onCreateUserChange(newValues, state)}
-                    )
 
-                    ToggleFields(createUser,
-                        {newValues, state ->
-                            userViewModel.onCreateUserChange(newValues, state)})
-                    PasswordField(
-                        password = createUser?.password.orEmpty(),
-                        focusManager=focusManager,
-                                onPasswordChange = {
-                            userViewModel.onCreateUserChange(it, UserRegisterDTOState.password)
-                        },
-                        onDone = { userViewModel.createUser() }
-                    )
-                }
-            }
+                Spacer(Modifier.height(32.dp))
 
-            Spacer(Modifier.height(32.dp))
-
-            // --- Actions ---
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(
-                    onClick = { userViewModel.createUser() },
-                    enabled = !hasValidationErrors && uiState !is UiState.Loading && uiState !is UiState.Success
-                ) {
-                    Text(if (uiState is UiState.Loading) "Creating..." else "Create")
-                }
-                OutlinedButton(onClick = { navigator.navigateTo(Destination.Users) }) {
-                    Text("Cancel")
-                }
-                if (uiState is UiState.Success) {
-                    OutlinedButton(onClick = { userViewModel.initializeEmptyCreateUse() }) {
-                        Text("Create Another")
+                // --- Actions ---
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Button(
+                        onClick = { userViewModel.createUser() },
+                        enabled = !hasValidationErrors && uiState !is UiState.Loading && uiState !is UiState.Success
+                    ) {
+                        Text(if (uiState is UiState.Loading) "Creating..." else "Create")
+                    }
+                    OutlinedButton(onClick = { navigator.navigateTo(Destination.Users) }) {
+                        Text("Cancel")
+                    }
+                    if (uiState is UiState.Success) {
+                        OutlinedButton(onClick = { userViewModel.initializeEmptyCreateUse() }) {
+                            Text("Create Another")
+                        }
                     }
                 }
-            }
-            Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
 
-            // --- Status Messages ---
-            when (uiState) {
-                is UiState.Error -> Text(
-                    (uiState as UiState.Error).message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-                is UiState.Success -> Text(
-                    "✅ User created successfully!",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                else -> {}
+                // --- Status Messages ---
+                when (uiState) {
+                    is UiState.Error -> Text(
+                        (uiState as UiState.Error).message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+
+                    is UiState.Success -> Text(
+                        "✅ User created successfully!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    else -> {}
+                }
             }
-        }
+        }// box
     }
 }
 

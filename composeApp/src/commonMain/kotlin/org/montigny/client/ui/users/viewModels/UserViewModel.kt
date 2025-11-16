@@ -1,7 +1,9 @@
 package org.montigny.client.ui.users.viewModels
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.com.client.database.User_type
 import org.montigny.client.auth.SessionManager
@@ -83,7 +85,8 @@ private val _totalPages = MutableStateFlow(1)
 val totalPages: StateFlow<Int> = _totalPages
 private val _currentPage = MutableStateFlow(DEFAULT_PAGE)
 val currentPage: StateFlow<Int> = _currentPage
-
+    private  val _isSyncingDepartments   = MutableStateFlow(false)
+    val isSyncingDepartments :StateFlow<Boolean> get() =  _isSyncingDepartments
 
 
 fun onCreateUserChange(newValue: String, state: UserRegisterDTOState) {
@@ -257,10 +260,10 @@ private fun synchronizeUserDataInternal(isNetworkAvailable: Boolean =false,isOnl
                 }
                 populateAUserAndUserTypeLists()
                 populateDepartmentsAndSections()
-            } catch (e: Exception) {
-                logger.error("Sync failed: ${e.message}")
-            } finally {
                 _isSyncing.value = false
+            } catch (e: Exception) {
+                _isSyncing.value = false
+                logger.error("Sync failed: ${e.message}")
             }
         }
     }
@@ -279,9 +282,12 @@ fun loadNextPage(pageSize: Int = DEFAULT_PAGE_SIZE) {
 private fun populateUsers(pageSize:Int = DEFAULT_PAGE_SIZE){
     viewModelScope.launch {
         try {
+            _isSyncing.value = true
             logger.info("Populating users ")
             pickUserDataSource(isNetworkAvailable.value, isOnlineLoggedIn.value, pageSize)
+            _isSyncing.value = false
         }catch (e: Exception) {
+            _isSyncing.value = false
             logger.error("failed to populate users Error ${e.message}")
         }
     }
@@ -320,7 +326,7 @@ private suspend fun getPagedListOffline() {
         val users: List<UserResponse> = userRepository.selectAllUsers() ?: emptyList()
         _users.value = users
     }
-    private fun populateUserTypes() {
+fun populateUserTypes() {
         viewModelScope.launch {
             try {
                pickDataSource(isNetworkAvailable.value, isOnlineLoggedIn.value)
@@ -329,8 +335,10 @@ private suspend fun getPagedListOffline() {
             }
         }
     }
+
 @Throws(Exception::class)
 private suspend fun pickDataSource(isNetworkAvailable: Boolean = false, isOnlineLoggedIn: Boolean) {
+         _isSyncingDepartments.value = true
           if(isNetworkAvailable && isOnlineLoggedIn){
              val userTypes: List<User_type> =  userApi.getUserTypes().map { User_type(
                   id = it.id.toString(),
@@ -344,6 +352,7 @@ private suspend fun pickDataSource(isNetworkAvailable: Boolean = false, isOnline
               val userTypes: List<User_type> =  userRepository.getAll()
               _useTypes.value = userTypes
         }
+    _isSyncingDepartments.value = false
    }
 
 fun populateDepartmentsAndSections(){
@@ -362,6 +371,7 @@ private fun populateDepartments(){
 
 private suspend fun pickDepartmentDataSource(isNetworkAvailable: Boolean = false,isOnlineLoggedIn: Boolean) {
          try{
+             _isSyncingDepartments.value = true
              if (isNetworkAvailable &&isOnlineLoggedIn){
                  val departmentsVariable : List<CreateOrgDTO> =organizationApi.getAllDept()
                  _departments.value = departmentsVariable
@@ -369,7 +379,10 @@ private suspend fun pickDepartmentDataSource(isNetworkAvailable: Boolean = false
                  val  departmentsVariable : List<CreateOrgDTO> = organizationRepository.getAllDepartments()
                  _departments.value = departmentsVariable
              }
+             delay(2000)
+             _isSyncingDepartments.value = false
          }catch (e: Exception){
+             _isSyncingDepartments.value = false
              logger.error("failed to populate departments pickDepartmentDataSourceError ${e.message}")
          }
     }

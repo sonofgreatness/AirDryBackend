@@ -1,6 +1,7 @@
 package org.montigny.client.ui.organizations
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,8 +18,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +32,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,6 +60,7 @@ import org.montigny.client.util.UtilityFunctions.Companion.toUUID
 import java.util.UUID
 import kotlin.text.Typography.section
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun  ViewOrgWithDepartmentsAndSectionsScreen(
     userId: String, navigator: Navigator,
@@ -72,7 +78,7 @@ fun  ViewOrgWithDepartmentsAndSectionsScreen(
     var showEditSectionDialog by remember { mutableStateOf<CreateSectDTO?>(null) }
     var showCreateDepartmentDialog by remember { mutableStateOf(false) }
     var showCreateSectionDialog by remember { mutableStateOf<DepartmentResponse?>(null) }
-
+    val isSyncing  by organizationViewModel.isSyncing.collectAsState()
 
     var departmentToDelete by remember { mutableStateOf<UUID?>(null) }
     var sectionToDelete by remember { mutableStateOf<UUID?>(null) }
@@ -82,67 +88,86 @@ fun  ViewOrgWithDepartmentsAndSectionsScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-        ) {
-            // ---- ORG HEADER ----
-            OrgHeaderBanner(
-                orgName = organization?.name ?: "No name loaded",
-                orgLogo = organization?.logo
-            )
-            Spacer(Modifier.height(16.dp))
-            // ---- DEPARTMENTS SECTION ----
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    "Departments",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                IconButton(onClick = { showCreateDepartmentDialog = true }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Department")
-                }
-            }
-
-            if (organization?.departments.isNullOrEmpty()) {
-                Text("No Departments Found", style = MaterialTheme.typography.bodyMedium)
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(organization.departments, key = { it.id.toString() }) { dept ->
-                        DepartmentItem(
-                            department = dept,
-                            onEditDepartment = { showEditDepartmentDialog = it },
-                            onAddSection = { showCreateSectionDialog = it },
-                            onEditSection = { showEditSectionDialog = it },
-                            onDeleteSection = { section ->
-                                if(!(isNetworkAvailable && isOnlineLoggedIn)) {
-                                    navigator.navigateTo(
-                                        Destination.Login,
-                                        Destination.ViewOrgWithDepartmentsAndSections(userId)
-                                    )
-                                }else{
-                                sectionToDelete = section.id}
-                            },
-                            onDeleteDepartment = { department ->
-                                if(!(isNetworkAvailable && isOnlineLoggedIn)) {
-                                    navigator.navigateTo(
-                                        Destination.Login,
-                                        Destination.ViewOrgWithDepartmentsAndSections(userId)
-                                    )
-                                }else
-                                {departmentToDelete = department.id}
-                            }
-                        )
+        topBar = {
+            TopAppBar(
+                title = { androidx.compose.material3.Text("Manage Organization") },
+                navigationIcon = {
+                    IconButton(onClick = {navigator.navigateTo(Destination.Organizations)}) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Go back")
                     }
                 }
+            )
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) {
+        if (isSyncing){
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
+        }else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
+                // ---- ORG HEADER ----
+                OrgHeaderBanner(
+                    orgName = organization?.name ?: "No name loaded",
+                    orgLogo = organization?.logo
+                )
+                Spacer(Modifier.height(16.dp))
+                // ---- DEPARTMENTS SECTION ----
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Departments",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    IconButton(onClick = { showCreateDepartmentDialog = true }) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Department")
+                    }
+                }
+
+                if (organization?.departments.isNullOrEmpty()) {
+                    Text("No Departments Found", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(organization.departments, key = { it.id.toString() }) { dept ->
+                            DepartmentItem(
+                                department = dept,
+                                onEditDepartment = { showEditDepartmentDialog = it },
+                                onAddSection = { showCreateSectionDialog = it },
+                                onEditSection = { showEditSectionDialog = it },
+                                onDeleteSection = { section ->
+                                    if (!(isNetworkAvailable && isOnlineLoggedIn)) {
+                                        navigator.navigateTo(
+                                            Destination.Login,
+                                            Destination.ViewOrgWithDepartmentsAndSections(userId)
+                                        )
+                                    } else {
+                                        sectionToDelete = section.id
+                                    }
+                                },
+                                onDeleteDepartment = { department ->
+                                    if (!(isNetworkAvailable && isOnlineLoggedIn)) {
+                                        navigator.navigateTo(
+                                            Destination.Login,
+                                            Destination.ViewOrgWithDepartmentsAndSections(userId)
+                                        )
+                                    } else {
+                                        departmentToDelete = department.id
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+            }// column
         }
+
         // ---- DIALOGS ----
         // Edit Department
         showEditDepartmentDialog?.let { dept ->
@@ -154,6 +179,7 @@ fun  ViewOrgWithDepartmentsAndSectionsScreen(
                     organizationViewModel.editDepartment(
                         newName = newName, departmentId = departmentId
                     )
+                    organizationViewModel.initializeLoadOrganization(userId)
                     showEditDepartmentDialog = null
                 }
             )
@@ -165,6 +191,7 @@ fun  ViewOrgWithDepartmentsAndSectionsScreen(
                 onDismiss = { showEditSectionDialog = null },
                 onConfirm = { newName, sectionId, departmentId ->
                     organizationViewModel.editSection(newName, sectionId, departmentId)
+                    organizationViewModel.initializeLoadOrganization(userId)
                     showEditSectionDialog = null
                 }
             )
@@ -202,6 +229,7 @@ fun  ViewOrgWithDepartmentsAndSectionsScreen(
                     onClick = {
                         coroutineScope.launch {
                             organizationViewModel.deleteDepartment(departmentToDelete!!)
+                            organizationViewModel.initializeLoadOrganization(userId)
                             departmentToDelete = null
                         }
                     }
@@ -245,6 +273,7 @@ fun  ViewOrgWithDepartmentsAndSectionsScreen(
                     onClick = {
                         coroutineScope.launch {
                             organizationViewModel.deleteSection(sectionToDelete!!)
+                            organizationViewModel.initializeLoadOrganization(userId)
                             sectionToDelete = null
                         }
                     }

@@ -26,6 +26,7 @@ import org.montigny.client.ui.Theme.Danger
 import org.montigny.client.ui.Theme.TextMuted
 import org.montigny.client.ui.organizations.DashboardCard
 import org.montigny.client.ui.users.viewModels.UserViewModel
+import org.montigny.client.ui.work.EmptyListPlaceHolder
 import org.montigny.client.util.Constants.Companion.DEFAULT_PAGE_SIZE
 import java.util.*
 
@@ -203,13 +204,18 @@ fun UsersScreen(userViewModel: UserViewModel, navigator: Navigator) {
                     .fillMaxWidth(),
                 color = MaterialTheme.colorScheme.surface
             ) {
-                if (users.isEmpty()) {
+
+                if (users.isEmpty() && isSyncing) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            "No users available",
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                        )
+                        CircularProgressIndicator()
+                }
+                }
+                if (users.isEmpty() && !isSyncing) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        EmptyListPlaceHolder("no users available",50 , Icons.Filled.WarningAmber)
+
                     }
+
                 } else {
                     LazyColumn(
                         state = listState,
