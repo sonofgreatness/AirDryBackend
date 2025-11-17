@@ -16,7 +16,6 @@ import org.montigny.client.ui.reports.WeeklyApprovalScreen
 import org.montigny.client.ui.reports.viewModel.GenerateReportsViewModel
 import org.montigny.client.ui.reports.viewModel.WeekApprovalsViewModel
 import org.montigny.client.ui.settings.MainSettingsScreen
-import org.montigny.client.ui.settings.SettingsScreen
 import org.montigny.client.ui.settings.stacks.CreateStackScreen
 import org.montigny.client.ui.settings.stacks.ManageStacksScreen
 import org.montigny.client.ui.settings.stacks.ViewStackCodesScreen
@@ -64,13 +63,13 @@ fun NavGraph(
         Destination.Work -> WorkScreen(loadWorkViewModel,navigator)
         Destination.ManageStacksScreen-> ManageStacksScreen(stacksViewModel, navigator)
         Destination.Reports -> ReportsScreen(navigator)
-        Destination.Settings -> SettingsScreen()
+
         Destination.Login -> LoginScreen(authViewModel, sessionManager) {
 
             if (nextDestination != null )
                 navigator.navigateTo(nextDestination!!)
             else
-                navigator.navigateTo(Destination.Settings)
+                navigator.navigateTo(Destination.Users)
         }
         Destination.MainSettings -> MainSettingsScreen(
             darkThemeEnabled = themeManager.isDarkThemeEnabled.value,
