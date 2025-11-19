@@ -3,7 +3,7 @@ import util from "../util/util";
 
 let axiosBaseUrl = "/";
 if (window.location.href.includes("localhost")) {
-  axiosBaseUrl = `${window.location.protocol}//${window.location.hostname}:9090`;
+  axiosBaseUrl = `${window.location.protocol}//${window.location.hostname}`;
 } else {
   axiosBaseUrl = window.location.origin;
 }

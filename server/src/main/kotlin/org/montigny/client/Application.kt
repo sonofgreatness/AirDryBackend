@@ -67,7 +67,7 @@ fun Application.module() {
         )
     }
     install(CORS) {
-        allowHost("localhost:5173", schemes = listOf("http"))
+        allowHost("api.localhost:5173", schemes = listOf("http"))
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.Accept)
@@ -110,7 +110,7 @@ fun Application.module() {
                 ),
                 servers = listOf<Server>(
                     Server(
-                        url = URI("http://localhost:9090"),
+                        url = URI("http://api.localhost"),
                         description = "Local development server "
                     )
                 ) as MutableList<Server>,

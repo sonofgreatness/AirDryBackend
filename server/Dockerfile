@@ -5,10 +5,10 @@ FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
 
 # Copy your server JAR into the container
-COPY build/libs/server-all.jar .
+COPY build/libs/server-1.0.1-all.jar .
 
 # Expose the port your server listens on
 EXPOSE 9090
 
 # Run the server
-CMD ["java", "-jar", "server-all.jar"]
+CMD ["java", "-jar", "server-1.0.1-all.jar"]
