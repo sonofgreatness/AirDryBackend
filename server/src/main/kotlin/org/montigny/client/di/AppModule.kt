@@ -1,0 +1,60 @@
+package org.montigny.client.di
+
+import io.ktor.server.config.*
+import org.koin.dsl.module
+import org.montigny.client.config.DatabaseFactory
+import org.montigny.client.config.JwtProvider
+import org.montigny.client.persistence.implementation.BCryptPasswordHasher
+import org.montigny.client.persistence.implementation.OrganizationRepositoryImpl
+import org.montigny.client.persistence.implementation.ReleasesRepositoryImpl
+import org.montigny.client.persistence.implementation.ReportsRepositoryImpl
+import org.montigny.client.persistence.implementation.StackRepositoryImpl
+import org.montigny.client.persistence.implementation.UserRepositoryImpl
+import org.montigny.client.persistence.implementation.WorkRepositoryImpl
+import org.montigny.client.persistence.repository.OrganizationRepository
+import org.montigny.client.persistence.repository.PasswordHasher
+import org.montigny.client.persistence.repository.ReleaseRepository
+import org.montigny.client.persistence.repository.ReportsRepository
+import org.montigny.client.persistence.repository.StackRepository
+import org.montigny.client.persistence.repository.UserRepository
+import org.montigny.client.persistence.repository.WorkRepository
+import org.montigny.client.service.OrganizationService
+import org.montigny.client.service.ReleaseService
+import org.montigny.client.service.ReportsService
+import org.montigny.client.service.StackService
+import org.montigny.client.service.TrackingService
+import org.montigny.client.service.UserService
+import org.montigny.client.service.VisitorTrackingService
+import org.montigny.client.service.WeeklyApprovalScheduler
+import org.montigny.client.service.WorkerService
+
+val appModule = module {
+    single<PasswordHasher> { BCryptPasswordHasher() }
+    // Repository
+    single<UserRepository> { UserRepositoryImpl(get()) }
+    single<OrganizationRepository> { OrganizationRepositoryImpl()}
+    single <StackRepository>{ StackRepositoryImpl()}
+    single<WorkRepository>{ WorkRepositoryImpl()}
+    single<ReportsRepository>{ ReportsRepositoryImpl()}
+    single <ReleaseRepository>{ ReleasesRepositoryImpl()}
+    // JWT
+    single {
+        val config = get<ApplicationConfig>().config("ktor.jwt")
+        JwtProvider(
+            secret = config.property("secret").getString(),
+            issuer = config.property("issuer").getString(),
+            audience = config.property("audience").getString(),
+            expirySeconds = config.property("expirySeconds").getString().toLong()
+        )
+    }
+    // Service
+    single { UserService(get(), get()) }
+    single { OrganizationService(get()) }
+    single {StackService(get()) }
+    single<WorkerService> { WorkerService(get())}
+    single<ReportsService>{ ReportsService(get(),) }
+    single { WeeklyApprovalScheduler() }
+    single { TrackingService()}
+    single{ VisitorTrackingService() }
+    single { ReleaseService(get()) }
+}

@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run ServerAndDesktop" type="CompoundRunConfigurationType">
+    <toRun name="Desktop [composeApp:run]" type="GradleRunConfiguration" />
+    <toRun name="Server" type="GradleRunConfiguration" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -1,0 +1,30 @@
+<configuration>
+    <!-- === Existing Console Appender === -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%date{HH:mm:ss}] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- === Rolling File Appender (production-safe) === -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- Log file in user's LocalAppData -->
+        <file>${user.home}/AppData/Local/BrotherHoodOffice/logs/desktop-app.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Daily rotated logs -->
+            <fileNamePattern>${user.home}/AppData/Local/BrotherHoodOffice/logs/desktop-app.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>10</maxHistory>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>[%date{HH:mm:ss}] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- === Root Logger uses BOTH Console and File === -->
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE" />
+    </root>
+</configuration>

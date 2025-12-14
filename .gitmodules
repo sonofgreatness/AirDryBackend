@@ -1,0 +1,3 @@
+[submodule "openapigen"]
+	path = openapigen
+	url = https://github.com/papsign/Ktor-OpenAPI-Generator.git

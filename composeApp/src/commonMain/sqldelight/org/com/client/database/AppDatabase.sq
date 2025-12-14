@@ -1,0 +1,654 @@
+----------------------------------------------------------------------
+-- Table: user_type
+----------------------------------------------------------------------
+CREATE TABLE user_type (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    displayname         TEXT NOT NULL,
+    is_pending_insert   INTEGER NOT NULL DEFAULT 0,
+    is_pending_update   INTEGER NOT NULL DEFAULT 0
+);
+
+----------------------------------------------------------------------
+-- Table: organization
+----------------------------------------------------------------------
+CREATE TABLE organization (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    is_pending_insert   INTEGER NOT NULL DEFAULT 0,
+    is_pending_update   INTEGER NOT NULL DEFAULT 0,
+    displayname         TEXT NOT NULL,
+    logo                BLOB
+);
+
+----------------------------------------------------------------------
+-- Table: department
+----------------------------------------------------------------------
+CREATE TABLE department (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    is_pending_insert   INTEGER NOT NULL DEFAULT 0,
+    is_pending_update   INTEGER NOT NULL DEFAULT 0,
+    displayname         TEXT NOT NULL,
+    organization_id     TEXT NOT NULL,
+    FOREIGN KEY(organization_id) REFERENCES organization(id)
+);
+
+----------------------------------------------------------------------
+-- Table: section
+----------------------------------------------------------------------
+CREATE TABLE section (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    is_pending_insert   INTEGER NOT NULL DEFAULT 0,
+    is_pending_update   INTEGER NOT NULL DEFAULT 0,
+    created_by          TEXT,
+    updated_by          TEXT,
+    displayname         TEXT NOT NULL,
+    department_id       TEXT NOT NULL,
+    FOREIGN KEY(department_id) REFERENCES department(id)
+);
+
+----------------------------------------------------------------------
+-- Table: app_user
+----------------------------------------------------------------------
+CREATE TABLE app_user (
+    id                         TEXT PRIMARY KEY NOT NULL,
+    created_at                 TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at                 TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by                 TEXT,
+    updated_by                 TEXT,
+    name                       TEXT NOT NULL,
+    surname                    TEXT NOT NULL,
+    phone_number               TEXT NOT NULL,
+    secondary_phone_number     TEXT,
+    is_approved                INTEGER NOT NULL DEFAULT 0,
+    is_active                  INTEGER NOT NULL DEFAULT 1,
+    is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+    is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    user_type_id               TEXT,
+    organization_id            TEXT,
+    department_id              TEXT,
+    section_id                 TEXT,
+    email                      TEXT,
+    password_hash              TEXT,
+    UNIQUE (email),
+    FOREIGN KEY(user_type_id) REFERENCES user_type(id),
+    FOREIGN KEY(organization_id) REFERENCES organization(id),
+    FOREIGN KEY(department_id) REFERENCES department(id),
+    FOREIGN KEY(section_id) REFERENCES section(id)
+);
+
+
+
+
+-------------------------------------------------
+-- TABLE: stack_code
+-------------------------------------------------
+CREATE TABLE stack_code (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+    is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    display_code        TEXT NOT NULL UNIQUE,
+    display_name        TEXT NOT NULL
+);
+
+-------------------------------------------------
+-- TABLE: stack
+-------------------------------------------------
+CREATE TABLE stack (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    display_name        TEXT NOT NULL,
+    length              REAL NOT NULL,
+    is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+    is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    height              REAL NOT NULL,
+    thickness           REAL NOT NULL,
+    number_of_pieces    INTEGER NOT NULL DEFAULT 1,
+    stack_code_id       TEXT NOT NULL UNIQUE,
+    volume              REAL NOT NULL,
+    FOREIGN KEY(stack_code_id) REFERENCES stack_code(id) ON DELETE CASCADE
+);
+
+-------------------------------------------------
+-- TABLE: work_done
+-------------------------------------------------
+CREATE TABLE work_done (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+    is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    work_date           TEXT NOT NULL
+);
+
+-------------------------------------------------
+-- TABLE: work_done_user
+-------------------------------------------------
+CREATE TABLE work_done_user (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    work_done_id        TEXT NOT NULL,
+    app_user_id         TEXT NOT NULL,
+   is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+   is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY(work_done_id) REFERENCES work_done(id) ON DELETE CASCADE,
+    FOREIGN KEY(app_user_id) REFERENCES app_user(id) ON DELETE CASCADE,
+    UNIQUE(work_done_id, app_user_id)
+);
+
+-------------------------------------------------
+-- TABLE: work_done_stack
+-------------------------------------------------
+CREATE TABLE work_done_stack (
+    id                  TEXT PRIMARY KEY NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    updated_at          TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'now')),
+    created_by          TEXT,
+    updated_by          TEXT,
+    work_done_id        TEXT NOT NULL,
+    stack_id            TEXT NOT NULL,
+    is_pending_insert          INTEGER NOT NULL DEFAULT 0,
+    is_pending_update          INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY(work_done_id) REFERENCES work_done(id) ON DELETE CASCADE,
+    FOREIGN KEY(stack_id) REFERENCES stack(id) ON DELETE CASCADE,
+    UNIQUE(work_done_id, stack_id)
+);
+
+
+
+
+----------------------------------------------------------------------
+-- UserType Queries
+----------------------------------------------------------------------
+
+-- Insert a new user_type
+insertUserType:
+INSERT INTO user_type(id, displayname, is_pending_insert, is_pending_update)
+VALUES (?, ?, ?, ?);
+
+-- Get all user_types
+selectAllUserTypes:
+SELECT * FROM user_type;
+
+-- Get user_type by id
+selectUserTypeById:
+SELECT * FROM user_type
+WHERE id = ?;
+
+-- Get admin user_type
+selectAdminUserType:
+SELECT * FROM  user_type
+WHERE displayname LIKE '%admin%';
+
+-- Delete user_type by id
+deleteUserTypeById:
+DELETE FROM user_type
+WHERE id = ?;
+
+-- Delete all user_types
+deleteAllUserType:
+DELETE FROM user_type;
+
+----------------------------------------------------------------------
+-- AppUser Queries
+----------------------------------------------------------------------
+
+-- Insert AppUser (full)
+insertAppUser:
+INSERT INTO app_user (
+    id,
+    name,
+    surname,
+    phone_number,
+    secondary_phone_number,
+    is_approved,
+    is_active,
+    is_pending_insert,
+    is_pending_update,
+    user_type_id,
+    organization_id,
+    department_id,
+    section_id,
+    email,
+    password_hash
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- Insert minimal AppUser
+insertMinimalAppUser:
+INSERT INTO app_user (
+    id,
+    name,
+    surname,
+    phone_number,
+    is_pending_insert,
+    is_pending_update
+)
+VALUES (?, ?, ?, ?, ?, ?);
+
+-- Delete all users
+deleteAllUsers:
+DELETE FROM app_user;
+
+-- Select by id
+selectUserById:
+SELECT * FROM app_user WHERE id = ?;
+
+-- Select by phone
+selectUserByPhone:
+SELECT * FROM app_user WHERE phone_number = ?;
+
+-- Select by email
+selectUserByEmail:
+SELECT * FROM app_user WHERE email = ?;
+
+-- Select all users
+selectAllUsers:
+SELECT
+    u.id,
+    u.name,
+    u.surname,
+    u.phone_number,
+    u.secondary_phone_number,
+    u.email,
+    u.is_active,
+    u.is_approved,
+    u.is_pending_insert,
+    u.is_pending_update,
+    u.user_type_id,
+    ut.displayname AS user_type_name,
+    u.organization_id,
+    o.displayname AS organization_name,
+    u.department_id,
+    d.displayname AS department_name,
+    u.section_id,
+    s.displayname AS section_name
+FROM app_user u
+LEFT JOIN user_type ut ON u.user_type_id = ut.id
+LEFT JOIN organization o ON u.organization_id = o.id
+LEFT JOIN department d ON u.department_id = d.id
+LEFT JOIN section s ON u.section_id = s.id;
+
+
+
+------------------------------
+-- Department Queries
+-------------------------------
+getAllDeparts:
+SELECT id, displayname FROM department;
+
+insertMinimalDepartment:
+INSERT INTO department (
+    id,
+    displayname,
+    organization_id,
+    is_pending_insert,
+    is_pending_update
+) VALUES (?, ?, ?, ?, ?);
+
+
+---------------------------------------
+-- Section Queries
+---------------------------------------
+selectAllSections:
+SELECT id, displayname, department_id FROM section;
+
+-- Insert minimal section (only required fields)
+insertMinimalSection:
+INSERT INTO section (
+    id,
+    displayname,
+    department_id,
+    is_pending_insert,
+    is_pending_update
+) VALUES (?, ?, ?, ?, ?);
+
+
+selectSectionsByDepartmentId:
+SELECT id, displayname, department_id FROM section
+WHERE department_id = ? ;
+
+
+------------------------------------
+-- Organization queries
+------------------------------------
+selectOrganizationById:
+SELECT * FROM  organization
+WHERE id = ?;
+
+
+-------------------------------------------------
+-- Stack Queries
+--------------------------------------------------
+-- Insert Stack Code
+insertStackCode:
+INSERT INTO stack_code(id, display_code, display_name, is_pending_insert,is_pending_update)
+VALUES (?, ?, ?, ?, ?);
+
+selectAllStackCodes:
+SELECT * FROM stack_code;
+
+-- Insert Stack
+insertStack:
+INSERT INTO stack(id,
+ display_name,
+  length, height, thickness,
+  number_of_pieces, stack_code_id, volume,
+  is_pending_insert,is_pending_update)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAllStacks:
+SELECT
+    s.id,
+    s.display_name,
+    s.length,
+    s.height,
+    s.thickness,
+    s.number_of_pieces,
+    s.volume,
+    sc.id AS stack_code_id,
+    sc.display_code AS stack_code,
+    sc.display_name AS stack_code_name
+FROM stack s
+LEFT JOIN stack_code sc ON s.stack_code_id = sc.id;
+
+selectStackById:
+SELECT
+    s.id,
+    s.display_name,
+    s.length,
+    s.height,
+    s.thickness,
+    s.number_of_pieces,
+    s.volume,
+    sc.id AS stack_code_id,
+    sc.display_code AS stack_code,
+    sc.display_name AS stack_code_name
+FROM stack s
+LEFT JOIN stack_code sc ON s.stack_code_id = sc.id
+WHERE s.id  = ?;
+
+
+------------------------------
+-- Cache deletes (START OF CACHE FUNCTIONS)
+-------------------------------
+
+-- Delete uncached User
+deleteUnCachedUsers:
+DELETE FROM app_user  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
+
+
+-- Delete uncached section
+deleteUnCachedSections:
+DELETE FROM section  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
+
+-- Delete uncached department
+deleteUnCachedDepartments:
+DELETE FROM department  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
+-- Delete uncached  organization
+
+deleteUnCachedOrganization:
+DELETE FROM organization  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
+
+deleteUnCachedStack:
+DELETE FROM stack  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
+
+deleteUnCachedStackCode:
+DELETE FROM stack_code  WHERE  is_pending_insert = 0
+AND is_pending_update =0;
+---------------------------------------------
+-- Get cache inserts
+---------------------------------------------
+-- Get cached departments insert
+selectCachedForInsertDepartments:
+SELECT id, displayname,organization_id FROM department  WHERE
+is_pending_insert = 1;
+
+-- Get cached sections insert
+selectCachedForInsertSections:
+SELECT id, displayname, department_id FROM section
+WHERE is_pending_insert = 1;
+
+-- Get cached user insert
+selectCachedForInsertUser:
+SELECT * FROM app_user WHERE is_pending_insert = 1;
+
+-- Get cached  organization insert
+selectCachedForInsertOrganizationInsert:
+SELECT * FROM organization WHERE is_pending_insert = 1;
+
+-- Get cached stack_code  insert
+selectCachedForInsertStackCode:
+SELECT *  FROM stack_code WHERE
+is_pending_insert = 1;
+-- Get cached stack insert
+selectCachedForInsertStack:
+SELECT *  FROM stack WHERE
+is_pending_insert = 1;
+-----------------------------------------------------
+-- Get cache updates
+-----------------------------------------------------
+
+-- Get cached departments update
+selectCachedForUpdateDepartments:
+SELECT id, displayname, organization_id FROM department  WHERE
+is_pending_update = 1;
+
+-- Get cached sections update
+selectCachedForUpdateSections:
+SELECT id, displayname, department_id FROM section
+WHERE is_pending_update = 1;
+
+-- Get cached user update
+selectCachedForUpdateUser:
+SELECT * FROM app_user WHERE is_pending_update = 1;
+
+-- Get cached organization update
+selectCachedForUpdateOrganization:
+SELECT * FROM organization WHERE is_pending_update = 1;
+
+--Get cached stacks update
+selectCachedForUpdateStack:
+SELECT * FROM stack WHERE is_pending_update = 1;
+
+selectCachedForUpdateStackCode:
+SELECT * FROM stack_code WHERE is_pending_update = 1;
+
+-------------------------------------------------------------
+-- Update Caches
+--------------------------------------------------------------
+unCacheUserForInsert:
+UPDATE app_user
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheDepartmentForInsert:
+UPDATE department
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheSectionForInsert:
+UPDATE section
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheDepartmentForUpdate:
+UPDATE department
+SET is_pending_update = 0
+WHERE id = ?;
+
+unCacheSectionForUpdate:
+UPDATE section
+SET is_pending_update = 0
+WHERE id = ?;
+
+unCacheUserForUpdate:
+UPDATE app_user
+SET is_pending_update = 0
+WHERE id = ?;
+
+unCacheOrganizationForInsert:
+UPDATE organization
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheOrganizationForUpdate:
+UPDATE organization
+SET is_pending_update = 0
+WHERE id = ?;
+
+unCacheStackForInsert:
+UPDATE stack
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheStackCodeForInsert:
+UPDATE stack_code
+SET is_pending_insert = 0
+WHERE id = ?;
+
+unCacheStackForUpdate:
+UPDATE stack
+SET is_pending_update  = 0
+WHERE id =?;
+
+unCacheStackCodeForUpdate:
+UPDATE stack_code
+SET is_pending_update  = 0
+WHERE id =?;
+
+-- Update  AppUser (full)
+updateUserIncludingPassword:
+UPDATE app_user
+SET
+    name = ?,
+    surname = ?,
+    phone_number = ?,
+    secondary_phone_number = ?,
+    is_approved = ?,
+    is_active = ?,
+    is_pending_update = 1,
+    user_type_id = ?,
+    organization_id = ?,
+    department_id = ?,
+    section_id = ?,
+    email = ?,
+    password_hash = ?
+WHERE id = ?;
+
+updateUserNoPassword:
+UPDATE app_user
+SET
+    name = ?,
+    surname = ?,
+    phone_number = ?,
+    secondary_phone_number = ?,
+    is_approved = ?,
+    is_active = ?,
+    is_pending_update = 1,
+    user_type_id = ?,
+    organization_id = ?,
+    department_id = ?,
+    section_id = ?,
+    email = ?
+WHERE id = ?;
+
+-- Update Organization
+updateOrganization:
+UPDATE organization
+SET
+logo = ?,
+displayname = ?,
+is_pending_update = 1
+WHERE id = ?;
+
+--  Update Department
+updateDepartment:
+UPDATE department
+SET  displayname  =? ,
+is_pending_update =1
+WHERE id = ?;
+
+-- Update Section
+updateSection:
+UPDATE section
+SET  displayname = ?,
+is_pending_update = 1
+WHERE id  = ?;
+
+
+-- Update  Stack
+updateStack:
+UPDATE stack
+SET
+display_name = ?,
+length = ?,
+height =?,
+thickness =?,
+number_of_pieces=?,
+stack_code_id =?,
+is_pending_update =1
+WHERE id  =?;
+
+updateStackCode:
+UPDATE  stack_code
+SET
+display_code=?,
+display_name=?,
+is_pending_update =1
+WHERE id =?;
+
+-----------------------------------------
+--  END OF CACHE FUNCTIONS
+----------------------------------------
+
+-- Get full organization structure (organization -> departments -> sections)
+selectOrganizationHierarchyByUserId:
+SELECT
+    o.id AS org_id,
+    o.displayname AS org_name,
+    o.logo AS org_logo,
+    d.id AS dept_id,
+    d.displayname AS dept_name,
+    s.id AS section_id,
+    s.displayname AS section_name
+FROM organization o
+LEFT JOIN department d ON d.organization_id = o.id
+LEFT JOIN section s ON s.department_id = d.id
+WHERE o.id = (
+    SELECT organization_id FROM app_user WHERE id = ?
+)
+ORDER BY o.displayname, d.displayname, s.displayname;
+
+
+insertOrganization:
+INSERT INTO organization (
+    id,
+    is_pending_insert,is_pending_update,
+    displayname,logo) VALUES (?,?,?,?,?);
+

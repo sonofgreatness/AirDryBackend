@@ -1,0 +1,77 @@
+.portlet-lgt .mt-comment,
+.tab-pane .mt-comment {
+    padding: 4px 8px 6px;
+    margin: 6px auto;
+    border-left: 2px solid #1BBC9B;
+    background: #fdfdfd;
+    position: relative;
+}
+
+.mt-comments .mt-comment .mt-comment-body .mt-comment-info .mt-comment-author {
+    color: #999 !important;
+}
+
+.mt-comments .mt-comment .mt-comment-body .mt-comment-text {
+    color: #060606 !important;
+}
+
+.label:not(.md-skip).label-sm {
+    font-size: 13px;
+    padding: 2px 5px;
+    font-weight: normal;
+}
+
+.doc-iframe {
+    position: relative;
+    width: 90%;
+    height: 99%;
+    border: none;
+    background: #fff;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #eee
+}
+
+.ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ticket-btn {
+    cursor: pointer;
+    user-select: none;
+    background: cyan;
+    padding: 1px 6px;
+    border-radius: 16px;
+    text-align: center;
+    font-weight: 700;
+    color: #555;
+    margin: 0 auto;
+    min-width: 80px;
+}
+
+
+@font-face {
+    font-family: "Poppins";
+    src: url("./pages/assets/Poppins.ttf");
+}
+@font-face {
+    font-family: "Poppins-Light";
+    src: url("./pages/assets/Poppins-Light.ttf");
+}
+
+
+*{
+    font-family: 'Poppins-Light';
+}
+/* GlobalLoader.css */
+.global-loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
