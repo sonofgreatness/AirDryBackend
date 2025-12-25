@@ -59,7 +59,8 @@ fun main() {
 fun Application.module() {
     val configStream = object {}.javaClass.classLoader.getResourceAsStream("application.conf")
         ?: throw IllegalStateException("Cannot find application.conf in resources")
-    val config = HoconApplicationConfig(ConfigFactory.parseReader(configStream.reader()))
+    val config = HoconApplicationConfig(ConfigFactory.parseReader(configStream.reader()).resolve())
+
     println("Loaded Config Keys: ${config.toMap().keys}") // debug
     DatabaseFactory.init(config.config("ktor"))
     val appConfig = config
@@ -116,7 +117,7 @@ fun Application.module() {
                 servers = listOf<Server>(
                     Server(
                         url = URI("http://localhost:9090"),
-                        description = "Local development server "
+                        description = "Release "
                     )
                 ) as MutableList<Server>,
                 components = Components(

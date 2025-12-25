@@ -27,6 +27,7 @@ const IMAGES: string[] = [
 ];
 const [loadedCount, setLoadedCount] = useState<number>(0);
 const allLoaded: boolean = loadedCount >= IMAGES.length;
+console.log(allLoaded)
 
   const handleImageLoaded = (): void => {
   setLoadedCount((/** @type {number} */ prev) => prev + 1);
@@ -42,7 +43,7 @@ const [showVideoModal, setShowVideoModal] = useState(false);
       
       {/* === GLOBAL LOADER OVERLAY === */}
       
-      {!allLoaded && (
+      { /*!allLoaded && (
         <div
           style={{
             position: "fixed",
@@ -56,7 +57,7 @@ const [showVideoModal, setShowVideoModal] = useState(false);
         >
           <div className="ncaloader"></div>
         </div>
-      )}
+      )*/}
 
       {/* === Preload images invisibly === */}
       <div style={{ display: "none" }}>
@@ -66,7 +67,7 @@ const [showVideoModal, setShowVideoModal] = useState(false);
       </div>
 
       
-      {allLoaded && (
+      {true && (
         <div className="fade-in">
           {/* === INTRO SECTION === */}
           <section className="intro-section container mb-5">
@@ -162,7 +163,7 @@ const [showVideoModal, setShowVideoModal] = useState(false);
                   <div className="how-icon-text">🖨️</div>
                   <h3 className="how-title">Print Media</h3>
                   <p className="how-text">
-                    Each week, <strong>I, the developer</strong> prints reports for all
+                    Each week, <strong> the developer</strong> prints reports for all
                     registered workers and hand-delivers them.
                     This delivery service alone justifies the
                     <strong> SZL 50 subscription</strong>.
@@ -203,7 +204,7 @@ const [showVideoModal, setShowVideoModal] = useState(false);
                   <h3 className="worth-title">System Maintenance</h3>
                   <p className="worth-text">
                     The SZL 50 subscription supports the maintenance of the
-                    <strong>database</strong>,
+                    <strong> database</strong>,
                     <strong>Android app</strong>,
                     <strong>desktop app</strong>,
                     <strong>web portal</strong>,
@@ -219,8 +220,8 @@ const [showVideoModal, setShowVideoModal] = useState(false);
                   <div className="worth-icon-text">📊</div>
                   <h3 className="worth-title">The Intelligence Platform</h3>
                   <p className="worth-text">
-                    Powered by a Superset instance, the <strong>Intelligence Platform</strong>
-                    provides deep business insights, operational analytics, and forecasting
+                    Powered by a Superset instance, the <strong>Intelligence Platform </strong>
+                     provides deep business insights, operational analytics, and forecasting
                     based on the data collected by the Brotherhood and any external
                     datasource.
                     It has its own independent roadmap and commercial potential.
@@ -234,7 +235,7 @@ const [showVideoModal, setShowVideoModal] = useState(false);
 </button>
                     <br /><br />
                     <a
-                      href="http://localhost:8088"
+                      href="https://superset-mag-production-0b46.up.railway.app"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="portal-login-link"
@@ -413,7 +414,7 @@ const [showVideoModal, setShowVideoModal] = useState(false);
                   <h3 className="tech-info-title">Simple REST Architecture</h3>
                   <p className="tech-info-text">
                     At the core is a clean, well-structured
-                    <strong>REST API built with Ktor</strong>.
+                    <strong> REST API built with Ktor</strong>.
                     No unnecessary complexity — just stable endpoints
                     connecting apps, databases, and reporting tools seamlessly.
                   </p>
@@ -440,7 +441,7 @@ const [showVideoModal, setShowVideoModal] = useState(false);
                   <h3 className="tech-info-title">Resilient Deployment With Docker</h3>
                   <p className="tech-info-text">
                     Superset, the Ktor server, and the full-stack portal run in
-                    <strong>Docker containers</strong>. This guarantees isolation,
+                    <strong>  Docker containers</strong>. This guarantees isolation,
                     resilience, fast recovery, and easy upgrades without downtime.
                   </p>
                 </div>

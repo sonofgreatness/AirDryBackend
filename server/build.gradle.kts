@@ -105,8 +105,8 @@ tasks.register<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shad
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
 
     // Optional relocations if you want to avoid dependency conflicts
-    relocate("org.slf4j", "shadow.org.slf4j")
-    relocate("ch.qos.logback", "shadow.ch.qos.logback")
+    //relocate("org.slf4j", "shadow.org.slf4j")
+   // relocate("ch.qos.logback", "shadow.ch.qos.logback")
 
     doLast {
         println("✅ Server fat JAR built successfully at: ${archiveFile.get().asFile.absolutePath}")

@@ -10,7 +10,7 @@ if (window.location.href.includes("localhost")) {
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: axiosBaseUrl,
-    timeout: 10000,
+    timeout: 900000,
   withCredentials:true,
 });
 

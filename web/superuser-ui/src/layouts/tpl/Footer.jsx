@@ -37,7 +37,7 @@ const Footer = () => {
 
         <p className="footer-link">
           📊 <a 
-                href="http://dash.localhost" 
+                href="https://superset-mag-production-0b46.up.railway.app"
                 target="_blank" 
                 rel="noopener noreferrer"
               >

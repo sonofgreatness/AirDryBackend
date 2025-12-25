@@ -1,0 +1,37 @@
+ktor {
+  deployment {
+    port = 9090
+    watch = [ classes ]
+  }
+  application {
+    modules = [ org.montigny.client.ApplicationKt.module ]
+  }
+
+
+  db {
+    jdbcUrl = "jdbc:postgresql://localhost:5432/main_database?currentSchema=public"
+    driver = "org.postgresql.Driver"
+    user = "postgres"
+    password = "password"
+    maximumPoolSize = 10
+    //jdbcUrl = "jdbc:postgresql://gondola.proxy.rlwy.net:26783/railway"
+    //driver = "org.postgresql.Driver"
+    //user = "postgres"
+    //password = "KBKXtsTxntebNGElBfgaflnmcXazNfXz"
+    //maximumPoolSize = 10
+  }
+
+  jwt {
+    secret = "a-very-long-secret-change-me"
+    issuer = "com.example"
+    audience = "com.example.api"
+    realm = "Access to example"
+    expirySeconds = 604800
+  }
+
+}
+
+
+
+
+

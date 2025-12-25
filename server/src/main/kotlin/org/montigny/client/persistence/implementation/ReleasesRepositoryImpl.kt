@@ -14,7 +14,10 @@ import org.montigny.client.persistence.Platform
 import org.montigny.client.persistence.Release
 import org.montigny.client.persistence.Release.dateOfRelease
 import org.montigny.client.persistence.repository.ReleaseRepository
+import org.montigny.client.util.UtilityFunctions.Companion.convertDateToString
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.UUID
 
 class ReleasesRepositoryImpl() : ReleaseRepository {
@@ -81,7 +84,7 @@ class ReleasesRepositoryImpl() : ReleaseRepository {
             ReleaseDTO(
                 id = release[Release.id].value,
                 link = release[Release.link],
-                dateOfRelease = release[dateOfRelease].toString(),
+                dateOfRelease = convertDateToString(release[dateOfRelease]),
                 platform = release[Release.platform].name
 
             )
@@ -100,7 +103,7 @@ class ReleasesRepositoryImpl() : ReleaseRepository {
             ReleaseDTO(
                 id = release[Release.id].value,
                 link = release[Release.link],
-                dateOfRelease = release[dateOfRelease].toString(),
+                dateOfRelease = convertDateToString(release[dateOfRelease]),
                 platform = release[Release.platform].name
 
             )
@@ -118,10 +121,11 @@ class ReleasesRepositoryImpl() : ReleaseRepository {
                 ReleaseDTO(
                     id = release[Release.id].value,
                     link = release[Release.link],
-                    dateOfRelease = release[dateOfRelease].toString(),
+                    dateOfRelease = convertDateToString(release[dateOfRelease]),
                     platform = release[Release.platform].name
 
                 )
             }
     }
+
 }

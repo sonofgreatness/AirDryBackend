@@ -38,8 +38,8 @@ class ApiExamples {
 
 
         val exampleLogin = AuthRequest(
-            username = "simphiweiq@gmail.com",
-            password = "myverystrongpassword",
+            username = "casual@email.com",
+            password = "123456",
         )
 
         val exampleUdateUser = UpdateUserDTO(
