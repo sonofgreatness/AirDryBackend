@@ -113,7 +113,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Exe, TargetFormat.Msi)
             packageName = "Brotherhood Office"
-            packageVersion = "1.0.1"
+            packageVersion = "1.0.2"
             modules("java.desktop")
             includeAllModules = true
 

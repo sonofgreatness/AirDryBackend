@@ -116,7 +116,7 @@ fun Application.module() {
                 ),
                 servers = listOf<Server>(
                     Server(
-                        url = URI("http://localhost:9090"),
+                        url = URI("https://brotherhoodplatform.com"),
                         description = "Release "
                     )
                 ) as MutableList<Server>,
