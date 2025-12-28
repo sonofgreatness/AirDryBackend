@@ -10,6 +10,7 @@ import io.bkbn.kompendium.json.schema.definition.TypeDefinition
 import io.bkbn.kompendium.oas.payload.MediaType
 import io.bkbn.kompendium.oas.payload.Parameter
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.plugins.origin
@@ -75,6 +76,8 @@ import org.montigny.client.util.Constants.Companion.UPDATED_USER_SUCCESS_DESCRIP
 import org.montigny.client.util.Constants.Companion.UPDATE_USER_DESCRIPTION
 import org.montigny.client.util.UserUtils
 import java.util.UUID
+import kotlin.text.isNullOrBlank
+import kotlin.text.split
 
 fun Route.userRoutes(userService: UserService, visitorTrackingService: VisitorTrackingService) {
     // ----------------- REGISTER -----------------
@@ -373,7 +376,7 @@ fun Route.userRoutes(userService: UserService, visitorTrackingService: VisitorTr
         }
         post {
             try{
-                val ipAddress = call.request.origin.remoteHost
+                val ipAddress = call.clientIp()
                 val routePath = API_URL_USER_LOGIN
                 visitorTrackingService.logOrUpdateDailyTraffic(ipAddress, routePath)}
             catch (e: Exception){
@@ -691,94 +694,7 @@ fun Route.userRoutes(userService: UserService, visitorTrackingService: VisitorTr
         }
     }
 
- route(API_HEALTH){
-     install(NotarizedRoute()){
-         tags = setOf("Utility")
-        get = GetInfo.builder {
-            summary("Get health check")
-            description("Health check")
-            response {
-                responseCode(HttpStatusCode.OK)
-                responseType<SimpleResponse>()
-                description("Ok for good server health")
-            }
-        }
-     }
-     get{
-         call.respond(HttpStatusCode.OK, SimpleResponse(SERVER_OK_TEXT))
-     }
- }
 
-    route(API_HEALTH_HALA){
-        install(NotarizedRoute()){
-            tags = setOf("Utility")
-            get = GetInfo.builder {
-                summary("Get hala @ me")
-                description("Get hala @ me")
-                response {
-                    responseCode(HttpStatusCode.OK)
-                    responseType<SimpleResponse>()
-                    description("Ok for good server health")
-                }
-            }
-        }
-        get{
-
-
-
-            val ipAddress = call.request.origin.remoteHost
-            val routePath = API_HEALTH_HALA
-            visitorTrackingService.logOrUpdateDailyTraffic(ipAddress, routePath)
-            call.respond(HttpStatusCode.OK, SimpleResponse(SERVER_OK_TEXT))
-        }
-    }
-
-    route(API_HEALTH_HALA_GALLERY){
-        install(NotarizedRoute()){
-            tags = setOf("Utility")
-            get = GetInfo.builder {
-                summary("Get hala @ me from gallery ")
-                description("Get hala @ me from gallery ")
-                response {
-                    responseCode(HttpStatusCode.OK)
-                    responseType<SimpleResponse>()
-                    description("Ok for good server health")
-                }
-            }
-        }
-        get{
-
-
-
-            val ipAddress = call.request.origin.remoteHost
-            val routePath = API_HEALTH_HALA_GALLERY
-            visitorTrackingService.logOrUpdateDailyTraffic(ipAddress, routePath)
-            call.respond(HttpStatusCode.OK, SimpleResponse(SERVER_OK_TEXT))
-        }
-    }
-    route(API_HEALTH_HALA_RELEASES){
-        install(NotarizedRoute()){
-            tags = setOf("Utility")
-            get = GetInfo.builder {
-                summary("Get hala @ me from releases ")
-                description("Get hala @ me from releases ")
-                response {
-                    responseCode(HttpStatusCode.OK)
-                    responseType<SimpleResponse>()
-                    description("Ok for good server health")
-                }
-            }
-        }
-        get{
-
-
-
-            val ipAddress = call.request.origin.remoteHost
-            val routePath = API_HEALTH_HALA_RELEASES
-            visitorTrackingService.logOrUpdateDailyTraffic(ipAddress, routePath)
-            call.respond(HttpStatusCode.OK, SimpleResponse(SERVER_OK_TEXT))
-        }
-    }
 
 
 

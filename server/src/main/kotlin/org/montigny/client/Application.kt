@@ -3,8 +3,6 @@ package org.montigny.client
 
 import com.typesafe.config.ConfigFactory
 import io.bkbn.kompendium.core.plugin.NotarizedApplication
-import io.bkbn.kompendium.json.schema.definition.JsonSchema
-import kotlin.reflect.typeOf
 import io.bkbn.kompendium.oas.OpenApiSpec
 import io.bkbn.kompendium.oas.component.Components
 import io.bkbn.kompendium.oas.info.Info
@@ -20,7 +18,7 @@ import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.request.httpMethod
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
@@ -31,25 +29,12 @@ import org.koin.ktor.plugin.Koin
 import org.montigny.client.config.DatabaseFactory
 import org.montigny.client.config.JwtProvider
 import org.montigny.client.di.appModule
+import org.montigny.client.domain.api.route.*
 import org.montigny.client.dto.Common.AnySerializer
-import org.montigny.client.domain.api.route.orgRoutes
-import org.montigny.client.domain.api.route.releaseRoutes
-import org.montigny.client.domain.api.route.reportRoutes
-import org.montigny.client.domain.api.route.userRoutes
-import org.montigny.client.domain.api.route.stackRoutes
-import org.montigny.client.domain.api.route.workRoutes
-import org.montigny.client.service.OrganizationService
-import org.montigny.client.service.ReleaseService
-import org.montigny.client.service.ReportsService
-import org.montigny.client.service.StackService
-import org.montigny.client.service.TrackingService
-import org.montigny.client.service.UserService
-import org.montigny.client.service.VisitorTrackingService
-import org.montigny.client.service.WeeklyApprovalScheduler
-import org.montigny.client.service.WorkerService
+import org.montigny.client.service.*
 import java.io.File
 import java.net.URI
-import kotlin.reflect.typeOf
+
 
 fun main() {
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
@@ -72,6 +57,7 @@ fun Application.module() {
             appModule
         )
     }
+
     install(CORS) {
         allowHost("localhost:5173", schemes = listOf("http"))
         allowHeader(HttpHeaders.ContentType)
@@ -156,6 +142,7 @@ fun Application.module() {
                 call.respondFile(File(resource.toURI()))
             }
         }
+        utilityroutes(visitorTrackingService)
         userRoutes(userService,visitorTrackingService)
         orgRoutes(organizationService,userService)
         stackRoutes(stackService, userService,trackingService)
